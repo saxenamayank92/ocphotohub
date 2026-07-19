@@ -12,5 +12,5 @@ binding = "PHOTOS"
 bucket_name = "pictide-photos"
 
 [vars]
-ALLOWED_ORIGIN = "https://ocphotohub.netlify.app"
+ALLOWED_ORIGIN = "https://ocphotohub.netlify.app,https://ocphotohub.vercel.app"
 ADMIN_EMAIL = "admin@oakville.com"

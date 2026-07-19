@@ -29,7 +29,12 @@ const validEmail = email => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || ''
 
 const safeEqual = async (left, right) => hash(left).then(a => hash(right).then(b => a === b));
 
-const originFor = (request, env) => env.ALLOWED_ORIGIN || request.headers.get('Origin') || '*';
+const originFor = (request, env) => {
+  const requestOrigin = request.headers.get('Origin');
+  const allowedOrigins = String(env.ALLOWED_ORIGIN || '').split(',').map(value => value.trim()).filter(Boolean);
+  if (!requestOrigin) return allowedOrigins[0] || '*';
+  return allowedOrigins.length === 0 || allowedOrigins.includes(requestOrigin) ? requestOrigin : allowedOrigins[0];
+};
 const headersFor = (origin, extra = {}) => ({
   'Content-Type': 'application/json; charset=utf-8',
   'Access-Control-Allow-Origin': origin,
