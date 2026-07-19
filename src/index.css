@@ -1,0 +1,117 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+  /* Oakville Club Premium Color Palette (Navy Blue & Gold) */
+  --club-green: #231F54; /* Navy blue from logo */
+  --club-green-light: #342E7A;
+  --club-green-dark: #16133B;
+  --club-green-rgb: 35, 31, 84;
+
+  --club-gold: #C5A059;
+  --club-gold-dark: #A6813B;
+  --club-gold-light: #E0BC75;
+  --club-gold-rgb: 197, 160, 89;
+
+  --club-cream: #FBF9F5;
+  --club-cream-dark: #EFECE6;
+  --club-white: #FFFFFF;
+  --club-charcoal: #1C2320;
+
+  --club-gray: #E0E6E2;
+  --club-gray-light: #EFF2F0;
+  --club-gray-dark: #7D8A82;
+
+  --club-success: #1E6B3F;
+  --club-danger: #962828;
+
+  /* Font Stacks */
+  --font-serif: 'Cormorant Garamond', Georgia, serif;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  /* Layout & Animations */
+  --radius-sm: 4px;
+  --radius-md: 10px;
+  --radius-lg: 20px;
+  --radius-xl: 30px;
+
+  --shadow-sm: 0 2px 4px rgba(10, 63, 38, 0.04);
+  --shadow-md: 0 10px 20px rgba(10, 63, 38, 0.06);
+  --shadow-lg: 0 20px 40px rgba(10, 63, 38, 0.1);
+  --shadow-gold: 0 4px 14px rgba(197, 160, 89, 0.3);
+
+  --transition: all 0.35s cubic-bezier(0.25, 0.8, 0.25, 1);
+  --transition-fast: all 0.15s ease;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  background-color: var(--club-cream);
+  color: var(--club-charcoal);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--club-green-dark);
+}
+
+a, button {
+  font-family: var(--font-sans);
+  transition: var(--transition-fast);
+}
+
+/* Custom Scrollbar for Premium Feel */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--club-cream);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--club-gray-dark);
+  border-radius: var(--radius-sm);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--club-gold);
+}
+
+/* Elegant Text Selection */
+::selection {
+  background-color: rgba(197, 160, 89, 0.2);
+  color: var(--club-green-dark);
+}
+
+/* Soft Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulseGold {
+  0% { box-shadow: 0 0 0 0 rgba(197, 160, 89, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(197, 160, 89, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(197, 160, 89, 0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+}

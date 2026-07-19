@@ -1,0 +1,16 @@
+name = "pictide-api"
+main = "src/index.js"
+compatibility_date = "2026-07-18"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "pictide"
+database_id = "25141cfd-2e4b-4945-aee0-253674369ab3"
+
+[[r2_buckets]]
+binding = "PHOTOS"
+bucket_name = "pictide-photos"
+
+[vars]
+ALLOWED_ORIGIN = "https://ocphotohub.netlify.app"
+ADMIN_EMAIL = "admin@oakville.com"
