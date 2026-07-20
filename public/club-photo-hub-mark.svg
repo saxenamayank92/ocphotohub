@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Club Photo Hub</title>
+  <desc id="desc">A camera lens shaped like the letter C inside a rounded square.</desc>
+  <rect width="512" height="512" rx="124" fill="#172238"/>
+  <path d="M350 151a144 144 0 1 0 0 210" fill="none" stroke="#C8A76B" stroke-width="48" stroke-linecap="round"/>
+  <circle cx="255" cy="256" r="66" fill="#F7F5F0"/>
+  <circle cx="255" cy="256" r="43" fill="#397874"/>
+  <circle cx="239" cy="239" r="12" fill="#F7F5F0" opacity=".9"/>
+  <path d="M366 185h44a18 18 0 0 1 18 18v106a18 18 0 0 1-18 18h-44" fill="none" stroke="#F7F5F0" stroke-width="24" stroke-linecap="round"/>
+</svg>

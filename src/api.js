@@ -72,11 +72,23 @@ export const deleteCloudMember = (memberNumber) => request(`/members/${encodeURI
   headers: { 'X-CSRF-Token': csrfToken }
 });
 
-export const uploadCloudPhoto = (photo) => request('/photos', {
-  method: 'POST',
-  headers: { 'X-CSRF-Token': csrfToken },
-  body: JSON.stringify(photo)
-});
+export const uploadCloudPhoto = (photo) => {
+  if (!(photo.blob instanceof Blob)) throw new Error('A compressed photo file is required.');
+  const params = new URLSearchParams({
+    id: photo.id,
+    caption: photo.caption,
+    category: photo.category,
+    createdAt: photo.createdAt
+  });
+  return request(`/photos?${params}`, {
+    method: 'POST',
+    headers: {
+      'X-CSRF-Token': csrfToken,
+      'Content-Type': photo.blob.type || 'image/jpeg'
+    },
+    body: photo.blob
+  });
+};
 
 export const deleteCloudPhoto = (photoId) => request(`/photos/${encodeURIComponent(photoId)}`, {
   method: 'DELETE',

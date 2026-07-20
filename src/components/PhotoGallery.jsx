@@ -4,6 +4,7 @@ import {
   Heart, Trash2, X, Calendar, Image as ImageIcon,
   Download
 } from 'lucide-react';
+import { photoDownloadName } from '../brand';
 
 export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhoto, onDeletePhoto }) {
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -316,7 +317,7 @@ export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhot
 
                     <a
                       href={photo.downloadUrl || photo.url}
-                      download={photo.fileName || 'Oakville_Club_Photo.jpg'}
+                      download={photo.fileName || photoDownloadName(photo.category)}
                       className="feed-action"
                       aria-label="Download photo"
                       title="Download photo"
@@ -450,7 +451,7 @@ export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhot
 
                   <a
                     href={activeLightboxPhoto.downloadUrl || activeLightboxPhoto.url}
-                    download={activeLightboxPhoto.fileName || 'Oakville_Club_Photo.jpg'}
+                    download={activeLightboxPhoto.fileName || photoDownloadName(activeLightboxPhoto.category)}
                     className="lightbox-icon-action lightbox-download"
                     aria-label={`Download photo (${activeLightboxPhoto.hearts} likes)`}
                     title={`Download photo · ${activeLightboxPhoto.hearts} likes`}

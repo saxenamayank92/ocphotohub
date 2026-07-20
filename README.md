@@ -1,6 +1,8 @@
-# PicTide
+# Club Photo Hub
 
-PicTide is a photo hub prototype. The browser runs in local IndexedDB mode by default. Shared cloud mode uses a Cloudflare Worker API backed by R2 for image files and D1 for metadata.
+Club Photo Hub is a private, white-label photo-sharing platform for member clubs. The browser runs in local IndexedDB mode by default. Shared cloud mode uses a Cloudflare Worker API backed by R2 for image files and D1 for metadata.
+
+The production resources retain their original `pictide` identifiers to avoid destructive infrastructure renames. Customer-facing branding is configured in `src/brand.js` and can be overridden with `VITE_CLUB_NAME`, `VITE_CLUB_SHORT_NAME`, and `VITE_CLUB_LOGO_URL`.
 
 ## Cloudflare setup
 

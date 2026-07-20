@@ -16,6 +16,16 @@
   z-index: 1;
 }
 
+.panel-loading {
+  min-height: 240px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--club-gray-dark);
+}
+
 /* --- BRAND HEADER COMPONENT --- */
 .club-header {
   background: var(--club-white);
@@ -56,6 +66,12 @@
   flex: 0 0 auto;
 }
 
+.brand-logo-platform {
+  border: 0;
+  padding: 0;
+  box-shadow: 0 6px 18px rgba(13, 23, 40, 0.16);
+}
+
 .brand-logo-circle {
   width: 48px;
   height: 48px;
@@ -81,6 +97,8 @@
   font-size: 22px;
   line-height: 1.1;
   font-weight: 700;
+  letter-spacing: -0.025em;
+  color: var(--club-green-dark);
 }
 
 .brand-subtitle {
@@ -226,7 +244,9 @@
   justify-content: center;
   min-height: 100vh;
   padding: 24px 16px;
-  background: radial-gradient(circle at 10% 20%, rgba(35, 31, 84, 0.98) 0%, rgba(13, 11, 36, 1) 90%);
+  background:
+    radial-gradient(circle at 82% 12%, rgba(57, 120, 116, 0.32), transparent 32%),
+    radial-gradient(circle at 10% 20%, rgba(38, 58, 92, 0.98) 0%, rgba(13, 23, 40, 1) 82%);
   position: relative;
 }
 
@@ -252,38 +272,112 @@
   animation: fadeIn 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
-.login-logo {
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  background: var(--club-green);
-  border: 3px solid var(--club-gold);
+.login-brand-lockup {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--club-gold);
-  font-family: var(--font-serif);
-  font-weight: 700;
-  font-size: 28px;
-  margin: 0 auto 24px auto;
-  box-shadow: var(--shadow-md);
+  gap: 14px;
+  margin-bottom: 24px;
 }
 
-.login-header-text {
-  text-align: center;
-  margin-bottom: 30px;
+.login-brand-lockup.compact {
+  justify-content: flex-start;
+  margin-bottom: 24px;
 }
 
-.login-title {
-  font-size: 32px;
-  font-weight: 700;
+.login-brand-mark {
+  width: 64px;
+  height: 64px;
+  flex: 0 0 auto;
+  border-radius: 16px;
+  box-shadow: 0 10px 24px rgba(13, 23, 40, 0.18);
+}
+
+.login-brand-lockup.compact .login-brand-mark {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+}
+
+.login-brand-name {
+  margin: 0;
   color: var(--club-green-dark);
-  margin-bottom: 6px;
+  font-family: var(--font-sans);
+  font-size: 28px;
+  font-weight: 750;
+  letter-spacing: -0.045em;
+  line-height: 1.05;
 }
 
-.login-desc {
-  font-size: 14px;
+.login-brand-lockup.compact .login-brand-name {
+  font-size: 22px;
+}
+
+.login-brand-tagline {
+  margin-top: 5px;
   color: var(--club-gray-dark);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.tenant-brand-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 auto 20px;
+  padding: 10px 14px;
+  border: 1px solid var(--club-gray);
+  border-radius: 14px;
+  background: var(--club-gray-light);
+}
+
+.tenant-brand-logo {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  object-fit: contain;
+  border-radius: 9px;
+  background: var(--club-white);
+  border: 1px solid var(--club-gray);
+  padding: 2px;
+}
+
+.tenant-brand-card span,
+.tenant-brand-card strong {
+  display: block;
+  line-height: 1.25;
+}
+
+.tenant-brand-card span {
+  color: var(--club-gray-dark);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+}
+
+.tenant-brand-card strong {
+  margin-top: 3px;
+  color: var(--club-green-dark);
+  font-size: 16px;
+}
+
+.login-context-label {
+  margin: 0 0 22px;
+  color: var(--club-green-dark);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.login-section-title {
+  margin: 0 0 22px;
+  color: var(--club-green-dark);
+  font-family: var(--font-sans);
+  font-size: 24px;
+  letter-spacing: -0.03em;
 }
 
 .login-form {

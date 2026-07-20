@@ -14,3 +14,20 @@ bucket_name = "pictide-photos"
 [vars]
 ALLOWED_ORIGIN = "https://ocphotohub.netlify.app,https://ocphotohub.vercel.app"
 ADMIN_EMAIL = "admin@oakville.com"
+APP_ORIGIN = "https://ocphotohub.vercel.app"
+
+[[ratelimits]]
+name = "AUTH_RATE_LIMITER"
+namespace_id = "1001"
+
+  [ratelimits.simple]
+  limit = 12
+  period = 60
+
+[[ratelimits]]
+name = "RESET_RATE_LIMITER"
+namespace_id = "1002"
+
+  [ratelimits.simple]
+  limit = 4
+  period = 60

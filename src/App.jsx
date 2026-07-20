@@ -1,12 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { lazy, Suspense, useEffect, useState } from 'react';
 import { ShieldCheck, AlertCircle, Info } from 'lucide-react';
 import { getAllPhotos, savePhoto, deletePhoto as localDeletePhoto, clearAllPhotos } from './db';
 import { seedMembers, seedPhotos } from './seedData';
 import Login from './components/Login';
 import Header from './components/Header';
-import PhotoUpload from './components/PhotoUpload';
 import PhotoGallery from './components/PhotoGallery';
-import AdminPortal from './components/AdminPortal';
 import {
   addCloudMember, cloudApiEnabled, cloudLogin, cloudLogout, cloudSession,
   deleteCloudMember, deleteCloudPhoto, loadCloudData, resetCloudData,
@@ -14,6 +12,9 @@ import {
   requestCloudPasswordReset, completeCloudPasswordReset, checkCloudMember
 } from './api';
 import './App.css';
+
+const PhotoUpload = lazy(() => import('./components/PhotoUpload'));
+const AdminPortal = lazy(() => import('./components/AdminPortal'));
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -176,8 +177,16 @@ export default function App() {
       const data = await loadCloudData();
       setPhotos(data.photos || []);
     } else {
-      await savePhoto(photo);
-      setPhotos(prev => [photo, ...prev]);
+      const url = photo.blob ? await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error('Could not prepare the local photo.'));
+        reader.readAsDataURL(photo.blob);
+      }) : photo.url;
+      const localPhoto = { ...photo, url };
+      delete localPhoto.blob;
+      await savePhoto(localPhoto);
+      setPhotos(prev => [localPhoto, ...prev]);
     }
   };
 
@@ -233,9 +242,11 @@ export default function App() {
     <div className="app-container">
       <Header user={currentUser} isAdmin={isAdmin} activeTab={activeTab} setActiveTab={setActiveTab} onLogout={handleLogout} />
       <main className="content-wrapper">
-        {activeTab === 'gallery' && <PhotoGallery photos={photos} currentUser={currentUser} isAdmin={isAdmin} onHeartPhoto={handleHeartPhoto} onDeletePhoto={handleDeletePhoto} />}
-        {activeTab === 'upload' && !isAdmin && <PhotoUpload user={currentUser} onUploadSuccess={handleUploadPhoto} addToast={addToast} />}
-        {activeTab === 'admin' && isAdmin && <AdminPortal members={members} photos={photos} onAddMember={handleAddMember} onDeleteMember={handleDeleteMember} onSetMemberPassword={handleSetMemberPassword} onDeletePhoto={handleDeletePhoto} firebaseConfig={cloudActive ? { provider: 'Cloudflare R2 + D1' } : null} onResetDatabase={handleResetDatabase} addToast={addToast} />}
+        <Suspense fallback={<div className="panel-loading" role="status"><div className="spinner" /><span>Loading…</span></div>}>
+          {activeTab === 'gallery' && <PhotoGallery photos={photos} currentUser={currentUser} isAdmin={isAdmin} onHeartPhoto={handleHeartPhoto} onDeletePhoto={handleDeletePhoto} />}
+          {activeTab === 'upload' && !isAdmin && <PhotoUpload user={currentUser} onUploadSuccess={handleUploadPhoto} addToast={addToast} />}
+          {activeTab === 'admin' && isAdmin && <AdminPortal members={members} photos={photos} onAddMember={handleAddMember} onDeleteMember={handleDeleteMember} onSetMemberPassword={handleSetMemberPassword} onDeletePhoto={handleDeletePhoto} firebaseConfig={cloudActive ? { provider: 'Cloudflare R2 + D1' } : null} onResetDatabase={handleResetDatabase} addToast={addToast} />}
+        </Suspense>
       </main>
       <div className="toast-container">
         {toasts.map(toast => <div key={toast.id} className={`toast ${toast.type}`}>

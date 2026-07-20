@@ -1,5 +1,18 @@
 import React, { useState } from 'react';
 import { Lock, User, KeyRound, ShieldCheck, AlertCircle } from 'lucide-react';
+import { clubBrand, platformBrand } from '../brand';
+
+function LoginBrand({ compact = false }) {
+  return (
+    <div className={`login-brand-lockup ${compact ? 'compact' : ''}`}>
+      <img src={platformBrand.mark} alt="" className="login-brand-mark" />
+      <div>
+        <h1 className="login-brand-name">{platformBrand.name}</h1>
+        <p className="login-brand-tagline">{platformBrand.tagline}</p>
+      </div>
+    </div>
+  );
+}
 
 export default function Login({ members, onLoginSuccess, onCloudLogin, onCloudCheckMember, onCloudRegister, onRequestPasswordReset, onCompletePasswordReset, onRegisterPassword, firebaseEnabled }) {
   const [isAdminMode, setIsAdminMode] = useState(false);
@@ -232,7 +245,8 @@ export default function Login({ members, onLoginSuccess, onCloudLogin, onCloudCh
   if (resetMode) {
     return (
       <div className="login-screen"><div className="login-card">
-        <h1 className="login-title">Reset your password</h1>
+        <LoginBrand compact />
+        <h2 className="login-section-title">Reset your password</h2>
         {error && <div className="login-error" role="alert"><AlertCircle size={16} /><span>{error}</span></div>}
         {resetMessage && <div className="login-info" role="alert"><ShieldCheck size={16} /><span>{resetMessage}</span></div>}
         {resetToken ? (
@@ -260,26 +274,19 @@ export default function Login({ members, onLoginSuccess, onCloudLogin, onCloudCh
   return (
     <div className="login-screen">
       <div className="login-card">
-        <img
-          src="/oakville-logo.jpg"
-          alt="Oakville Club Logo"
-          style={{
-            width: '140px',
-            height: 'auto',
-            margin: '0 auto 20px auto',
-            display: 'block',
-            filter: 'drop-shadow(var(--shadow-sm))'
-          }}
-        />
+        <LoginBrand />
 
-        <div className="login-header-text">
-          <h1 className="login-title">Oakville Club</h1>
-          <p className="login-desc">
-            {isAdminMode
-              ? 'Management Administration Portal'
-              : 'Member Photo Collection Hub'}
-          </p>
+        <div className="tenant-brand-card">
+          <img src={clubBrand.logo} alt={`${clubBrand.name} crest`} className="tenant-brand-logo" />
+          <div>
+            <span>Private gallery for</span>
+            <strong>{clubBrand.name}</strong>
+          </div>
         </div>
+
+        <p className="login-context-label">
+          {isAdminMode ? 'Club administration' : 'Member access'}
+        </p>
 
         {error && (
           <div className="login-error" role="alert">
@@ -437,7 +444,7 @@ export default function Login({ members, onLoginSuccess, onCloudLogin, onCloudCh
                   type="text"
                   className="input-field"
                   style={{ width: '100%', paddingLeft: '40px' }}
-                  placeholder="admin@oakville.com"
+                  placeholder="admin@yourclub.com"
                   value={adminEmail}
                   onChange={(e) => setAdminEmail(e.target.value)}
                   required

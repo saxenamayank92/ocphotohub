@@ -4,6 +4,7 @@ import {
   Users, Image as ImageIcon, Plus, Trash2,
   Upload, Database, CloudLightning, FileSpreadsheet, RefreshCw, BarChart3, X, Download
 } from 'lucide-react';
+import { clubBrand, photoDownloadName } from '../brand';
 
 export default function AdminPortal({
   members, photos, onAddMember, onDeleteMember, onSetMemberPassword, onDeletePhoto,
@@ -182,7 +183,7 @@ export default function AdminPortal({
         {activeSubTab === 'dashboard' && (
           <div>
             <div className="admin-section-header">
-              <h2 className="admin-section-title">Oakville Hub Metrics</h2>
+              <h2 className="admin-section-title">{clubBrand.name} Hub Metrics</h2>
             </div>
 
             <div className="admin-stats-row">
@@ -531,8 +532,8 @@ export default function AdminPortal({
                 </span>
 
                 <a
-                  href={selectedPhoto.url}
-                  download={selectedPhoto.fileName || 'Oakville_Club_Photo.jpg'}
+                  href={selectedPhoto.downloadUrl || selectedPhoto.url}
+                  download={selectedPhoto.fileName || photoDownloadName(selectedPhoto.category)}
                   className="btn-secondary"
                   style={{
                     display: 'inline-flex',

@@ -1,10 +1,9 @@
-import React, { useState, useRef } from 'react';
-import heic2any from 'heic2any';
-import confetti from 'canvas-confetti';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   Upload, Image as ImageIcon, Camera,
   AlertCircle, Sparkles, RefreshCw, Plus, X
 } from 'lucide-react';
+import { clubBrand } from '../brand';
 
 export default function PhotoUpload({ user, onUploadSuccess, addToast }) {
   const [uploadQueue, setUploadQueue] = useState([]); // [{ id, fileName, previewUrl, caption, category, aiSuggestions, isGeneratingCaption }]
@@ -16,13 +15,25 @@ export default function PhotoUpload({ user, onUploadSuccess, addToast }) {
   const [isDragActive, setIsDragActive] = useState(false);
 
   const fileInputRef = useRef(null);
+  const previewUrlsRef = useRef(new Set());
 
   const categories = ['General', 'Tennis', 'Golf', 'Dining', 'Clubhouse', 'Events'];
+
+  useEffect(() => () => {
+    previewUrlsRef.current.forEach(url => URL.revokeObjectURL(url));
+    previewUrlsRef.current.clear();
+  }, []);
+
+  const revokePreview = (item) => {
+    if (!item?.previewUrl || !previewUrlsRef.current.has(item.previewUrl)) return;
+    URL.revokeObjectURL(item.previewUrl);
+    previewUrlsRef.current.delete(item.previewUrl);
+  };
 
   // AI captions library based on categories
   const aiCaptionsLibrary = {
     Tennis: [
-      'Serving up some heat on the Oakville courts today! 🎾',
+      `Serving up some heat on the ${clubBrand.shortName} courts today! 🎾`,
       'Mixed doubles action under a perfect blue sky.',
       'Rallying into the weekend at the courts. Game, set, match!'
     ],
@@ -32,12 +43,12 @@ export default function PhotoUpload({ user, onUploadSuccess, addToast }) {
       'Perfect swing, perfect day, perfect club life.'
     ],
     Dining: [
-      'Patio season is officially open at the Oakville Bistro! 🍽️',
+      `Patio season is officially open at ${clubBrand.shortName}! 🍽️`,
       'Cheers to sunset drinks and delicious bites by the harbor.',
       'Unwinding with an exquisite culinary evening at the lounge.'
     ],
     Events: [
-      'Celebrating the annual Oakville Reception in style. ✨',
+      `Celebrating the annual ${clubBrand.shortName} reception in style. ✨`,
       'Dressed to impress under the evening gala lights.',
       'Toasting to great friends and memories at the club social.'
     ],
@@ -47,7 +58,7 @@ export default function PhotoUpload({ user, onUploadSuccess, addToast }) {
       'The heart of the club looking stunning today.'
     ],
     General: [
-      'Making lifelong memories at the Oakville Club.',
+      `Making lifelong memories at ${clubBrand.name}.`,
       'Beautiful days and even better company.',
       'Weekend relaxation at our favorite harbor spot.'
     ]
@@ -105,24 +116,27 @@ export default function PhotoUpload({ user, onUploadSuccess, addToast }) {
   };
 
   const handleRemoveFromQueue = (itemId) => {
-    setUploadQueue(prev => prev.filter(item => item.id !== itemId));
+    setUploadQueue(prev => {
+      revokePreview(prev.find(item => item.id === itemId));
+      return prev.filter(item => item.id !== itemId);
+    });
     addToast('Photo removed from upload queue.', 'info');
   };
 
   const handleClearQueue = () => {
+    uploadQueue.forEach(revokePreview);
     setUploadQueue([]);
     addToast('Cleared entire upload queue.', 'info');
   };
 
-  // Resizes and compresses image to base64 JPEG format
+  // Resizes and compresses images into uploadable JPEG blobs.
   const compressImage = (imageFile) => {
     return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(imageFile);
-      reader.onload = (event) => {
-        const img = new Image();
-        img.src = event.target.result;
-        img.onload = () => {
+      const sourceUrl = URL.createObjectURL(imageFile);
+      const img = new Image();
+      img.src = sourceUrl;
+      img.onload = () => {
+        try {
           let width = img.width;
           let height = img.height;
           const maxDimension = 1200;
@@ -146,12 +160,20 @@ export default function PhotoUpload({ user, onUploadSuccess, addToast }) {
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, width, height);
 
-          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.75);
-          resolve(compressedDataUrl);
-        };
-        img.onerror = () => reject(new Error('Failed to load image into canvas.'));
+          canvas.toBlob(blob => {
+            URL.revokeObjectURL(sourceUrl);
+            if (!blob) reject(new Error('Failed to compress image.'));
+            else resolve(blob);
+          }, 'image/jpeg', 0.75);
+        } catch (error) {
+          URL.revokeObjectURL(sourceUrl);
+          reject(error);
+        }
       };
-      reader.onerror = () => reject(new Error('Failed to read image file.'));
+      img.onerror = () => {
+        URL.revokeObjectURL(sourceUrl);
+        reject(new Error('Failed to load image into canvas.'));
+      };
     });
   };
 
@@ -183,6 +205,7 @@ export default function PhotoUpload({ user, onUploadSuccess, addToast }) {
 
         if (isHeic) {
           try {
+            const { default: heic2any } = await import('heic2any');
             const convertedBlob = await heic2any({
               blob: rawFile,
               toType: 'image/jpeg',
@@ -203,13 +226,16 @@ export default function PhotoUpload({ user, onUploadSuccess, addToast }) {
           }
         }
 
-        const compressedBase64 = await compressImage(fileToCompress);
+        const compressedBlob = await compressImage(fileToCompress);
+        const previewUrl = URL.createObjectURL(compressedBlob);
+        previewUrlsRef.current.add(previewUrl);
 
         // Push a new item into the upload queue
         const queueItem = {
           id: `queue-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           originalName: rawFile.name,
-          previewUrl: compressedBase64,
+          previewUrl,
+          blob: compressedBlob,
           caption: '',
           category: globalCategory, // inherits current global dropdown category
           aiSuggestions: [],
@@ -255,6 +281,7 @@ export default function PhotoUpload({ user, onUploadSuccess, addToast }) {
     if (e.target.files && e.target.files.length > 0) {
       processMultipleFiles(e.target.files);
     }
+    e.target.value = '';
   };
 
   const triggerFileInput = () => {
@@ -279,11 +306,13 @@ export default function PhotoUpload({ user, onUploadSuccess, addToast }) {
         setLoadingStatus(`Uploading photo ${i + 1} of ${uploadQueue.length}...`);
 
         const randomHex = Math.random().toString(36).substr(2, 6);
-        const contextFileName = `Oakville_${item.category}_${cleanLastName}_${dateStamp}_${randomHex}.jpg`;
+        const cleanClubName = clubBrand.shortName.replace(/[^a-zA-Z0-9]/g, '');
+        const contextFileName = `${cleanClubName}_${item.category}_${cleanLastName}_${dateStamp}_${randomHex}.jpg`;
 
         const photoObject = {
           id: `photo-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           url: item.previewUrl,
+          blob: item.blob,
           fileName: contextFileName,
           caption: item.caption.trim() || `${item.category} scene at the club`,
           category: item.category,
@@ -298,6 +327,7 @@ export default function PhotoUpload({ user, onUploadSuccess, addToast }) {
         await onUploadSuccess(photoObject);
       }
 
+      const { default: confetti } = await import('canvas-confetti');
       confetti({
         particleCount: 150,
         spread: 80,
@@ -306,6 +336,7 @@ export default function PhotoUpload({ user, onUploadSuccess, addToast }) {
       });
 
       addToast(`Successfully uploaded ${uploadQueue.length} photos to the hub!`, 'success');
+      uploadQueue.forEach(revokePreview);
       setUploadQueue([]);
     } catch (err) {
       console.error(err);

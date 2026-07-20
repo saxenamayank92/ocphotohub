@@ -1,4 +1,7 @@
 const SESSION_MAX_AGE = 60 * 60 * 24 * 7;
+const MAX_PHOTO_BYTES = 8 * 1024 * 1024;
+const ALLOWED_PHOTO_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const PHOTO_CATEGORIES = new Set(['General', 'Tennis', 'Golf', 'Dining', 'Clubhouse', 'Events']);
 const encoder = new TextEncoder();
 
 const seedMembers = [
@@ -10,7 +13,7 @@ const seedPhotos = [
   ['seed-1', 'https://images.unsplash.com/photo-1587174486073-ae5e5cff23aa?q=80&w=1200&auto=format&fit=crop', 'Perfect morning for a round on the 18th green.', 'Golf', 'Club Management', 'admin', 14],
   ['seed-2', 'https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?q=80&w=1200&auto=format&fit=crop', 'Action-packed mixed doubles finals under the sun!', 'Tennis', 'Sarah Jenkins', '1002', 28],
   ['seed-3', 'https://images.unsplash.com/photo-1550966871-3ed3cdb5ed0c?q=80&w=1200&auto=format&fit=crop', 'Lovely summer patio dining experience at the Bistro.', 'Dining', 'John Smith', '1001', 9],
-  ['seed-4', 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=1200&auto=format&fit=crop', 'Annual Oakville Gala reception looking spectacular.', 'Events', 'Club Management', 'admin', 35],
+  ['seed-4', 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=1200&auto=format&fit=crop', 'The annual club gala reception is looking spectacular.', 'Events', 'Club Management', 'admin', 35],
   ['seed-5', 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?q=80&w=1200&auto=format&fit=crop', 'Sunset reflecting on the harbor from the clubhouse lounge.', 'Clubhouse', 'Robert Davis', '1003', 19]
 ];
 
@@ -54,6 +57,15 @@ const responseHeaders = (origin, extra = {}) => {
 };
 const json = (body, status, origin, extra) => new Response(JSON.stringify(body), { status: status || 200, headers: responseHeaders(origin, extra) });
 const noContent = (status, origin, extra) => new Response(null, { status: status || 204, headers: responseHeaders(origin, extra) });
+const rateLimited = origin => json({ error: 'Too many attempts. Please wait a minute and try again.', code: 'RATE_LIMITED' }, 429, origin, { 'Retry-After': '60' });
+
+async function withinRateLimit(request, limiter, action) {
+  if (!limiter) return true;
+  const body = await request.clone().json().catch(() => ({}));
+  const identity = String(body.memberNumber || body.email || body.token || request.headers.get('CF-Connecting-IP') || 'anonymous').trim().toLowerCase();
+  const result = await limiter.limit({ key: await hash(`${action}:${identity}`) });
+  return result.success;
+}
 
 const cookies = request => Object.fromEntries((request.headers.get('Cookie') || '').split(';').map(part => part.trim().split('=').map(decodeURIComponent)).filter(pair => pair.length === 2));
 const cookie = (name, value, maxAge, httpOnly) => `${name}=${encodeURIComponent(value)}; Path=/; Max-Age=${maxAge}; Secure; SameSite=None${httpOnly ? '; HttpOnly' : ''}`;
@@ -73,14 +85,8 @@ async function requireAuth(request, env, role) {
   return session;
 }
 
-const decodeDataUrl = dataUrl => {
-  const match = /^data:([^;]+);base64,(.+)$/.exec(dataUrl || '');
-  if (!match) throw new Error('Photo must be a base64 data URL.');
-  return { contentType: match[1], bytes: Uint8Array.from(atob(match[2]), char => char.charCodeAt(0)) };
-};
-
-const photoUrl = (request, photo) => photo.external_url || `${new URL(request.url).origin}/api/photos/${encodeURIComponent(photo.id)}/file`;
-const photoDownloadUrl = (request, photo) => `${new URL(request.url).origin}/api/photos/${encodeURIComponent(photo.id)}/file?download=1`;
+const photoUrl = (_request, photo) => photo.external_url || `/api/photos/${encodeURIComponent(photo.id)}/file`;
+const photoDownloadUrl = (_request, photo) => `/api/photos/${encodeURIComponent(photo.id)}/file?download=1`;
 const publicMember = member => ({ memberNumber: member.memberNumber, lastName: member.lastName, firstName: member.firstName, registeredAt: member.registeredAt, role: member.role });
 
 async function seed(env) {
@@ -164,7 +170,11 @@ async function requestPasswordReset(request, env, origin) {
     await env.DB.prepare('DELETE FROM password_resets WHERE member_number = ?').bind(member.member_number).run();
     await env.DB.prepare('INSERT INTO password_resets (token_hash, member_number, expires_at) VALUES (?, ?, ?)').bind(await hash(rawToken), member.member_number, Date.now() + 30 * 60 * 1000).run();
     const resetUrl = `${env.APP_ORIGIN || 'https://ocphotohub.netlify.app'}?reset=${encodeURIComponent(rawToken)}`;
-    await fetch('https://api.mailersend.com/v1/email', { method: 'POST', headers: { Authorization: `Bearer ${env.MAILERSEND_API_TOKEN}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ from: { email: env.MAIL_FROM, name: 'PicTide' }, to: [{ email: member.email }], subject: 'Reset your PicTide password', text: `Use this link to reset your PicTide password. It expires in 30 minutes and can only be used once: ${resetUrl}`, html: `<p>Use this link to reset your PicTide password. It expires in 30 minutes and can only be used once.</p><p><a href="${resetUrl}">Reset password</a></p>` }) });
+    const mailResponse = await fetch('https://api.mailersend.com/v1/email', { method: 'POST', headers: { Authorization: `Bearer ${env.MAILERSEND_API_TOKEN}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ from: { email: env.MAIL_FROM, name: 'Club Photo Hub' }, to: [{ email: member.email }], subject: 'Reset your Club Photo Hub password', text: `Use this link to reset your Club Photo Hub password. It expires in 30 minutes and can only be used once: ${resetUrl}`, html: `<p>Use this link to reset your Club Photo Hub password. It expires in 30 minutes and can only be used once.</p><p><a href="${resetUrl}">Reset password</a></p>` }) });
+    if (!mailResponse.ok) {
+      console.error('MailerSend rejected password reset email', { status: mailResponse.status, memberNumber: member.member_number });
+      await env.DB.prepare('DELETE FROM password_resets WHERE member_number = ?').bind(member.member_number).run();
+    }
   }
   return json({ message: 'If the membership details and email are registered, a reset link will be sent.' }, 200, origin);
 }
@@ -189,16 +199,29 @@ export default {
       const url = new URL(request.url);
       const path = url.pathname.replace(/^\/api/, '').replace(/\/$/, '') || '/';
       if (path === '/health' && request.method === 'GET') return json({ ok: true }, 200, origin);
-      if (path === '/auth/login' && request.method === 'POST') return login(request, env, origin);
+      if (path === '/auth/login' && request.method === 'POST') {
+        if (!await withinRateLimit(request, env.AUTH_RATE_LIMITER, 'login')) return rateLimited(origin);
+        return login(request, env, origin);
+      }
       if (path === '/auth/member-check' && request.method === 'POST') {
+        if (!await withinRateLimit(request, env.AUTH_RATE_LIMITER, 'member-check')) return rateLimited(origin);
         const body = await request.json();
         const member = await env.DB.prepare('SELECT last_name, password_hash FROM members WHERE member_number = ?').bind(String(body.memberNumber || '').trim()).first();
         if (!member || String(member.last_name).trim().toLowerCase() !== String(body.lastName || '').trim().toLowerCase()) return json({ error: 'Invalid membership details.' }, 400, origin);
         return json({ registered: Boolean(member.password_hash) }, 200, origin);
       }
-      if (path === '/auth/register' && request.method === 'POST') return registerMember(request, env, origin);
-      if (path === '/auth/password-reset/request' && request.method === 'POST') return requestPasswordReset(request, env, origin);
-      if (path === '/auth/password-reset/complete' && request.method === 'POST') return resetPassword(request, env, origin);
+      if (path === '/auth/register' && request.method === 'POST') {
+        if (!await withinRateLimit(request, env.AUTH_RATE_LIMITER, 'register')) return rateLimited(origin);
+        return registerMember(request, env, origin);
+      }
+      if (path === '/auth/password-reset/request' && request.method === 'POST') {
+        if (!await withinRateLimit(request, env.RESET_RATE_LIMITER, 'reset-request')) return rateLimited(origin);
+        return requestPasswordReset(request, env, origin);
+      }
+      if (path === '/auth/password-reset/complete' && request.method === 'POST') {
+        if (!await withinRateLimit(request, env.RESET_RATE_LIMITER, 'reset-complete')) return rateLimited(origin);
+        return resetPassword(request, env, origin);
+      }
       if (path === '/auth/logout' && request.method === 'POST') {
         const session = await requireAuth(request, env);
         if (session) await env.DB.prepare('DELETE FROM sessions WHERE token_hash = ?').bind(await hash(cookies(request).pt_session)).run();
@@ -243,14 +266,32 @@ export default {
       if (path === '/photos' && request.method === 'POST') {
         const session = await requireAuth(request, env);
         if (!session) return json({ error: 'Unauthorized.' }, 401, origin);
-        const photo = await request.json();
-        const { contentType, bytes } = decodeDataUrl(photo.url);
-        if (bytes.byteLength > 8 * 1024 * 1024) return json({ error: 'Photo exceeds the 8 MB limit.' }, 413, origin);
-        const objectKey = `hub_photos/${session.member_number}/${photo.id}.jpg`;
-        await env.PHOTOS.put(objectKey, bytes, { httpMetadata: { contentType } });
-        await env.DB.prepare('INSERT INTO photos (id, object_key, caption, category, uploader_name, uploader_id, created_at, hearts) VALUES (?, ?, ?, ?, ?, ?, ?, 0)')
-          .bind(photo.id, objectKey, String(photo.caption || '').slice(0, 500), photo.category, `${session.firstName || ''} ${session.lastName || ''}`.trim(), session.member_number, photo.createdAt).run();
-        return json({ ...photo, url: `${new URL(request.url).origin}/api/photos/${encodeURIComponent(photo.id)}/file`, downloadUrl: `${new URL(request.url).origin}/api/photos/${encodeURIComponent(photo.id)}/file?download=1`, fileName: objectKey, uploaderId: session.member_number, hearts: 0, heartUsers: [] }, 201, origin);
+        const photoId = String(url.searchParams.get('id') || '').trim();
+        const caption = String(url.searchParams.get('caption') || '').trim().slice(0, 500);
+        const category = String(url.searchParams.get('category') || '').trim();
+        const createdAt = String(url.searchParams.get('createdAt') || '').trim();
+        const contentType = String(request.headers.get('Content-Type') || '').split(';')[0].toLowerCase();
+        const declaredLength = Number(request.headers.get('Content-Length') || 0);
+        if (!/^[a-zA-Z0-9_-]{8,100}$/.test(photoId)) return json({ error: 'Invalid photo identifier.' }, 400, origin);
+        if (!PHOTO_CATEGORIES.has(category)) return json({ error: 'Invalid photo category.' }, 400, origin);
+        if (!ALLOWED_PHOTO_TYPES.has(contentType)) return json({ error: 'Only JPEG, PNG, and WebP photos are accepted.' }, 415, origin);
+        if (!request.body) return json({ error: 'Photo file is required.' }, 400, origin);
+        if (declaredLength > MAX_PHOTO_BYTES) return json({ error: 'Photo exceeds the 8 MB limit.' }, 413, origin);
+        const extension = contentType === 'image/png' ? 'png' : contentType === 'image/webp' ? 'webp' : 'jpg';
+        const objectKey = `hub_photos/${session.member_number}/${photoId}.${extension}`;
+        const storedObject = await env.PHOTOS.put(objectKey, request.body, { httpMetadata: { contentType } });
+        if (storedObject.size > MAX_PHOTO_BYTES) {
+          await env.PHOTOS.delete(objectKey);
+          return json({ error: 'Photo exceeds the 8 MB limit.' }, 413, origin);
+        }
+        try {
+          await env.DB.prepare('INSERT INTO photos (id, object_key, caption, category, uploader_name, uploader_id, created_at, hearts) VALUES (?, ?, ?, ?, ?, ?, ?, 0)')
+            .bind(photoId, objectKey, caption || `${category} scene at the club`, category, `${session.firstName || ''} ${session.lastName || ''}`.trim(), session.member_number, createdAt || new Date().toISOString()).run();
+        } catch (error) {
+          await env.PHOTOS.delete(objectKey);
+          throw error;
+        }
+        return json({ id: photoId, url: `/api/photos/${encodeURIComponent(photoId)}/file`, downloadUrl: `/api/photos/${encodeURIComponent(photoId)}/file?download=1`, fileName: objectKey, caption: caption || `${category} scene at the club`, category, uploaderName: `${session.firstName || ''} ${session.lastName || ''}`.trim(), uploaderId: session.member_number, createdAt: createdAt || new Date().toISOString(), hearts: 0, heartUsers: [] }, 201, origin);
       }
       const fileMatch = path.match(/^\/photos\/([^/]+)\/file$/);
       if (fileMatch && request.method === 'GET') {
@@ -276,7 +317,7 @@ export default {
         const headers = responseHeaders(origin, { 'Content-Type': contentType, 'Cache-Control': 'private, max-age=3600' });
         if (url.searchParams.get('download') === '1') {
           const safeId = photoId.replace(/[^a-zA-Z0-9_-]/g, '-');
-          headers.set('Content-Disposition', `attachment; filename="pictide-${safeId}.jpg"`);
+          headers.set('Content-Disposition', `attachment; filename="club-photo-hub-${safeId}.jpg"`);
         }
         return new Response(body, { headers });
       }

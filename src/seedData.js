@@ -43,7 +43,7 @@ export const seedPhotos = [
   {
     id: 'seed-4',
     url: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=1200&auto=format&fit=crop',
-    caption: 'Annual Oakville Gala reception looking spectacular.',
+    caption: 'The annual club gala reception is looking spectacular.',
     category: 'Events',
     uploaderName: 'Club Management',
     uploaderId: 'admin',

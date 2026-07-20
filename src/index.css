@@ -1,25 +1,27 @@
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700&display=swap');
 
 :root {
-  /* Oakville Club Premium Color Palette (Navy Blue & Gold) */
-  --club-green: #231F54; /* Navy blue from logo */
-  --club-green-light: #342E7A;
-  --club-green-dark: #16133B;
-  --club-green-rgb: 35, 31, 84;
+  /* Club Photo Hub platform palette: heritage navy, harbour teal, warm brass. */
+  --club-green: #172238;
+  --club-green-light: #263A5C;
+  --club-green-dark: #0D1728;
+  --club-green-rgb: 23, 34, 56;
 
-  --club-gold: #C5A059;
-  --club-gold-dark: #A6813B;
-  --club-gold-light: #E0BC75;
-  --club-gold-rgb: 197, 160, 89;
+  --club-gold: #C8A76B;
+  --club-gold-dark: #A78345;
+  --club-gold-light: #E2C892;
+  --club-gold-rgb: 200, 167, 107;
+  --brand-teal: #397874;
+  --brand-teal-dark: #285C59;
 
-  --club-cream: #FBF9F5;
-  --club-cream-dark: #EFECE6;
+  --club-cream: #F7F5F0;
+  --club-cream-dark: #ECE8DF;
   --club-white: #FFFFFF;
-  --club-charcoal: #1C2320;
+  --club-charcoal: #1C2531;
 
-  --club-gray: #E0E6E2;
-  --club-gray-light: #EFF2F0;
-  --club-gray-dark: #7D8A82;
+  --club-gray: #DCE2E0;
+  --club-gray-light: #F0F3F2;
+  --club-gray-dark: #697874;
 
   --club-success: #1E6B3F;
   --club-danger: #962828;
@@ -34,10 +36,10 @@
   --radius-lg: 20px;
   --radius-xl: 30px;
 
-  --shadow-sm: 0 2px 4px rgba(10, 63, 38, 0.04);
-  --shadow-md: 0 10px 20px rgba(10, 63, 38, 0.06);
-  --shadow-lg: 0 20px 40px rgba(10, 63, 38, 0.1);
-  --shadow-gold: 0 4px 14px rgba(197, 160, 89, 0.3);
+  --shadow-sm: 0 2px 6px rgba(13, 23, 40, 0.06);
+  --shadow-md: 0 10px 24px rgba(13, 23, 40, 0.09);
+  --shadow-lg: 0 24px 56px rgba(13, 23, 40, 0.16);
+  --shadow-gold: 0 4px 14px rgba(200, 167, 107, 0.3);
 
   --transition: all 0.35s cubic-bezier(0.25, 0.8, 0.25, 1);
   --transition-fast: all 0.15s ease;

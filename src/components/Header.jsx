@@ -1,5 +1,6 @@
 import React from 'react';
 import { LogOut, Image, Upload, Shield, User } from 'lucide-react';
+import { clubBrand, platformBrand } from '../brand';
 
 export default function Header({ user, isAdmin, activeTab, setActiveTab, onLogout }) {
   return (
@@ -7,13 +8,13 @@ export default function Header({ user, isAdmin, activeTab, setActiveTab, onLogou
       <div className="header-content">
         <div className="brand-section">
           <img
-            src="/oakville-logo.jpg"
-            alt="Oakville Club Logo"
-            className="brand-logo"
+            src={platformBrand.mark}
+            alt=""
+            className="brand-logo brand-logo-platform"
           />
           <div className="brand-titles">
-            <span className="brand-title">Oakville Club</span>
-            <span className="brand-subtitle">Photo Collection Hub</span>
+            <span className="brand-title">{platformBrand.name}</span>
+            <span className="brand-subtitle">{clubBrand.name} · Private gallery</span>
           </div>
         </div>
 
