@@ -169,7 +169,7 @@ async function requestPasswordReset(request, env, origin) {
     const rawToken = randomToken(32);
     await env.DB.prepare('DELETE FROM password_resets WHERE member_number = ?').bind(member.member_number).run();
     await env.DB.prepare('INSERT INTO password_resets (token_hash, member_number, expires_at) VALUES (?, ?, ?)').bind(await hash(rawToken), member.member_number, Date.now() + 30 * 60 * 1000).run();
-    const resetUrl = `${env.APP_ORIGIN || 'https://ocphotohub.netlify.app'}?reset=${encodeURIComponent(rawToken)}`;
+    const resetUrl = `${env.APP_ORIGIN || 'https://ocphotohub.netlify.app'}/app?reset=${encodeURIComponent(rawToken)}`;
     const mailResponse = await fetch('https://api.mailersend.com/v1/email', { method: 'POST', headers: { Authorization: `Bearer ${env.MAILERSEND_API_TOKEN}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ from: { email: env.MAIL_FROM, name: 'Club Photo Hub' }, to: [{ email: member.email }], subject: 'Reset your Club Photo Hub password', text: `Use this link to reset your Club Photo Hub password. It expires in 30 minutes and can only be used once: ${resetUrl}`, html: `<p>Use this link to reset your Club Photo Hub password. It expires in 30 minutes and can only be used once.</p><p><a href="${resetUrl}">Reset password</a></p>` }) });
     if (!mailResponse.ok) {
       console.error('MailerSend rejected password reset email', { status: mailResponse.status, memberNumber: member.member_number });

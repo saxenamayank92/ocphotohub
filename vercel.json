@@ -26,6 +26,10 @@
     {
       "source": "/api/:path*",
       "destination": "https://pictide-api.summer-wind-c5c6.workers.dev/api/:path*"
+    },
+    {
+      "source": "/app/:path*",
+      "destination": "/index.html"
     }
   ]
 }
