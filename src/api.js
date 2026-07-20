@@ -28,6 +28,7 @@ const request = async (path, options = {}) => {
 };
 
 export const loadCloudData = () => request('/bootstrap');
+export const listCloudClubs = () => request('/clubs');
 
 export const cloudLogin = async credentials => {
   const result = await request('/auth/login', { method: 'POST', body: JSON.stringify(credentials) });
@@ -36,6 +37,7 @@ export const cloudLogin = async credentials => {
 };
 
 export const checkCloudMember = details => request('/auth/member-check', { method: 'POST', body: JSON.stringify(details) });
+export const requestRegistrationCode = details => request('/auth/registration-code', { method: 'POST', body: JSON.stringify(details) });
 
 export const cloudRegister = async details => {
   const result = await request('/auth/register', { method: 'POST', body: JSON.stringify(details) });
@@ -67,9 +69,21 @@ export const addCloudMember = (member) => request('/members', {
   body: JSON.stringify(member)
 });
 
+export const addCloudClub = club => request('/clubs', {
+  method: 'POST',
+  headers: { 'X-CSRF-Token': csrfToken },
+  body: JSON.stringify(club)
+});
+
 export const deleteCloudMember = (memberNumber) => request(`/members/${encodeURIComponent(memberNumber)}`, {
   method: 'DELETE',
   headers: { 'X-CSRF-Token': csrfToken }
+});
+
+export const updateCloudMember = (memberNumber, changes) => request(`/members/${encodeURIComponent(memberNumber)}`, {
+  method: 'PATCH',
+  headers: { 'X-CSRF-Token': csrfToken },
+  body: JSON.stringify(changes)
 });
 
 export const uploadCloudPhoto = (photo) => {

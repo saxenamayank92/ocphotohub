@@ -1,8 +1,8 @@
 import React from 'react';
 import { LogOut, Image, Upload, Shield, User } from 'lucide-react';
-import { clubBrand, platformBrand } from '../brand';
+import { platformBrand } from '../brand';
 
-export default function Header({ user, isAdmin, activeTab, setActiveTab, onLogout }) {
+export default function Header({ user, club, isAdmin, activeTab, setActiveTab, onLogout }) {
   return (
     <header className="club-header">
       <div className="header-content">
@@ -14,7 +14,7 @@ export default function Header({ user, isAdmin, activeTab, setActiveTab, onLogou
           />
           <div className="brand-titles">
             <span className="brand-title">{platformBrand.name}</span>
-            <span className="brand-subtitle">{clubBrand.name} · Private gallery</span>
+            <span className="brand-subtitle">{club?.name || 'Private club'} · Private gallery</span>
           </div>
         </div>
 

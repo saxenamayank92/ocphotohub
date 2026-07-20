@@ -9,8 +9,10 @@ import {
   addCloudMember, cloudApiEnabled, cloudLogin, cloudLogout, cloudSession,
   deleteCloudMember, deleteCloudPhoto, loadCloudData, resetCloudData,
   saveCloudPassword, toggleCloudHeart, uploadCloudPhoto, cloudRegister,
-  requestCloudPasswordReset, completeCloudPasswordReset, checkCloudMember
+  requestCloudPasswordReset, completeCloudPasswordReset, checkCloudMember,
+  listCloudClubs, requestRegistrationCode, addCloudClub, updateCloudMember
 } from './api';
+import { clubBrand } from './brand';
 import './App.css';
 
 const PhotoUpload = lazy(() => import('./components/PhotoUpload'));
@@ -24,6 +26,8 @@ export default function App() {
   const [photos, setPhotos] = useState([]);
   const [toasts, setToasts] = useState([]);
   const [cloudActive, setCloudActive] = useState(false);
+  const [clubs, setClubs] = useState([clubBrand]);
+  const [currentClub, setCurrentClub] = useState(null);
 
   const addToast = (message, type = 'success') => {
     const id = Date.now() + Math.random();
@@ -68,6 +72,8 @@ export default function App() {
 
     const loadCloud = async () => {
       try {
+        const clubData = await listCloudClubs();
+        if (!cancelled) setClubs(clubData.clubs || []);
         const session = await cloudSession();
         if (!session.authenticated) {
           if (!cancelled) {
@@ -79,6 +85,7 @@ export default function App() {
         }
         if (!cancelled) {
           setCurrentUser(session.user);
+          setCurrentClub(session.club);
           setIsAdmin(session.role === 'admin');
           sessionStorage.setItem('oakville_user', JSON.stringify(session.user));
           sessionStorage.setItem('oakville_is_admin', String(session.role === 'admin'));
@@ -124,6 +131,7 @@ export default function App() {
   const handleCloudLogin = async credentials => {
     const result = await cloudLogin(credentials);
     setCloudActive(true);
+    setCurrentClub(result.club);
     handleLoginSuccess(result.user, result.role === 'admin');
     const data = await loadCloudData();
     setMembers(data.members || []);
@@ -133,6 +141,7 @@ export default function App() {
   const handleCloudRegister = async details => {
     const result = await cloudRegister(details);
     setCloudActive(true);
+    setCurrentClub(result.club);
     const data = await loadCloudData();
     setMembers(data.members || []);
     setPhotos(data.photos || []);
@@ -142,6 +151,7 @@ export default function App() {
   const handleLogout = () => {
     if (cloudActive) cloudLogout().catch(error => console.error('Cloud logout failed:', error));
     setCurrentUser(null);
+    setCurrentClub(null);
     setIsAdmin(false);
     setActiveTab('gallery');
     sessionStorage.removeItem('oakville_user');
@@ -156,10 +166,24 @@ export default function App() {
     setMembers(updatedMembers);
   };
 
+  const handleAddClub = async club => {
+    if (!cloudActive) throw new Error('Club onboarding requires the cloud API.');
+    const created = await addCloudClub(club);
+    setClubs(previous => [...previous, created].sort((left, right) => left.name.localeCompare(right.name)));
+    return created;
+  };
+
   const handleDeleteMember = async (memberNumber) => {
     if (cloudActive) await deleteCloudMember(memberNumber);
     else localStorage.setItem('oakville_members', JSON.stringify(members.filter(member => member.memberNumber !== memberNumber)));
     setMembers(prev => prev.filter(member => member.memberNumber !== memberNumber));
+  };
+
+  const handleUpdateMember = async (memberNumber, changes) => {
+    const updated = cloudActive ? await updateCloudMember(memberNumber, changes) : { ...members.find(member => member.memberNumber === memberNumber), ...changes };
+    setMembers(previous => previous.map(member => member.memberNumber === memberNumber ? { ...member, ...updated } : member));
+    if (!cloudActive) localStorage.setItem('oakville_members', JSON.stringify(members.map(member => member.memberNumber === memberNumber ? { ...member, ...changes } : member)));
+    return updated;
   };
 
   const handleSetMemberPassword = async (memberNumber, password) => {
@@ -235,17 +259,17 @@ export default function App() {
   };
 
   if (!currentUser) {
-    return <Login members={members} onLoginSuccess={handleLoginSuccess} onCloudLogin={handleCloudLogin} onCloudCheckMember={checkCloudMember} onCloudRegister={handleCloudRegister} onRequestPasswordReset={requestCloudPasswordReset} onCompletePasswordReset={completeCloudPasswordReset} onRegisterPassword={handleRegisterPassword} firebaseEnabled={cloudApiEnabled} />;
+    return <Login clubs={clubs} members={members} onLoginSuccess={handleLoginSuccess} onCloudLogin={handleCloudLogin} onCloudCheckMember={checkCloudMember} onCloudRequestRegistrationCode={requestRegistrationCode} onCloudRegister={handleCloudRegister} onRequestPasswordReset={requestCloudPasswordReset} onCompletePasswordReset={completeCloudPasswordReset} onRegisterPassword={handleRegisterPassword} firebaseEnabled={cloudApiEnabled} />;
   }
 
   return (
     <div className="app-container">
-      <Header user={currentUser} isAdmin={isAdmin} activeTab={activeTab} setActiveTab={setActiveTab} onLogout={handleLogout} />
+      <Header user={currentUser} club={currentClub || clubBrand} isAdmin={isAdmin} activeTab={activeTab} setActiveTab={setActiveTab} onLogout={handleLogout} />
       <main className="content-wrapper">
         <Suspense fallback={<div className="panel-loading" role="status"><div className="spinner" /><span>Loading…</span></div>}>
           {activeTab === 'gallery' && <PhotoGallery photos={photos} currentUser={currentUser} isAdmin={isAdmin} onHeartPhoto={handleHeartPhoto} onDeletePhoto={handleDeletePhoto} />}
           {activeTab === 'upload' && !isAdmin && <PhotoUpload user={currentUser} onUploadSuccess={handleUploadPhoto} addToast={addToast} />}
-          {activeTab === 'admin' && isAdmin && <AdminPortal members={members} photos={photos} onAddMember={handleAddMember} onDeleteMember={handleDeleteMember} onSetMemberPassword={handleSetMemberPassword} onDeletePhoto={handleDeletePhoto} firebaseConfig={cloudActive ? { provider: 'Cloudflare R2 + D1' } : null} onResetDatabase={handleResetDatabase} addToast={addToast} />}
+          {activeTab === 'admin' && isAdmin && <AdminPortal club={currentClub || clubBrand} clubs={clubs} members={members} photos={photos} onAddClub={handleAddClub} onAddMember={handleAddMember} onUpdateMember={handleUpdateMember} onDeleteMember={handleDeleteMember} onSetMemberPassword={handleSetMemberPassword} onDeletePhoto={handleDeletePhoto} firebaseConfig={cloudActive ? { provider: 'Cloudflare R2 + D1' } : null} onResetDatabase={handleResetDatabase} addToast={addToast} />}
         </Suspense>
       </main>
       <div className="toast-container">

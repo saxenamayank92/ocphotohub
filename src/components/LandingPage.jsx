@@ -20,12 +20,12 @@ const features = [
   {
     icon: LockKeyhole,
     title: 'Members-only access',
-    copy: 'Member name and number verification keeps the gallery inside the club community.'
+    copy: 'Club selection, roster details and email-code verification keep each gallery inside its own community.'
   },
   {
     icon: Palette,
     title: 'Designed for your club',
-    copy: 'Your club name, crest, colours and categories sit naturally inside the Club Photo Hub experience.'
+    copy: 'Your club name, crest, colours and categories sit naturally inside the Club PhotoHub experience.'
   },
   {
     icon: Heart,
@@ -45,7 +45,7 @@ export default function LandingPage() {
   return (
     <div className="marketing-page">
       <header className="marketing-nav">
-        <a className="marketing-brand" href="/" aria-label="Club Photo Hub home">
+        <a className="marketing-brand" href="/" aria-label="Club PhotoHub home">
           <img src={platformBrand.mark} alt="" />
           <span>{platformBrand.name}</span>
         </a>
@@ -65,7 +65,7 @@ export default function LandingPage() {
             <div className="marketing-eyebrow"><ShieldCheck size={15} /> Private photo sharing for member clubs</div>
             <h1>Every club moment, in one private place.</h1>
             <p>
-              Club Photo Hub gives members a simple, beautifully branded space to upload,
+              Club PhotoHub gives members a simple, beautifully branded space to upload,
               discover and preserve the moments that make their club special.
             </p>
             <div className="marketing-hero-actions">
@@ -86,13 +86,16 @@ export default function LandingPage() {
               <span /><span /><span />
               <div>Member Gallery</div>
             </div>
-            <img
-              src="/club-photo-hub-product-preview.jpg"
-              alt="Club Photo Hub gallery showing a private club photo feed"
-              width="1440"
-              height="900"
-              fetchPriority="high"
-            />
+            <div className="marketing-feed-preview" aria-label="Generic Club PhotoHub member gallery preview">
+              <div className="marketing-feed-head">
+                <div className="marketing-feed-avatar">CM</div>
+                <div><strong>Club Member</strong><span>Summer social · Today</span></div>
+                <em>EVENTS</em>
+              </div>
+              <div className="marketing-feed-photo"><span>Moments worth remembering.</span></div>
+              <div className="marketing-feed-actions"><Heart size={21} /><Download size={21} /></div>
+              <div className="marketing-feed-copy"><strong>Club Member</strong><span>A wonderful evening shared with friends at the club.</span></div>
+            </div>
             <div className="marketing-private-badge"><LockKeyhole size={15} /> Private member gallery</div>
           </div>
         </section>
@@ -134,7 +137,7 @@ export default function LandingPage() {
             <article>
               <strong>02</strong>
               <h3>Members create their account</h3>
-              <p>On first access, each member verifies their details and creates their own email and password.</p>
+              <p>On first access, members match their roster email, enter a one-time code, and create a password.</p>
             </article>
             <article>
               <strong>03</strong>
@@ -149,7 +152,7 @@ export default function LandingPage() {
             <span>Private by design</span>
             <h2>Your club community—not the public internet.</h2>
             <p>
-              Club Photo Hub is designed around controlled membership rather than public profiles,
+              Club PhotoHub is designed around controlled membership rather than public profiles,
               followers or open discovery.
             </p>
             <ul>
@@ -180,7 +183,7 @@ export default function LandingPage() {
           <div>
             <span>Bring your club together</span>
             <h2>Give every club moment a place to belong.</h2>
-            <p>Enter the member hub and experience Club Photo Hub in action.</p>
+            <p>Enter the member hub and experience Club PhotoHub in action.</p>
           </div>
           <a href="/app">Enter the member hub <ArrowRight size={18} /></a>
         </section>
@@ -192,7 +195,7 @@ export default function LandingPage() {
           <span>{platformBrand.name}</span>
         </div>
         <p>{platformBrand.tagline}</p>
-        <span>© {new Date().getFullYear()} Club Photo Hub</span>
+        <span>© {new Date().getFullYear()} Club PhotoHub</span>
       </footer>
     </div>
   );

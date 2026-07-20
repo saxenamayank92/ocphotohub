@@ -204,11 +204,18 @@
   text-transform: uppercase;
 }
 
-.marketing-product-stage > img {
-  display: block;
-  width: 100%;
-  height: auto;
-}
+.marketing-feed-preview { background: #fff; }
+.marketing-feed-head { display: flex; align-items: center; gap: 12px; padding: 18px 20px; }
+.marketing-feed-avatar { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 50%; color: #fff; background: #173a3d; font-size: 12px; font-weight: 800; }
+.marketing-feed-head > div:nth-child(2) { display: flex; flex: 1; flex-direction: column; gap: 2px; }
+.marketing-feed-head strong { color: #172238; font-size: 14px; }
+.marketing-feed-head span { color: #7a8582; font-size: 11px; }
+.marketing-feed-head em { padding: 6px 9px; border: 1px solid #d4ae61; border-radius: 999px; color: #8c6725; font-size: 9px; font-style: normal; font-weight: 800; letter-spacing: .08em; }
+.marketing-feed-photo { display: flex; align-items: flex-end; aspect-ratio: 16 / 9; padding: 28px; color: white; background: radial-gradient(circle at 73% 23%, rgba(255,222,141,.9) 0 7%, transparent 8%), linear-gradient(160deg, #789a8b 0 31%, #244e52 32% 54%, #b58c4e 55% 58%, #143236 59% 100%); }
+.marketing-feed-photo span { max-width: 310px; font-family: 'Cormorant Garamond', Georgia, serif; font-size: clamp(25px, 4vw, 42px); font-weight: 600; line-height: .98; text-shadow: 0 2px 18px rgba(0,0,0,.25); }
+.marketing-feed-actions { display: flex; gap: 18px; padding: 15px 20px 8px; color: #172238; }
+.marketing-feed-copy { display: flex; gap: 7px; padding: 0 20px 22px; color: #36413f; font-size: 12px; }
+.marketing-feed-copy strong { color: #172238; white-space: nowrap; }
 
 .marketing-private-badge {
   position: absolute;
