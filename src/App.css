@@ -428,6 +428,11 @@
 .onboarding-pilot-notice { display: flex; align-items: center; gap: 12px; padding: 13px 14px; border: 1px solid rgba(40,92,89,.24); border-radius: 11px; color: var(--brand-teal-dark); background: rgba(57,120,116,.07); }
 .onboarding-pilot-notice > span { display: grid; gap: 2px; }
 .onboarding-pilot-notice small { color: var(--club-gray-dark); }
+.logo-upload-field small { display: block; margin-top: 6px; color: var(--club-gray-dark); font-size: 12px; }
+.onboarding-logo-preview { display: block; width: 72px; height: 72px; margin-top: 10px; padding: 6px; border: 1px solid var(--club-gray); border-radius: 12px; object-fit: contain; background: white; }
+.direct-club-lock { display: flex; align-items: center; gap: 9px; min-height: 44px; padding: 0 13px; border: 1px solid rgba(31,79,74,.2); border-radius: 10px; color: var(--club-green-dark); background: rgba(31,79,74,.06); }
+.direct-club-lock span { font-weight: 700; }
+.direct-club-lock small { margin-left: auto; color: var(--club-gray-dark); font-size: 11px; }
 .trial-status-banner { display: flex; align-items: center; justify-content: center; gap: 14px; padding: 8px 14px; color: #5f471c; background: #f4e8cc; font-size: 11px; font-weight: 700; }
 .trial-status-banner.expired { color: #fff; background: #8e2f2f; }
 .trial-status-banner a { padding: 4px 9px; border-radius: 999px; color: inherit; background: rgba(255,255,255,.7); text-decoration: none; }

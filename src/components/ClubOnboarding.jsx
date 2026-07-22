@@ -16,6 +16,7 @@ export default function ClubOnboarding({ onStart, onComplete, onCancel }) {
   const [shortName, setShortName] = useState('');
   const [organizationType, setOrganizationType] = useState('Private Club');
   const [logoUrl, setLogoUrl] = useState('');
+  const [logoPreview, setLogoPreview] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
@@ -35,6 +36,17 @@ export default function ClubOnboarding({ onStart, onComplete, onCancel }) {
       setSignupId(result.signupId); setMessage(result.message); setStep(2);
     } catch (requestError) { setError(requestError.message || 'We could not start club onboarding.'); }
     finally { setWorking(false); }
+  };
+
+  const handleLogoChange = event => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) return setError('Choose a PNG, JPG, or WebP logo.');
+    if (file.size > 256 * 1024) return setError('Please choose a logo smaller than 256 KB.');
+    const reader = new FileReader();
+    reader.onload = () => { setLogoUrl(String(reader.result || '')); setLogoPreview(String(reader.result || '')); setError(''); };
+    reader.onerror = () => setError('We could not read that logo file.');
+    reader.readAsDataURL(file);
   };
 
   const finishOnboarding = async event => {
@@ -70,7 +82,7 @@ export default function ClubOnboarding({ onStart, onComplete, onCancel }) {
         <Field id="onboardShortName" label="Short name" icon={Building2} placeholder="Harbour" value={shortName} onChange={event => setShortName(event.target.value)} maxLength={40} />
       </div>
       <div className="form-group"><label htmlFor="onboardOrganizationType">Organization type</label><div className="input-with-icon"><select id="onboardOrganizationType" className="input-field" value={organizationType} onChange={event => setOrganizationType(event.target.value)} required><option>Private Club</option><option>Golf Club</option><option>Racquet Club</option><option>Yacht Club</option><option>Residential Community</option><option>Alumni Association</option><option>Hospitality Organization</option><option>Other Private Community</option></select><Building2 size={18} /></div></div>
-      <Field id="onboardLogoUrl" label="Club logo URL (optional)" placeholder="https://yourclub.com/logo.png" type="url" value={logoUrl} onChange={event => setLogoUrl(event.target.value)} />
+      <div className="form-group logo-upload-field"><label htmlFor="onboardLogoFile">Club logo (optional)</label><input id="onboardLogoFile" className="input-field" type="file" accept="image/png,image/jpeg,image/webp" onChange={handleLogoChange} /><small>Upload a PNG, JPG, or WebP up to 256 KB.</small>{logoPreview && <img className="onboarding-logo-preview" src={logoPreview} alt="Selected club logo preview" />}</div>
       <div className="onboarding-section-heading"><span>Primary administrator</span><p>This person becomes the verified owner of the club workspace.</p></div>
       <div className="onboarding-two-column">
         <Field id="onboardFirstName" label="First name" icon={User} value={firstName} onChange={event => setFirstName(event.target.value)} maxLength={50} required />

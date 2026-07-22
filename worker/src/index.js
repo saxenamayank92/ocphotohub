@@ -2,6 +2,7 @@ const SESSION_MAX_AGE = 60 * 60 * 24 * 7;
 const MAX_PHOTO_BYTES = 8 * 1024 * 1024;
 const REGISTRATION_CODE_MAX_AGE = 10 * 60 * 1000;
 const ALLOWED_PHOTO_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const MAX_LOGO_DATA_URL_BYTES = 256 * 1024;
 const PHOTO_CATEGORIES = new Set(['General', 'Tennis', 'Golf', 'Dining', 'Clubhouse', 'Events']);
 const encoder = new TextEncoder();
 
@@ -33,7 +34,10 @@ const escapeHtml = value => String(value).replace(/[&<>"']/g, character => ({ '&
 const clubSlug = value => cleanText(value, 80).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60);
 const secureLogoUrl = value => {
   const logoUrl = String(value || '').trim();
-  return !logoUrl || /^https:\/\//i.test(logoUrl) ? logoUrl : null;
+  if (!logoUrl || /^https:\/\//i.test(logoUrl)) return logoUrl;
+  const match = logoUrl.match(/^data:(image\/(?:png|jpeg|webp));base64,([A-Za-z0-9+/]+={0,2})$/i);
+  if (!match) return null;
+  try { return atob(match[2]).length <= MAX_LOGO_DATA_URL_BYTES ? logoUrl : null; } catch { return null; }
 };
 const verificationCode = () => {
   const values = new Uint32Array(1);
