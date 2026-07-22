@@ -224,10 +224,6 @@ async function login(request, env, origin) {
 
 async function startClubOnboarding(request, env, origin) {
   const body = await request.json();
-  if (String(env.PILOT_MODE || '').toLowerCase() === 'true') {
-    if (!env.PILOT_SIGNUP_CODE) return json({ error: 'Private pilot onboarding is temporarily unavailable. Contact support@xtide.io.' }, 503, origin);
-    if (!body.pilotCode || !await safeEqual(String(body.pilotCode).trim(), env.PILOT_SIGNUP_CODE)) return json({ error: 'Enter a valid private pilot access code.' }, 403, origin);
-  }
   const clubName = cleanText(body.clubName, 80);
   const shortName = cleanText(body.shortName || clubName, 40);
   const organizationType = cleanText(body.organizationType, 50);

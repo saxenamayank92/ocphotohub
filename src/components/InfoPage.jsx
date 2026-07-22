@@ -4,7 +4,7 @@ import { platformBrand } from '../brand';
 import './InfoPage.css';
 
 const adminGuide = [
-  ['Create and brand your workspace', 'Use your private pilot code, verify the primary administrator email, then add your organization name, crest and gallery categories.'],
+  ['Create and brand your workspace', 'Verify the primary administrator email, then add your organization name, crest and gallery categories.'],
   ['Build the member directory', 'Add each member’s first name, last name, member number and club-registered email. The directory is the gate to account creation.'],
   ['Invite members', 'Share your Club PhotoHub link. Members select the organization, match their roster details, verify the email on file and create their own password.'],
   ['Moderate the gallery', 'Review activity, remove inappropriate photos, keep roster emails current and deactivate access when a membership ends.'],
@@ -22,7 +22,7 @@ const memberGuide = [
 const faqs = [
   ['Who is Club PhotoHub for?', 'Private clubs, associations, residential communities, alumni groups, hospitality teams and other organizations that need a controlled photo space.'],
   ['Do members need Facebook or Google accounts?', 'No. Member access is based on the organization’s own directory and the member’s verified roster email.'],
-  ['Is a credit card required for the trial?', 'No. Approved private-pilot organizations receive a 30-day trial without a credit card.'],
+  ['Is a credit card required for the trial?', 'No. Every new organization receives a 30-day trial without a credit card.'],
   ['What happens after the trial?', 'The workspace becomes read-only until a plan is activated. Members can still view and download existing photos, but new uploads and administrative changes pause.'],
   ['How much storage is included?', 'The launch plan includes 25 GB of fair-use photo storage per organization. We will warn administrators before a limit is reached.'],
   ['Can an administrator remove photos?', 'Yes. Administrators can moderate photos, and members can remove photos they uploaded themselves.'],
@@ -92,10 +92,10 @@ export function PrivacyPage() {
 }
 
 export function TermsPage() {
-  return <InfoLayout title="Terms of service" eyebrow="Effective July 21, 2026" intro="These are plain-language private-pilot terms for Club PhotoHub, operated by xTide Apps. They require legal review before commercial use.">
+  return <InfoLayout title="Terms of service" eyebrow="Effective July 21, 2026" intro="These are plain-language terms for Club PhotoHub, operated by xTide Apps. They require legal review before commercial use.">
     <div className="legal-copy">
       <h2>1. The service</h2><p>Club PhotoHub provides organizations with private, branded photo workspaces, member verification, uploads, downloads and administrative controls. Each organization is responsible for its member directory, authorized administrators and lawful use of the service.</p>
-      <h2>2. Trial and plans</h2><p>Approved private-pilot organizations receive a 30-day trial without a credit card. The launch plan is CAD $60 per month or CAD $600 per year and includes 25 GB of fair-use photo storage. Taxes may apply. After a trial or paid term ends, the workspace may become read-only until service is renewed.</p>
+      <h2>2. Trial and plans</h2><p>Organizations receive a 30-day trial without a credit card. The launch plan is CAD $60 per month or CAD $600 per year and includes 25 GB of fair-use photo storage. Taxes may apply. After a trial or paid term ends, the workspace may become read-only until service is renewed.</p>
       <h2>3. Accounts and security</h2><p>You must provide accurate information, protect credentials and promptly report suspected unauthorized access. Accounts may not be shared with people who are not authorized by the organization. Administrators must remove members whose access is no longer appropriate.</p>
       <h2>4. Photos and acceptable use</h2><p>You retain ownership of content you upload and grant Club PhotoHub the limited rights needed to store, process, display and deliver it within your organization’s workspace. You must have permission to upload the content. Illegal, abusive, infringing, deceptive or privacy-invasive content is prohibited.</p>
       <h2>5. Moderation</h2><p>Organizations are primarily responsible for moderating their workspaces. Club PhotoHub may restrict or remove content and accounts when reasonably necessary to protect users, comply with law or enforce these terms.</p>

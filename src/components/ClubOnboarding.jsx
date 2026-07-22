@@ -16,7 +16,6 @@ export default function ClubOnboarding({ onStart, onComplete, onCancel }) {
   const [shortName, setShortName] = useState('');
   const [organizationType, setOrganizationType] = useState('Private Club');
   const [logoUrl, setLogoUrl] = useState('');
-  const [pilotCode, setPilotCode] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
@@ -32,7 +31,7 @@ export default function ClubOnboarding({ onStart, onComplete, onCancel }) {
     if (!/^\S+@\S+\.\S+$/.test(email)) return setError('Enter a valid administrator email.');
     setWorking(true);
     try {
-      const result = await onStart({ clubName, shortName: shortName || clubName, organizationType, logoUrl, firstName, lastName, email, pilotCode });
+      const result = await onStart({ clubName, shortName: shortName || clubName, organizationType, logoUrl, firstName, lastName, email });
       setSignupId(result.signupId); setMessage(result.message); setStep(2);
     } catch (requestError) { setError(requestError.message || 'We could not start club onboarding.'); }
     finally { setWorking(false); }
@@ -64,8 +63,7 @@ export default function ClubOnboarding({ onStart, onComplete, onCancel }) {
     {message && <div className="login-info"><ShieldCheck size={16} /><span>{message}</span></div>}
 
     {step === 1 ? <form className="login-form onboarding-form" onSubmit={beginVerification}>
-      <div className="onboarding-pilot-notice"><ShieldCheck size={18} /><span><strong>Private pilot access</strong><small>Enter the access code supplied by the Club PhotoHub team.</small></span></div>
-      <Field id="onboardPilotCode" label="Pilot access code" icon={KeyRound} type="password" value={pilotCode} onChange={event => setPilotCode(event.target.value)} autoComplete="off" required />
+      <div className="onboarding-pilot-notice"><ShieldCheck size={18} /><span><strong>Start your 30-day free trial</strong><small>No credit card is required. Verify your administrator email to create your private workspace.</small></span></div>
       <div className="onboarding-section-heading"><span>Club details</span><p>This creates a completely separate workspace for your members and photos.</p></div>
       <div className="onboarding-two-column">
         <Field id="onboardClubName" label="Club name" icon={Building2} placeholder="Harbour Club" value={clubName} onChange={event => setClubName(event.target.value)} maxLength={80} required />

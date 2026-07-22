@@ -210,6 +210,6 @@ export default function Login({
       {firebaseEnabled && <button type="button" className="btn-text" onClick={() => { setAdminResetMode(true); setResetMode(true); setError(''); }}>Forgot administrator password?</button>}
     </form>}
     <div className="admin-toggle-link"><button onClick={() => { setIsAdminMode(value => !value); resetMemberFlow(); }}>{isAdminMode ? '← Back to member access' : 'Access admin portal →'}</button></div>
-    {firebaseEnabled && <div className="club-signup-link"><span>Approved for the private pilot?</span><button type="button" onClick={onCreateClub}>Enter your access code</button></div>}
+    {firebaseEnabled && <div className="club-signup-link"><span>Represent a club or organization?</span><button type="button" onClick={onCreateClub}>Create your workspace</button></div>}
   </div></div>;
 }

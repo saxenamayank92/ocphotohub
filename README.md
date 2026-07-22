@@ -19,13 +19,7 @@ The Worker uses server-side sessions and authorization. Every member, photo, lik
 
 A new club creates its own workspace from `/app?onboard=club`. The primary administrator supplies the club details and a work email, confirms a six-digit email code, and creates a password. The club and owner account are created together only after verification succeeds. Each administrator login is checked against that club's own `club_admins` record; administrators cannot select or manage another club through an authenticated session.
 
-The current release is a private pilot. Set the Worker secret `PILOT_SIGNUP_CODE` before deployment and give the code only to approved organizations:
-
-```bash
-npx wrangler secret put PILOT_SIGNUP_CODE --config worker/wrangler.toml
-```
-
-New workspaces receive a full 30-day trial with no credit card. When the trial ends, gallery reads and downloads continue while uploads, likes, branding changes, roster mutations and deletions become read-only until the plan is activated. The launch plan is CAD $60 monthly or CAD $600 annually with 25 GB of photo storage.
+Organizations can create their own workspace from the public onboarding route. The primary administrator verifies their email before the workspace and owner account are created. New workspaces receive a full 30-day trial with no credit card. When the trial ends, gallery reads and downloads continue while uploads, likes, branding changes, roster mutations and deletions become read-only until the plan is activated. The launch plan is CAD $60 monthly or CAD $600 annually with 25 GB of photo storage.
 
 The pre-existing Oakville deployment has a one-time compatibility path: its current Worker administrator credentials create the first Oakville `club_admins` account on the next successful login. That fallback is limited to Oakville and is disabled as soon as an active club administrator exists.
 
