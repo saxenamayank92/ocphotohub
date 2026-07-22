@@ -668,6 +668,21 @@ export default {
         return json({ hearts: likes.results.length, heartUsers: likes.results.map(like => like.member_number) }, 200, origin);
       }
       const photoMatch = path.match(/^\/photos\/([^/]+)$/);
+      if (photoMatch && request.method === 'PATCH') {
+        const session = await requireAuth(request, env, 'admin');
+        if (!session) return json({ error: 'Forbidden.' }, 403, origin);
+        if (!await requireWritableClub(env, session)) return readOnly(origin);
+        const photoId = decodeURIComponent(photoMatch[1]);
+        const body = await request.json();
+        const caption = String(body.caption || '').trim().slice(0, 500);
+        const category = String(body.category || '').trim();
+        if (!caption) return json({ error: 'Caption cannot be empty.' }, 400, origin);
+        if (!PHOTO_CATEGORIES.has(category)) return json({ error: 'Invalid photo category.' }, 400, origin);
+        const result = await env.DB.prepare('UPDATE photos SET caption = ?, category = ? WHERE club_id = ? AND id = ?').bind(caption, category, session.club_id, photoId).run();
+        if (!result.meta.changes) return json({ error: 'Photo not found.' }, 404, origin);
+        const photo = await env.DB.prepare('SELECT * FROM photos WHERE club_id = ? AND id = ?').bind(session.club_id, photoId).first();
+        return json({ id: photo.id, url: photoUrl(photo), downloadUrl: photoDownloadUrl(photo), fileName: photo.object_key || undefined, caption: photo.caption, category: photo.category, uploaderName: photo.uploader_name, uploaderId: photo.uploader_id, createdAt: photo.created_at, hearts: photo.hearts || 0, heartUsers: [] }, 200, origin);
+      }
       if (photoMatch && request.method === 'DELETE') {
         const session = await requireAuth(request, env);
         if (!session) return json({ error: 'Forbidden.' }, 403, origin);

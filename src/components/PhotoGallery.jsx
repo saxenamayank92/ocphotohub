@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import {
-  Heart, Trash2, X, Calendar, Image as ImageIcon,
+  Heart, Trash2, X, Image as ImageIcon,
   Download
 } from 'lucide-react';
 import { photoDownloadName } from '../brand';
@@ -12,6 +12,7 @@ export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhot
 
   // Lightbox index tracking
   const [activeLightboxIndex, setActiveLightboxIndex] = useState(null);
+  const modalFeedRef = useRef(null);
 
   // Zoom & Pan State
   const [zoomScale, setZoomScale] = useState(1);
@@ -39,6 +40,12 @@ export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhot
   const sortedPhotos = [...filteredPhotos].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
   const activeLightboxPhoto = activeLightboxIndex !== null ? sortedPhotos[activeLightboxIndex] : null;
+
+  useEffect(() => {
+    if (activeLightboxIndex === null) return;
+    const target = modalFeedRef.current?.querySelector(`[data-photo-index="${activeLightboxIndex}"]`);
+    target?.scrollIntoView({ block: 'start' });
+  }, [activeLightboxIndex]);
 
   // Zoom management
   const resetZoom = () => {
@@ -113,17 +120,6 @@ export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhot
         handleCloseLightbox();
       }
     }
-  };
-
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString(undefined, {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
   };
 
   const hasLiked = (photo) => {
@@ -266,84 +262,21 @@ export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhot
         )}
       </div>
 
-      {/* Vertical social-style feed */}
+      {/* Gallery grid; open a photo for the full scrollable feed */}
       {sortedPhotos.length > 0 ? (
-        <div className="photo-feed">
+        <div className="gallery-grid photo-gallery-grid">
           {sortedPhotos.map(photo => {
-            const isOwner = currentUser && photo.uploaderId === currentUser.memberNumber;
-            const canDelete = isAdmin || isOwner;
-            const userLiked = hasLiked(photo);
-
-            return (
-              <article key={photo.id} className="photo-post">
-                <header className="photo-post-header">
-                  <div className="photo-post-avatar" aria-hidden="true">
-                    {(photo.uploaderName || 'C').trim().charAt(0).toUpperCase()}
-                  </div>
-                  <div className="photo-post-author">
-                    <strong>{photo.uploaderName || 'Club Member'}</strong>
-                    <span>{new Date(photo.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                  </div>
-                  <span className="photo-post-category">{photo.category}</span>
-                </header>
-
-                <button
-                  type="button"
-                  className="photo-post-image-button"
-                  onClick={() => handleCardClick(photo)}
-                  aria-label={`Open photo from ${photo.uploaderName || 'club member'}`}
-                >
-                  <img
-                    src={photo.url}
-                    alt={photo.caption}
-                    className="photo-post-image"
-                    loading="lazy"
-                  />
-                </button>
-
-                <div className="photo-post-body">
-                  <div className="photo-post-actions">
-                    <button
-                      type="button"
-                      className={`feed-action ${userLiked ? 'liked' : ''}`}
-                      onClick={(e) => handleHeartClick(e, photo.id)}
-                      disabled={isAdmin}
-                      aria-label={userLiked ? 'Unlike photo' : 'Like photo'}
-                      title={userLiked ? 'Unlike photo' : 'Like photo'}
-                    >
-                      <Heart size={22} fill={userLiked ? 'currentColor' : 'none'} />
-                      <span>{photo.hearts || 0}</span>
-                    </button>
-
-                    <a
-                      href={photo.downloadUrl || photo.url}
-                      download={photo.fileName || photoDownloadName(photo.category)}
-                      className="feed-action"
-                      aria-label="Download photo"
-                      title="Download photo"
-                    >
-                      <Download size={22} />
-                    </a>
-
-                    {canDelete && (
-                      <button
-                        type="button"
-                        className="feed-action feed-delete"
-                        onClick={(e) => handleDeleteClick(e, photo.id)}
-                        aria-label="Delete photo"
-                        title="Delete photo"
-                      >
-                        <Trash2 size={21} />
-                      </button>
-                    )}
-                  </div>
-
-                  <p className="photo-post-caption">
-                    <strong>{photo.uploaderName || 'Club Member'}</strong> {photo.caption}
-                  </p>
-                </div>
-              </article>
-            );
+            return <button key={photo.id} type="button" className="photo-card gallery-grid-card" onClick={() => handleCardClick(photo)} aria-label={`Open photo from ${photo.uploaderName || 'club member'}`}>
+              <span className="photo-card-img-wrapper">
+                <img src={photo.url} alt={photo.caption} className="photo-card-img" loading="lazy" />
+                <span className="photo-card-category">{photo.category}</span>
+                <span className="photo-card-hearts"><Heart size={13} fill="currentColor" /> {photo.hearts || 0}</span>
+              </span>
+              <span className="photo-card-details">
+                <span className="photo-card-caption"><strong>{photo.uploaderName || 'Club Member'}</strong> {photo.caption}</span>
+                <span className="photo-card-footer"><span className="photo-card-uploader">{photo.uploaderName || 'Club Member'}</span><span className="photo-card-date">{new Date(photo.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span></span>
+              </span>
+            </button>;
           })}
         </div>
       ) : (
@@ -351,131 +284,41 @@ export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhot
           <ImageIcon size={48} />
           <p className="gallery-empty-text">No photos found</p>
           <p style={{ color: 'var(--club-gray-dark)', fontSize: '14px' }}>
-            {showOnlyMine
-              ? "You haven't uploaded any photos to this category yet."
-              : "Be the first to upload a photo to this category!"}
+            {showOnlyMine ? "You haven't uploaded any photos to this category yet." : "Be the first to upload a photo to this category!"}
           </p>
         </div>
       )}
 
-      {/* Lightbox Dialog Modal */}
+      {/* Instagram-style scrollable photo view */}
       {activeLightboxPhoto && createPortal(
         <div className="lightbox-backdrop" onClick={handleCloseLightbox}>
-          <div className="lightbox-container animate-fade-in" onClick={e => e.stopPropagation()}>
-            <button className="lightbox-close" onClick={handleCloseLightbox} title="Close lightbox (Esc)">
-              <X size={20} />
-            </button>
-
-            {/* Image viewport with gestures */}
-            <div
-              className="lightbox-image-pane"
-              onMouseDown={handleMouseDown}
-              onMouseMove={handleMouseMove}
-              onMouseUp={handleMouseUp}
-              onMouseLeave={handleMouseUp}
-              onTouchStart={handleTouchStart}
-              onTouchMove={handleTouchMove}
-              onTouchEnd={handleTouchEnd}
-              style={{ overflow: 'hidden', userSelect: 'none' }}
-            >
-              {/* Main Image with Drag/Pan Transform */}
-              <img
-                src={activeLightboxPhoto.url}
-                alt={activeLightboxPhoto.caption}
-                className="lightbox-img"
-                style={{
-                  transform: `scale(${zoomScale}) translate(${panOffset.x / zoomScale}px, ${panOffset.y / zoomScale}px)`,
-                  transition: isPanning ? 'none' : 'transform 0.25s cubic-bezier(0.25, 0.8, 0.25, 1)',
-                  cursor: zoomScale > 1 ? (isPanning ? 'grabbing' : 'grab') : 'default',
-                  ...(zoomScale > 1 ? { maxHeight: 'none', maxWidth: 'none' } : {}),
-                  objectFit: 'contain'
-                }}
-                onDoubleClick={toggleZoom}
-              />
-
-              {/* Mobile swipe helper text */}
-              {zoomScale === 1 && (
-                <div style={{
-                  position: 'absolute',
-                  bottom: '12px',
-                  color: 'rgba(255,255,255,0.4)',
-                  fontSize: '11px',
-                  pointerEvents: 'none',
-                  textAlign: 'center',
-                  width: '100%'
-                }}>
-                  Swipe left or right to browse
-                </div>
-              )}
-            </div>
-
-            <div className="lightbox-info-pane">
-              <div className="lightbox-details">
-                <div className="lightbox-meta">
-                  <div className="lightbox-uploader-info">
-                    <span className="lightbox-uploader-name">
-                      {activeLightboxPhoto.uploaderName}
-                    </span>
-                    <span className="lightbox-date">
-                      <Calendar size={12} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'text-bottom' }} />
-                      {formatDate(activeLightboxPhoto.createdAt)}
-                    </span>
+          <div className="instagram-lightbox" onClick={e => e.stopPropagation()}>
+            <button className="lightbox-close" onClick={handleCloseLightbox} title="Close photo view (Esc)"><X size={20} /></button>
+            <div className="instagram-feed-scroll" ref={modalFeedRef}>
+              {sortedPhotos.map((photo, index) => {
+                const isOwner = currentUser && photo.uploaderId === currentUser.memberNumber;
+                const canDelete = isAdmin || isOwner;
+                const userLiked = hasLiked(photo);
+                return <article key={photo.id} data-photo-index={index} className="photo-post instagram-photo-post">
+                  <header className="photo-post-header">
+                    <div className="photo-post-avatar" aria-hidden="true">{(photo.uploaderName || 'C').trim().charAt(0).toUpperCase()}</div>
+                    <div className="photo-post-author"><strong>{photo.uploaderName || 'Club Member'}</strong><span>{new Date(photo.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span></div>
+                    <span className="photo-post-category">{photo.category}</span>
+                  </header>
+                  <div className="instagram-photo-image-wrap" onMouseDown={index === activeLightboxIndex ? handleMouseDown : undefined} onMouseMove={index === activeLightboxIndex ? handleMouseMove : undefined} onMouseUp={index === activeLightboxIndex ? handleMouseUp : undefined} onMouseLeave={index === activeLightboxIndex ? handleMouseUp : undefined} onTouchStart={index === activeLightboxIndex ? handleTouchStart : undefined} onTouchMove={index === activeLightboxIndex ? handleTouchMove : undefined} onTouchEnd={index === activeLightboxIndex ? handleTouchEnd : undefined} style={{ touchAction: index === activeLightboxIndex && zoomScale > 1 ? 'none' : 'pan-y' }}><img src={photo.url} alt={photo.caption} className="photo-post-image" loading={index === activeLightboxIndex ? 'eager' : 'lazy'} style={index === activeLightboxIndex ? { transform: `scale(${zoomScale}) translate(${panOffset.x / zoomScale}px, ${panOffset.y / zoomScale}px)`, transition: isPanning ? 'none' : 'transform 0.25s ease', cursor: zoomScale > 1 ? (isPanning ? 'grabbing' : 'grab') : 'zoom-in' } : undefined} onDoubleClick={index === activeLightboxIndex ? toggleZoom : undefined} /></div>
+                  <div className="photo-post-body">
+                    <div className="photo-post-actions">
+                      <button type="button" className={`feed-action ${userLiked ? 'liked' : ''}`} onClick={e => handleHeartClick(e, photo.id)} disabled={isAdmin} aria-label={userLiked ? 'Unlike photo' : 'Like photo'}><Heart size={22} fill={userLiked ? 'currentColor' : 'none'} /><span>{photo.hearts || 0}</span></button>
+                      <a href={photo.downloadUrl || photo.url} download={photo.fileName || photoDownloadName(photo.category)} className="feed-action" aria-label="Download photo"><Download size={22} /></a>
+                      {canDelete && <button type="button" className="feed-action feed-delete" onClick={e => handleDeleteClick(e, photo.id)} aria-label="Delete photo"><Trash2 size={21} /></button>}
+                    </div>
+                    <p className="photo-post-caption"><strong>{photo.uploaderName || 'Club Member'}</strong> {photo.caption}</p>
                   </div>
-
-                  <span className="lightbox-category-badge">
-                    {activeLightboxPhoto.category}
-                  </span>
-                </div>
-
-                <p className="lightbox-caption">
-                  "{activeLightboxPhoto.caption}"
-                </p>
-              </div>
-
-              <div className="lightbox-actions">
-                <div className="lightbox-icon-actions">
-                  <button
-                    className={`lightbox-icon-action btn-like ${hasLiked(activeLightboxPhoto) ? 'liked' : ''}`}
-                    onClick={(e) => handleHeartClick(e, activeLightboxPhoto.id)}
-                    disabled={isAdmin}
-                    aria-label={hasLiked(activeLightboxPhoto) ? 'Unlike photo' : 'Like photo'}
-                    title={hasLiked(activeLightboxPhoto) ? 'Unlike photo' : 'Like photo'}
-                    aria-pressed={hasLiked(activeLightboxPhoto)}
-                  >
-                    <Heart
-                      size={20}
-                      fill={hasLiked(activeLightboxPhoto) ? 'var(--club-danger)' : 'none'}
-                      stroke={hasLiked(activeLightboxPhoto) ? 'var(--club-danger)' : 'currentColor'}
-                    />
-                  </button>
-
-                  <a
-                    href={activeLightboxPhoto.downloadUrl || activeLightboxPhoto.url}
-                    download={activeLightboxPhoto.fileName || photoDownloadName(activeLightboxPhoto.category)}
-                    className="lightbox-icon-action lightbox-download"
-                    aria-label={`Download photo (${activeLightboxPhoto.hearts} likes)`}
-                    title={`Download photo · ${activeLightboxPhoto.hearts} likes`}
-                  >
-                    <Download size={20} />
-                  </a>
-
-                  {(isAdmin || (currentUser && activeLightboxPhoto.uploaderId === currentUser.memberNumber)) && (
-                    <button
-                      type="button"
-                      className="lightbox-icon-action lightbox-delete"
-                      onClick={(e) => handleDeleteClick(e, activeLightboxPhoto.id)}
-                      aria-label="Delete photo"
-                      title="Delete photo"
-                    >
-                      <Trash2 size={20} />
-                    </button>
-                  )}
-                </div>
-              </div>
+                </article>;
+              })}
             </div>
           </div>
-        </div>,
-        document.body
+        </div>, document.body
       )}
     </div>
   );

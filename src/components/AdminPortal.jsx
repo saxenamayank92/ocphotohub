@@ -9,7 +9,7 @@ import { photoDownloadName } from '../brand';
 
 export default function AdminPortal({
   club, members, photos, onUpdateClub, onAddMember, onUpdateMember, onDeleteMember, onSetMemberPassword, onDeletePhoto,
-  firebaseConfig, onResetDatabase, addToast
+  onUpdatePhoto, firebaseConfig, onResetDatabase, addToast
 }) {
   const [activeSubTab, setActiveSubTab] = useState(members.length === 0 ? 'clubs' : 'dashboard');
   const [selectedPhoto, setSelectedPhoto] = useState(null);
@@ -31,6 +31,7 @@ export default function AdminPortal({
   const [sheetHeaders, setSheetHeaders] = useState([]);
   const [sheetRows, setSheetRows] = useState([]);
   const [columnMap, setColumnMap] = useState({ memberNumber: '', lastName: '', firstName: '', email: '' });
+  const [photoEdits, setPhotoEdits] = useState({});
 
   const normalizeMemberNumber = value => String(value || '').trim().toUpperCase();
   const normalizeHeader = value => String(value || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -578,11 +579,24 @@ export default function AdminPortal({
                     <div className="mod-img-wrapper">
                       <img src={photo.url} alt={photo.caption} className="mod-img" />
                     </div>
-                    <div style={{ padding: '8px', fontSize: '12px' }}>
-                      <p style={{ fontWeight: '700', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{photo.uploaderName}</p>
-                      <p style={{ color: 'var(--club-gray-dark)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{photo.caption}</p>
+                    <div className="mod-photo-fields">
+                      <p className="mod-photo-uploader">{photo.uploaderName}</p>
+                      <label>Caption<textarea value={photoEdits[photo.id]?.caption ?? photo.caption} onChange={event => setPhotoEdits(previous => ({ ...previous, [photo.id]: { ...previous[photo.id], caption: event.target.value } }))} maxLength={500} /></label>
+                      <label>Category<select value={photoEdits[photo.id]?.category ?? photo.category} onChange={event => setPhotoEdits(previous => ({ ...previous, [photo.id]: { ...previous[photo.id], category: event.target.value } }))}>{['General', 'Tennis', 'Golf', 'Dining', 'Clubhouse', 'Events'].map(category => <option key={category}>{category}</option>)}</select></label>
                     </div>
                     <div className="mod-actions">
+                      <button
+                        className="btn-secondary"
+                        style={{ padding: '6px', fontSize: '11px', flex: '1', justifyContent: 'center' }}
+                        onClick={async () => {
+                          const changes = photoEdits[photo.id] || {};
+                          try {
+                            await onUpdatePhoto(photo.id, { caption: String(changes.caption ?? photo.caption).trim(), category: changes.category ?? photo.category });
+                            setPhotoEdits(previous => { const next = { ...previous }; delete next[photo.id]; return next; });
+                            addToast('Photo text updated.', 'success');
+                          } catch (error) { addToast(error.message || 'Could not update photo text.', 'error'); }
+                        }}
+                      >Save changes</button>
                       <button
                         className="btn-danger"
                         style={{ padding: '6px', fontSize: '11px', flex: '1', justifyContent: 'center' }}

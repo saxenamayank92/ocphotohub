@@ -117,6 +117,12 @@ export const deleteCloudPhoto = (photoId) => request(`/photos/${encodeURICompone
   headers: { 'X-CSRF-Token': csrfToken }
 });
 
+export const updateCloudPhoto = (photoId, changes) => request(`/photos/${encodeURIComponent(photoId)}`, {
+  method: 'PATCH',
+  headers: { 'X-CSRF-Token': csrfToken },
+  body: JSON.stringify(changes)
+});
+
 export const toggleCloudHeart = (photoId, memberNumber) => request(`/photos/${encodeURIComponent(photoId)}/heart`, {
   method: 'POST',
   headers: { 'X-CSRF-Token': csrfToken },

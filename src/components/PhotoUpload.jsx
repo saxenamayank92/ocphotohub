@@ -30,6 +30,11 @@ export default function PhotoUpload({ user, onUploadSuccess, addToast }) {
     previewUrlsRef.current.delete(item.previewUrl);
   };
 
+  const withTimeout = (promise, milliseconds, message) => Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error(message)), milliseconds))
+  ]);
+
   // AI captions library based on categories
   const aiCaptionsLibrary = {
     Tennis: [
@@ -190,6 +195,10 @@ export default function PhotoUpload({ user, onUploadSuccess, addToast }) {
 
     for (let i = 0; i < filesArray.length; i++) {
       const rawFile = filesArray[i];
+      if (rawFile.size > 40 * 1024 * 1024) {
+        addToast(`Skipped: ${rawFile.name} (maximum source size is 40 MB)`, 'error');
+        continue;
+      }
       const isImage = rawFile.type.startsWith('image/');
       const isHeic = rawFile.name.toLowerCase().endsWith('.heic') || rawFile.name.toLowerCase().endsWith('.heif') || rawFile.type === 'image/heic' || rawFile.type === 'image/heif';
 
@@ -205,14 +214,16 @@ export default function PhotoUpload({ user, onUploadSuccess, addToast }) {
 
         if (isHeic) {
           try {
-            const { default: heic2any } = await import('heic2any');
-            const convertedBlob = await heic2any({
+            setLoadingStatus(`Converting iPhone photo ${i + 1} of ${filesArray.length}…`);
+            const { default: heic2any } = await withTimeout(import('heic2any'), 15000, 'HEIC converter took too long to load.');
+            const convertedBlob = await withTimeout(heic2any({
               blob: rawFile,
               toType: 'image/jpeg',
               quality: 0.8
-            });
+            }), 30000, 'HEIC conversion timed out.');
 
             const actualBlob = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
+            if (!(actualBlob instanceof Blob) || actualBlob.size === 0) throw new Error('HEIC conversion returned no image.');
 
             fileToCompress = new File(
               [actualBlob],

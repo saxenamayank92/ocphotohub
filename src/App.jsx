@@ -9,7 +9,7 @@ import ClubOnboarding from './components/ClubOnboarding';
 import AccountSettings from './components/AccountSettings';
 import {
   addCloudMember, cloudApiEnabled, cloudLogin, cloudLogout, cloudSession,
-  deleteCloudMember, deleteCloudPhoto, loadCloudData, resetCloudData,
+  deleteCloudMember, deleteCloudPhoto, updateCloudPhoto, loadCloudData, resetCloudData,
   saveCloudPassword, toggleCloudHeart, uploadCloudPhoto, cloudRegister,
   requestCloudPasswordReset, completeCloudPasswordReset, checkCloudMember,
   listCloudClubs, requestRegistrationCode, updateCloudMember, startClubOnboarding,
@@ -253,6 +253,18 @@ export default function App() {
     addToast('Photo deleted successfully.', 'success');
   };
 
+  const handleUpdatePhoto = async (photoId, changes) => {
+    const photo = photos.find(item => item.id === photoId);
+    if (!photo) throw new Error('Photo not found.');
+    const updated = cloudActive
+      ? await updateCloudPhoto(photoId, changes)
+      : { ...photo, ...changes };
+    if (!cloudActive) await savePhoto(updated);
+    const merged = { ...photo, ...updated, heartUsers: updated.heartUsers || photo.heartUsers, hearts: updated.hearts ?? photo.hearts };
+    setPhotos(previous => previous.map(item => item.id === photoId ? merged : item));
+    return merged;
+  };
+
   const handleHeartPhoto = async photoId => {
     if (!currentUser) return;
     const photo = photos.find(item => item.id === photoId);
@@ -320,7 +332,7 @@ export default function App() {
         <Suspense fallback={<div className="panel-loading" role="status"><div className="spinner" /><span>Loading…</span></div>}>
           {activeTab === 'gallery' && <PhotoGallery photos={photos} currentUser={currentUser} isAdmin={isAdmin} onHeartPhoto={handleHeartPhoto} onDeletePhoto={handleDeletePhoto} />}
           {activeTab === 'upload' && !isAdmin && <PhotoUpload user={currentUser} onUploadSuccess={handleUploadPhoto} addToast={addToast} />}
-          {activeTab === 'admin' && isAdmin && <AdminPortal club={currentClub || clubBrand} members={members} photos={photos} onUpdateClub={handleUpdateClub} onAddMember={handleAddMember} onUpdateMember={handleUpdateMember} onDeleteMember={handleDeleteMember} onSetMemberPassword={handleSetMemberPassword} onDeletePhoto={handleDeletePhoto} firebaseConfig={cloudActive ? { provider: 'Cloudflare R2 + D1' } : null} onResetDatabase={handleResetDatabase} addToast={addToast} />}
+          {activeTab === 'admin' && isAdmin && <AdminPortal club={currentClub || clubBrand} members={members} photos={photos} onUpdateClub={handleUpdateClub} onAddMember={handleAddMember} onUpdateMember={handleUpdateMember} onDeleteMember={handleDeleteMember} onSetMemberPassword={handleSetMemberPassword} onDeletePhoto={handleDeletePhoto} onUpdatePhoto={handleUpdatePhoto} firebaseConfig={cloudActive ? { provider: 'Cloudflare R2 + D1' } : null} onResetDatabase={handleResetDatabase} addToast={addToast} />}
           {activeTab === 'account' && <AccountSettings user={currentUser} club={currentClub || clubBrand} isAdmin={isAdmin} demoMode={demoMode} onDeleteAccount={handleDeleteAccount} onDeleteOrganization={handleDeleteOrganization} addToast={addToast} />}
         </Suspense>
       </main>

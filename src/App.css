@@ -1220,6 +1220,15 @@
   gap: 24px;
 }
 
+.gallery-grid-card { width: 100%; padding: 0; text-align: left; cursor: pointer; }
+.gallery-grid-card .photo-card-details { display: flex; }
+.instagram-lightbox { position: relative; width: min(100%, 680px); height: min(100%, 100vh); background: var(--club-white); overflow: hidden; border-radius: 12px; }
+.instagram-feed-scroll { height: 100%; overflow-y: auto; overscroll-behavior: contain; scroll-behavior: smooth; }
+.instagram-photo-post { border: 0; border-radius: 0; box-shadow: none; margin: 0 auto; max-width: 680px; }
+.instagram-photo-image-wrap { background: #111; }
+.instagram-photo-post .photo-post-image { aspect-ratio: 4 / 5; max-height: none; object-fit: contain; background: #111; }
+.instagram-photo-post + .instagram-photo-post { border-top: 10px solid var(--club-gray-light); }
+
 .photo-card {
   background: var(--club-white);
   border-radius: var(--radius-lg);
@@ -1375,6 +1384,8 @@
   .lightbox-backdrop {
     padding: 0; /* Clear padding on desktop for edge-to-edge view */
   }
+
+  .instagram-lightbox { height: 94vh; }
 }
 
 .lightbox-container {
@@ -1833,6 +1844,13 @@
   background: var(--club-gray-light);
 }
 
+.mod-photo-fields { display: grid; gap: 8px; padding: 10px; font-size: 12px; }
+.mod-photo-uploader { margin: 0; color: var(--club-green-dark); font-weight: 700; }
+.mod-photo-fields label { display: grid; gap: 4px; color: var(--club-gray-dark); font-weight: 600; }
+.mod-photo-fields textarea,
+.mod-photo-fields select { width: 100%; min-height: 34px; padding: 7px 8px; border: 1px solid var(--club-gray); border-radius: 8px; background: var(--club-white); color: var(--club-charcoal); font: inherit; resize: vertical; }
+.mod-photo-fields textarea { min-height: 58px; }
+
 .mod-actions button {
   flex: 1;
 }
@@ -2075,6 +2093,9 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
   }
+
+  .instagram-lightbox { width: 100%; height: 100%; border-radius: 0; }
+  .instagram-photo-post { width: 100%; }
 
   .photo-feed {
     gap: 14px;
