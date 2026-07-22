@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   ArrowRight, Check, CheckCircle2, Download, Heart, Images, LockKeyhole,
-  Palette, ShieldCheck, Smartphone, UploadCloud, Users, X
+  Menu, Palette, ShieldCheck, Smartphone, UploadCloud, UserRound, Users, X
 } from 'lucide-react';
 import { platformBrand } from '../brand';
 import './LandingPage.css';
@@ -60,7 +60,16 @@ export default function LandingPage() {
         </div>
         <div className="hero-device-stack" aria-label="Club PhotoHub Your Club demo preview">
           <div className="hero-desktop"><div className="marketing-window-bar"><span /><span /><span /><div>Your Club · Member Gallery</div></div><img className="hero-product-screenshot" src="./demo/product-feed.png" alt="Club PhotoHub Your Club member gallery demo screen" /></div>
-          <div className="hero-phone"><div className="hero-phone-speaker" /><img src="./demo/golf-morning.jpg" alt="Golf morning in the Your Club demo" /><div><Heart size={18} /><Download size={18} /></div><p><strong>Jordan Lee</strong><br />Championship weekend begins.</p></div>
+          <div className="hero-phone" aria-label="Club PhotoHub mobile gallery mockup">
+            <div className="hero-phone-status"><span>9:41</span><span>● ● ▮</span></div>
+            <div className="hero-phone-header"><img src={platformBrand.mark} alt="" /><strong>Your Club</strong><Menu size={15} /></div>
+            <div className="hero-phone-tabs"><span className="active">Member Gallery</span><span>Upload</span></div>
+            <div className="hero-phone-chips"><span className="active">All</span><span>Golf</span><span>Dining</span></div>
+            <div className="hero-phone-post-header"><span><UserRound size={11} /></span><div><strong>Jordan Lee</strong><small>This week · GOLF</small></div></div>
+            <img src="./demo/golf-morning.jpg" alt="Golf morning in the Your Club mobile gallery" />
+            <div className="hero-phone-actions"><Heart size={15} /><strong>24</strong><Download size={15} /><span /></div>
+            <p><strong>Jordan Lee</strong> Championship weekend begins.</p>
+          </div>
           <div className="marketing-private-badge"><LockKeyhole size={15} /> Verified members only</div>
         </div>
       </section>

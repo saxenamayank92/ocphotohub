@@ -20,11 +20,27 @@
 .landing-demo-actions strong { margin-right: 11px; font-size: 11px; }
 .landing-demo-post > p { padding: 2px 16px 17px; color: #596560; font-size: 10px; line-height: 1.5; }
 .landing-demo-post > p strong { color: var(--club-green-dark); }
-.hero-phone { position: absolute; right: -14px; bottom: -8px; z-index: 3; overflow: hidden; width: 180px; padding: 8px 8px 14px; border: 7px solid var(--club-green-dark); border-radius: 28px; background: white; box-shadow: 0 20px 50px rgba(13,23,40,.3); transform: rotate(-3deg); }
-.hero-phone-speaker { width: 44px; height: 4px; margin: 0 auto 7px; border-radius: 5px; background: #bbc3c0; }
-.hero-phone img { display: block; width: 100%; aspect-ratio: 4 / 5; border-radius: 9px; object-fit: cover; }
-.hero-phone > div:nth-of-type(2) { display: flex; gap: 12px; padding: 9px 4px 4px; }
-.hero-phone p { padding: 0 4px; color: #606d69; font-size: 8px; line-height: 1.4; }
+.hero-phone { position: absolute; right: -14px; bottom: -8px; z-index: 3; overflow: hidden; width: 205px; padding: 9px 9px 13px; border: 7px solid #182c37; border-radius: 31px; background: #fbfaf7; box-shadow: 0 20px 50px rgba(13,23,40,.3); transform: rotate(-3deg); }
+.hero-phone-status { display: flex; align-items: center; justify-content: space-between; padding: 0 7px 7px; color: #49615d; font-size: 7px; font-weight: 800; }
+.hero-phone-header { display: flex; align-items: center; gap: 6px; padding: 7px 5px 9px; border-top: 1px solid #e1e7e3; color: var(--club-green-dark); font-size: 10px; }
+.hero-phone-header img { width: 18px; height: 18px; border-radius: 5px; }
+.hero-phone-header svg { margin-left: auto; }
+.hero-phone-tabs { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid #dfe6e2; color: #87938f; font-size: 8px; font-weight: 750; text-align: center; }
+.hero-phone-tabs span { padding: 6px 2px; }
+.hero-phone-tabs .active { border-bottom: 2px solid var(--club-gold); color: var(--club-green-dark); }
+.hero-phone-chips { display: flex; gap: 4px; overflow: hidden; padding: 8px 0; white-space: nowrap; }
+.hero-phone-chips span { padding: 4px 8px; border: 1px solid #d6dfda; border-radius: 99px; color: #74827d; background: white; font-size: 7px; font-weight: 750; }
+.hero-phone-chips .active { border-color: var(--club-green-dark); color: white; background: var(--club-green-dark); }
+.hero-phone-post-header { display: flex; align-items: center; gap: 6px; padding: 5px 2px 7px; }
+.hero-phone-post-header > span { display: grid; width: 21px; height: 21px; place-items: center; border-radius: 50%; color: white; background: var(--club-green-dark); }
+.hero-phone-post-header div { display: grid; gap: 1px; }
+.hero-phone-post-header strong { color: var(--club-green-dark); font-size: 8px; }
+.hero-phone-post-header small { color: #87938f; font-size: 6px; }
+.hero-phone > img { display: block; width: 100%; aspect-ratio: 4 / 3; border-radius: 7px; object-fit: cover; }
+.hero-phone-actions { display: flex; align-items: center; gap: 5px; padding: 8px 3px 3px; color: var(--club-green-dark); }
+.hero-phone-actions strong { margin-right: 5px; font-size: 8px; }
+.hero-phone-actions span { flex: 1; }
+.hero-phone p { padding: 2px 3px 0; color: #606d69; font-size: 7px; line-height: 1.4; }
 .hero-phone p strong { color: var(--club-green-dark); }
 .hero-device-stack .marketing-private-badge { right: 14px; bottom: 22px; z-index: 4; }
 
