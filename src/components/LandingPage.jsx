@@ -55,7 +55,7 @@ export default function LandingPage() {
           <div className="marketing-eyebrow"><ShieldCheck size={15} /> Private photo sharing for real communities</div>
           <h1>Your members. Your moments. Your PhotoHub.</h1>
           <p>Give every organization a private, beautifully branded place to collect and enjoy the photos that make its community special—without public social media or messy shared folders.</p>
-          <div className="marketing-hero-actions"><a className="marketing-primary-cta" href="mailto:support@xtide.io?subject=Club%20PhotoHub%20Private%20Pilot">Request private pilot access <ArrowRight size={18} /></a><a className="marketing-secondary-cta" href="/app?demo=1">Explore the live demo</a></div>
+          <div className="marketing-hero-actions"><a className="marketing-primary-cta" href="/app?onboard=club">Create your organization workspace <ArrowRight size={18} /></a><a className="marketing-secondary-cta" href="/app?demo=1">Explore the live demo</a></div>
           <div className="marketing-trust-row"><span><Check size={15} /> No credit card</span><span><Check size={15} /> 25 GB included</span><span><Check size={15} /> CAD pricing</span></div>
         </div>
         <div className="hero-device-stack" aria-label="Club PhotoHub Your Club demo preview">
@@ -90,7 +90,7 @@ export default function LandingPage() {
       </section>
 
       <section className="marketing-how" id="how-it-works">
-        <div className="marketing-how-intro"><span>From approved pilot to active gallery</span><h2>Set up once. Members take it from there.</h2><p>A guided private pilot with an organization-owned membership gate.</p></div>
+        <div className="marketing-how-intro"><span>From signup to active gallery</span><h2>Set up once. Members take it from there.</h2><p>A guided onboarding flow with an organization-owned membership gate.</p></div>
         <div className="marketing-steps"><article><strong>01</strong><h3>Create the workspace</h3><p>Choose your organization type, verify the primary administrator and start a separate 30-day trial.</p></article><article><strong>02</strong><h3>Add the directory</h3><p>Enter member names, numbers and registered emails so only recognized people can create accounts.</p></article><article><strong>03</strong><h3>Share the moments</h3><p>Members verify themselves, choose their password and begin uploading, browsing, liking and downloading.</p></article></div>
       </section>
 
@@ -107,10 +107,10 @@ export default function LandingPage() {
 
       <section className="pricing-section" id="pricing">
         <div className="pricing-copy"><span>Simple launch pricing</span><h2>One plan. Every core feature.</h2><p>Try the complete product for 30 days. No credit card and no cut-down trial.</p></div>
-        <div className="pricing-card"><div><span>Club PhotoHub</span><p><strong>$60</strong> CAD / month</p><small>or $600 CAD billed annually—save $120</small></div><ul><li><Check size={16} /> Unlimited members during launch</li><li><Check size={16} /> 25 GB fair-use photo storage</li><li><Check size={16} /> Branded organization workspace</li><li><Check size={16} /> Member verification and moderation</li><li><Check size={16} /> Admin and member help centre</li></ul><a href="mailto:support@xtide.io?subject=Club%20PhotoHub%20Private%20Pilot">Request pilot access <ArrowRight size={17} /></a><small>Approved pilots receive a 30-day trial without a credit card</small></div>
+        <div className="pricing-card"><div><span>Club PhotoHub</span><p><strong>$60</strong> CAD / month</p><small>or $600 CAD billed annually—save $120</small></div><ul><li><Check size={16} /> Unlimited members during launch</li><li><Check size={16} /> 25 GB fair-use photo storage</li><li><Check size={16} /> Branded organization workspace</li><li><Check size={16} /> Member verification and moderation</li><li><Check size={16} /> Admin and member help centre</li></ul><a href="/app?onboard=club">Start your 30-day trial <ArrowRight size={17} /></a><small>No credit card required</small></div>
       </section>
 
-      <section className="marketing-final-cta"><div><span>Now accepting private pilots</span><h2>Give every moment a place to belong.</h2><p>Request access for your organization, or explore Your Club before you decide.</p></div><div className="final-actions"><a href="mailto:support@xtide.io?subject=Club%20PhotoHub%20Private%20Pilot">Request access <ArrowRight size={18} /></a><a href="/app?demo=1">View demo</a></div></section>
+      <section className="marketing-final-cta"><div><span>Start your organization trial</span><h2>Give every moment a place to belong.</h2><p>Create your workspace in minutes, or explore Your Club before you decide.</p></div><div className="final-actions"><a href="/app?onboard=club">Create workspace <ArrowRight size={18} /></a><a href="/app?demo=1">View demo</a></div></section>
     </main>
 
     <footer className="marketing-footer"><div className="marketing-brand"><img src={platformBrand.mark} alt="" /><span>{platformBrand.name}</span></div><div className="footer-links"><a href="/features">Features</a><a href="/help/admin">Admin guide</a><a href="/help/members">Member guide</a><a href="/faq">FAQ</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a></div><span>© {new Date().getFullYear()} xTide Apps</span></footer>

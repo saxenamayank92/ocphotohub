@@ -221,7 +221,7 @@ export default function App() {
   };
 
   const handleUploadPhoto = async photo => {
-    if (demoMode) return addToast('The public demo is read-only. Contact support@xtide.io to join the private pilot.', 'info');
+    if (demoMode) return addToast('The public demo is read-only. Create your own organization workspace to begin.', 'info');
     if (cloudActive) {
       await uploadCloudPhoto(photo);
       const data = await loadCloudData();
@@ -313,7 +313,7 @@ export default function App() {
   return (
     <div className="app-container">
       <Header user={currentUser} club={currentClub || clubBrand} isAdmin={isAdmin} activeTab={activeTab} setActiveTab={setActiveTab} onLogout={handleLogout} />
-      {demoMode && <div className="demo-mode-banner"><span><ShieldCheck size={15} /> Exploring the read-only Your Club demo</span><a href="mailto:support@xtide.io?subject=Club%20PhotoHub%20Private%20Pilot">Request pilot access</a></div>}
+      {demoMode && <div className="demo-mode-banner"><span><ShieldCheck size={15} /> Exploring the read-only Your Club demo</span><a href="/app?onboard=club">Create your workspace</a></div>}
       {!demoMode && trialDaysLeft !== null && <div className={`trial-status-banner ${trialDaysLeft === 0 ? 'expired' : ''}`}><span>{trialDaysLeft > 0 ? `${trialDaysLeft} days left in your free trial` : 'Your trial has ended. This workspace is now read-only.'}</span>{isAdmin && <a href="mailto:support@xtide.io?subject=Activate%20Club%20PhotoHub">Activate plan</a>}</div>}
       <main className="content-wrapper">
         <Suspense fallback={<div className="panel-loading" role="status"><div className="spinner" /><span>Loading…</span></div>}>

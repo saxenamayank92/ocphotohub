@@ -16,7 +16,6 @@ ALLOWED_ORIGIN = "https://clubphotohub.xtide.io,https://ocphotohub.xtide.io,http
 ADMIN_EMAIL = "admin@oakville.com"
 APP_ORIGIN = "https://ocphotohub.xtide.io"
 LEGACY_PHOTO_HOSTS = "images.unsplash.com"
-PILOT_MODE = "true"
 
 [[ratelimits]]
 name = "AUTH_RATE_LIMITER"
