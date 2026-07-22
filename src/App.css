@@ -433,6 +433,12 @@
 .direct-club-lock { display: flex; align-items: center; gap: 9px; min-height: 44px; padding: 0 13px; border: 1px solid rgba(31,79,74,.2); border-radius: 10px; color: var(--club-green-dark); background: rgba(31,79,74,.06); }
 .direct-club-lock span { font-weight: 700; }
 .direct-club-lock small { margin-left: auto; color: var(--club-gray-dark); font-size: 11px; }
+.excel-column-map { display: grid; gap: 9px; padding: 12px; border: 1px solid var(--club-gray); border-radius: 10px; background: white; }
+.excel-column-map > strong { font-size: 13px; }
+.excel-column-map label { display: grid; grid-template-columns: 130px minmax(0, 1fr); align-items: center; gap: 8px; color: var(--club-gray-dark); font-size: 12px; }
+.excel-column-map select { min-height: 36px; padding: 0 9px; border: 1px solid var(--club-gray); border-radius: 8px; background: white; }
+.excel-preview { display: grid; gap: 8px; font-size: 12px; }
+.excel-preview .table-wrapper { max-height: 220px; overflow: auto; }
 .trial-status-banner { display: flex; align-items: center; justify-content: center; gap: 14px; padding: 8px 14px; color: #5f471c; background: #f4e8cc; font-size: 11px; font-weight: 700; }
 .trial-status-banner.expired { color: #fff; background: #8e2f2f; }
 .trial-status-banner a { padding: 4px 9px; border-radius: 999px; color: inherit; background: rgba(255,255,255,.7); text-decoration: none; }

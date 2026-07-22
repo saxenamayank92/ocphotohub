@@ -10,6 +10,8 @@ const b64 = bytes => btoa(String.fromCharCode(...new Uint8Array(bytes))).replace
 const randomToken = (size = 32) => b64(crypto.getRandomValues(new Uint8Array(size)));
 const hash = async value => b64(await crypto.subtle.digest('SHA-256', encoder.encode(String(value))));
 const normalize = value => String(value || '').trim().toLowerCase();
+const normalizeMemberNumber = value => String(value || '').trim().toUpperCase();
+const sameMemberNumber = (left, right) => normalizeMemberNumber(left) === normalizeMemberNumber(right);
 const validEmail = email => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalize(email));
 const safeEqual = async (left, right) => hash(left).then(a => hash(right).then(b => a === b));
 const publicClub = club => ({ id: club.id, slug: club.slug, name: club.name, shortName: club.short_name, logoUrl: club.logo_url });
@@ -214,7 +216,7 @@ async function login(request, env, origin) {
     user = { memberNumber, firstName: admin.first_name, lastName: admin.last_name, email: admin.email };
     role = 'admin';
   } else {
-    const member = await env.DB.prepare('SELECT * FROM members WHERE club_id = ? AND member_number = ?').bind(club.id, String(body.memberNumber || '').trim()).first();
+    const member = await env.DB.prepare('SELECT * FROM members WHERE club_id = ? AND member_number = ? COLLATE NOCASE').bind(club.id, String(body.memberNumber || '').trim()).first();
     const namesMatch = member && normalize(member.last_name) === normalize(body.lastName);
     if (namesMatch && !member.password_hash) return json({ error: 'Complete your first-time registration.', code: 'NEEDS_REGISTRATION' }, 403, origin);
     if (!namesMatch || !member.password_hash || !(await safeEqual(await derivePassword(body.password || '', member.password_salt), member.password_hash))) return json({ error: 'Invalid credentials.' }, 401, origin);
@@ -290,7 +292,8 @@ async function requestRegistrationCode(request, env, origin) {
   const club = await getClub(env, body.clubId);
   const memberNumber = String(body.memberNumber || '').trim();
   const email = normalize(body.email);
-  const member = club ? await env.DB.prepare('SELECT * FROM members WHERE club_id = ? AND member_number = ?').bind(club.id, memberNumber).first() : null;
+  const member = club ? await env.DB.prepare('SELECT * FROM members WHERE club_id = ? AND member_number = ? COLLATE NOCASE').bind(club.id, memberNumber).first() : null;
+  const storedMemberNumber = member?.member_number || memberNumber;
   if (!member || member.password_hash || normalize(member.last_name) !== normalize(body.lastName) || !validEmail(email) || normalize(member.email) !== email) {
     return json({ error: 'Those details do not match the club directory. Contact your club if your roster email needs updating.' }, 400, origin);
   }
@@ -298,7 +301,7 @@ async function requestRegistrationCode(request, env, origin) {
   crypto.getRandomValues(values);
   const code = String(100000 + (values[0] % 900000));
   await env.DB.prepare('INSERT OR REPLACE INTO registration_challenges (club_id, member_number, email_hash, code_hash, expires_at, attempts, created_at) VALUES (?, ?, ?, ?, ?, 0, ?)')
-    .bind(club.id, memberNumber, await hash(email), await hash(code), Date.now() + REGISTRATION_CODE_MAX_AGE, Date.now()).run();
+    .bind(club.id, storedMemberNumber, await hash(email), await hash(code), Date.now() + REGISTRATION_CODE_MAX_AGE, Date.now()).run();
   try {
     await sendMail(env, {
       to: member.email,
@@ -307,7 +310,7 @@ async function requestRegistrationCode(request, env, origin) {
       html: `<p>Your <strong>Club PhotoHub</strong> verification code for ${club.name} is:</p><p style="font-size:28px;font-weight:700;letter-spacing:6px">${code}</p><p>It expires in 10 minutes. If you did not request this, you can ignore this email.</p>`
     });
   } catch (error) {
-    await env.DB.prepare('DELETE FROM registration_challenges WHERE club_id = ? AND member_number = ?').bind(club.id, memberNumber).run();
+    await env.DB.prepare('DELETE FROM registration_challenges WHERE club_id = ? AND member_number = ? COLLATE NOCASE').bind(club.id, storedMemberNumber).run();
     console.error('Registration verification email failed', { clubId: club.id, memberNumber, message: error.message });
     return json({ error: 'We could not send the verification code. Please try again shortly.' }, 502, origin);
   }
@@ -319,27 +322,27 @@ async function registerMember(request, env, origin) {
   const club = await getClub(env, body.clubId);
   const memberNumber = String(body.memberNumber || '').trim();
   const email = normalize(body.email);
-  const member = club ? await env.DB.prepare('SELECT * FROM members WHERE club_id = ? AND member_number = ?').bind(club.id, memberNumber).first() : null;
+  const member = club ? await env.DB.prepare('SELECT * FROM members WHERE club_id = ? AND member_number = ? COLLATE NOCASE').bind(club.id, memberNumber).first() : null;
   if (!member || member.password_hash || normalize(member.last_name) !== normalize(body.lastName) || normalize(member.email) !== email) return json({ error: 'Registration could not be completed.' }, 400, origin);
   if (typeof body.password !== 'string' || body.password.length < 10 || !/^\d{6}$/.test(String(body.code || ''))) return json({ error: 'Enter the 6-digit code and a password of at least 10 characters.' }, 400, origin);
-  const challenge = await env.DB.prepare('SELECT * FROM registration_challenges WHERE club_id = ? AND member_number = ?').bind(club.id, memberNumber).first();
+  const challenge = await env.DB.prepare('SELECT * FROM registration_challenges WHERE club_id = ? AND member_number = ? COLLATE NOCASE').bind(club.id, member.member_number).first();
   if (!challenge || challenge.expires_at <= Date.now() || challenge.attempts >= 5 || challenge.email_hash !== await hash(email)) return json({ error: 'The verification code is invalid or expired.' }, 400, origin);
-  await env.DB.prepare('UPDATE registration_challenges SET attempts = attempts + 1 WHERE club_id = ? AND member_number = ?').bind(club.id, memberNumber).run();
+  await env.DB.prepare('UPDATE registration_challenges SET attempts = attempts + 1 WHERE club_id = ? AND member_number = ? COLLATE NOCASE').bind(club.id, member.member_number).run();
   if (!(await safeEqual(await hash(String(body.code)), challenge.code_hash))) return json({ error: 'The verification code is invalid or expired.' }, 400, origin);
   const salt = randomToken(16);
   await env.DB.batch([
-    env.DB.prepare('UPDATE members SET password = \'\', password_hash = ?, password_salt = ?, registered_at = ? WHERE club_id = ? AND member_number = ?').bind(await derivePassword(body.password, salt), salt, new Date().toISOString(), club.id, memberNumber),
-    env.DB.prepare('DELETE FROM registration_challenges WHERE club_id = ? AND member_number = ?').bind(club.id, memberNumber)
+    env.DB.prepare('UPDATE members SET password = \'\', password_hash = ?, password_salt = ?, registered_at = ? WHERE club_id = ? AND member_number = ? COLLATE NOCASE').bind(await derivePassword(body.password, salt), salt, new Date().toISOString(), club.id, member.member_number),
+    env.DB.prepare('DELETE FROM registration_challenges WHERE club_id = ? AND member_number = ? COLLATE NOCASE').bind(club.id, member.member_number)
   ]);
-  const session = await createSession(env, club.id, memberNumber, member.role || 'member');
-  return json({ user: { memberNumber, firstName: member.first_name, lastName: member.last_name }, club: accountClub(club), role: member.role || 'member', csrfToken: session.csrf }, 201, origin, { 'Set-Cookie': [cookie('pt_session', session.token, SESSION_MAX_AGE, true), cookie('pt_csrf', session.csrf, SESSION_MAX_AGE, false)] });
+  const session = await createSession(env, club.id, member.member_number, member.role || 'member');
+  return json({ user: { memberNumber: member.member_number, firstName: member.first_name, lastName: member.last_name }, club: accountClub(club), role: member.role || 'member', csrfToken: session.csrf }, 201, origin, { 'Set-Cookie': [cookie('pt_session', session.token, SESSION_MAX_AGE, true), cookie('pt_csrf', session.csrf, SESSION_MAX_AGE, false)] });
 }
 
 async function requestPasswordReset(request, env, origin) {
   const body = await request.json();
   const club = await getClub(env, body.clubId);
   const memberNumber = String(body.memberNumber || '').trim();
-  const member = club ? await env.DB.prepare('SELECT member_number, last_name, email FROM members WHERE club_id = ? AND member_number = ?').bind(club.id, memberNumber).first() : null;
+  const member = club ? await env.DB.prepare('SELECT member_number, last_name, email FROM members WHERE club_id = ? AND member_number = ? COLLATE NOCASE').bind(club.id, memberNumber).first() : null;
   if (member && normalize(member.last_name) === normalize(body.lastName) && validEmail(member.email)) {
     const rawToken = randomToken(32);
     await env.DB.prepare('DELETE FROM password_resets WHERE club_id = ? AND member_number = ?').bind(club.id, member.member_number).run();
@@ -435,7 +438,7 @@ export default {
         if (!await withinRateLimit(request, env.AUTH_RATE_LIMITER, 'member-check')) return rateLimited(origin);
         const body = await request.json();
         const club = await getClub(env, body.clubId);
-        const member = club ? await env.DB.prepare('SELECT last_name, password_hash FROM members WHERE club_id = ? AND member_number = ?').bind(club.id, String(body.memberNumber || '').trim()).first() : null;
+        const member = club ? await env.DB.prepare('SELECT last_name, password_hash FROM members WHERE club_id = ? AND member_number = ? COLLATE NOCASE').bind(club.id, String(body.memberNumber || '').trim()).first() : null;
         if (!member || normalize(member.last_name) !== normalize(body.lastName)) return json({ error: 'Invalid membership details.' }, 400, origin);
         return json({ registered: Boolean(member.password_hash) }, 200, origin);
       }
@@ -551,18 +554,20 @@ export default {
         if (!await requireWritableClub(env, session)) return readOnly(origin);
         const member = await request.json();
         if (!member.memberNumber || !member.lastName || !member.firstName || !validEmail(member.email)) return json({ error: 'Member number, name, and a valid roster email are required.' }, 400, origin);
-        await env.DB.prepare('INSERT INTO members (club_id, member_number, last_name, first_name, email) VALUES (?, ?, ?, ?, ?)').bind(session.club_id, String(member.memberNumber).trim(), String(member.lastName).trim(), String(member.firstName).trim(), normalize(member.email)).run();
-        return json(publicMember({ ...member, email: normalize(member.email), registeredAt: '', role: 'member' }), 201, origin);
+        const memberNumber = normalizeMemberNumber(member.memberNumber);
+        if (await env.DB.prepare('SELECT 1 FROM members WHERE club_id = ? AND member_number = ? COLLATE NOCASE').bind(session.club_id, memberNumber).first()) return json({ error: 'That member number already exists.' }, 409, origin);
+        await env.DB.prepare('INSERT INTO members (club_id, member_number, last_name, first_name, email) VALUES (?, ?, ?, ?, ?)').bind(session.club_id, memberNumber, String(member.lastName).trim(), String(member.firstName).trim(), normalize(member.email)).run();
+        return json(publicMember({ ...member, memberNumber, email: normalize(member.email), registeredAt: '', role: 'member' }), 201, origin);
       }
       const passwordMatch = path.match(/^\/members\/([^/]+)\/password$/);
       if (passwordMatch && request.method === 'PATCH') {
         const session = await requireAuth(request, env);
         const memberNumber = decodeURIComponent(passwordMatch[1]);
-        if (!session || (session.role !== 'admin' && session.member_number !== memberNumber)) return json({ error: 'Forbidden.' }, 403, origin);
+        if (!session || (session.role !== 'admin' && !sameMemberNumber(session.member_number, memberNumber))) return json({ error: 'Forbidden.' }, 403, origin);
         const { password } = await request.json();
         if (typeof password !== 'string' || password.length < 10) return json({ error: 'Password must be at least 10 characters.' }, 400, origin);
         const salt = randomToken(16);
-        await env.DB.prepare('UPDATE members SET password = \'\', password_hash = ?, password_salt = ?, registered_at = ? WHERE club_id = ? AND member_number = ?').bind(await derivePassword(password, salt), salt, new Date().toISOString(), session.club_id, memberNumber).run();
+        await env.DB.prepare('UPDATE members SET password = \'\', password_hash = ?, password_salt = ?, registered_at = ? WHERE club_id = ? AND member_number = ? COLLATE NOCASE').bind(await derivePassword(password, salt), salt, new Date().toISOString(), session.club_id, memberNumber).run();
         return json({ ok: true }, 200, origin);
       }
       const memberMatch = path.match(/^\/members\/([^/]+)$/);
@@ -573,9 +578,9 @@ export default {
         const body = await request.json();
         if (!validEmail(body.email)) return json({ error: 'Enter a valid roster email.' }, 400, origin);
         const memberNumber = decodeURIComponent(memberMatch[1]);
-        const result = await env.DB.prepare('UPDATE members SET email = ? WHERE club_id = ? AND member_number = ?').bind(normalize(body.email), session.club_id, memberNumber).run();
+        const result = await env.DB.prepare('UPDATE members SET email = ? WHERE club_id = ? AND member_number = ? COLLATE NOCASE').bind(normalize(body.email), session.club_id, memberNumber).run();
         if (!result.meta.changes) return json({ error: 'Member not found.' }, 404, origin);
-        const member = await env.DB.prepare('SELECT member_number AS memberNumber, last_name AS lastName, first_name AS firstName, email, registered_at AS registeredAt, role FROM members WHERE club_id = ? AND member_number = ?').bind(session.club_id, memberNumber).first();
+        const member = await env.DB.prepare('SELECT member_number AS memberNumber, last_name AS lastName, first_name AS firstName, email, registered_at AS registeredAt, role FROM members WHERE club_id = ? AND member_number = ? COLLATE NOCASE').bind(session.club_id, memberNumber).first();
         return json(publicMember(member), 200, origin);
       }
       if (memberMatch && request.method === 'DELETE') {
@@ -584,11 +589,11 @@ export default {
         if (!await requireWritableClub(env, session)) return readOnly(origin);
         const memberNumber = decodeURIComponent(memberMatch[1]);
         await env.DB.batch([
-          env.DB.prepare('DELETE FROM photo_likes WHERE club_id = ? AND member_number = ?').bind(session.club_id, memberNumber),
-          env.DB.prepare('DELETE FROM sessions WHERE club_id = ? AND member_number = ?').bind(session.club_id, memberNumber),
-          env.DB.prepare('DELETE FROM password_resets WHERE club_id = ? AND member_number = ?').bind(session.club_id, memberNumber),
-          env.DB.prepare('DELETE FROM registration_challenges WHERE club_id = ? AND member_number = ?').bind(session.club_id, memberNumber),
-          env.DB.prepare('DELETE FROM members WHERE club_id = ? AND member_number = ?').bind(session.club_id, memberNumber)
+          env.DB.prepare('DELETE FROM photo_likes WHERE club_id = ? AND member_number = ? COLLATE NOCASE').bind(session.club_id, memberNumber),
+          env.DB.prepare('DELETE FROM sessions WHERE club_id = ? AND member_number = ? COLLATE NOCASE').bind(session.club_id, memberNumber),
+          env.DB.prepare('DELETE FROM password_resets WHERE club_id = ? AND member_number = ? COLLATE NOCASE').bind(session.club_id, memberNumber),
+          env.DB.prepare('DELETE FROM registration_challenges WHERE club_id = ? AND member_number = ? COLLATE NOCASE').bind(session.club_id, memberNumber),
+          env.DB.prepare('DELETE FROM members WHERE club_id = ? AND member_number = ? COLLATE NOCASE').bind(session.club_id, memberNumber)
         ]);
         return noContent(204, origin);
       }

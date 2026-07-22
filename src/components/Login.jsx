@@ -92,7 +92,7 @@ export default function Login({
       }
       return;
     }
-    const member = members.find(item => item.memberNumber.trim() === memberNumber.trim());
+    const member = members.find(item => item.memberNumber.trim().toLowerCase() === memberNumber.trim().toLowerCase());
     if (!member || member.lastName.toLowerCase().trim() !== lastName.toLowerCase().trim()) return setError('Membership details do not match.');
     if (!member.password) { setRegisteredMember(member); setIsRegistering(true); return; }
     if (!showPassword) { setShowPassword(true); return; }

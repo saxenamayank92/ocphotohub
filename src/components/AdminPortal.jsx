@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import readXlsxFile from 'read-excel-file/browser';
 import { createPortal } from 'react-dom';
 import {
   Users, Image as ImageIcon, Plus, Trash2,
@@ -24,6 +25,62 @@ export default function AdminPortal({
 
   // CSV Import State
   const [csvText, setCsvText] = useState('');
+  const [workbook, setWorkbook] = useState(null);
+  const [workbookName, setWorkbookName] = useState('');
+  const [sheetName, setSheetName] = useState('');
+  const [sheetHeaders, setSheetHeaders] = useState([]);
+  const [sheetRows, setSheetRows] = useState([]);
+  const [columnMap, setColumnMap] = useState({ memberNumber: '', lastName: '', firstName: '', email: '' });
+
+  const normalizeMemberNumber = value => String(value || '').trim().toUpperCase();
+  const normalizeHeader = value => String(value || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+  const findHeader = (headers, aliases) => headers.find(header => aliases.includes(normalizeHeader(header))) || '';
+
+  const loadWorkbookSheet = (nextWorkbook, nextSheetName) => {
+    const matrix = nextWorkbook.find(sheet => sheet.sheet === nextSheetName)?.data || [];
+    const headers = (matrix[0] || []).map((header, index) => String(header || `Column ${index + 1}`).trim());
+    setSheetName(nextSheetName); setSheetHeaders(headers); setSheetRows(matrix.slice(1).filter(row => row.some(value => String(value || '').trim())));
+    setColumnMap({
+      memberNumber: findHeader(headers, ['membernumber', 'memberno', 'memberid', 'number', 'id']),
+      lastName: findHeader(headers, ['lastname', 'surname', 'familyname']),
+      firstName: findHeader(headers, ['firstname', 'givenname', 'name']),
+      email: findHeader(headers, ['email', 'emailaddress', 'rosteremail'])
+    });
+  };
+
+  const handleWorkbookChange = async event => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    try {
+      if (!/\.xlsx$/i.test(file.name)) return addToast('Please choose an Excel .xlsx workbook. CSV paste import is available below.', 'error');
+      if (file.size > 10 * 1024 * 1024) return addToast('Please choose an Excel workbook smaller than 10 MB.', 'error');
+      const nextWorkbook = await readXlsxFile(file);
+      setWorkbook(nextWorkbook); setWorkbookName(file.name);
+      const firstSheetName = nextWorkbook[0]?.sheet;
+      if (!firstSheetName) return addToast('That workbook does not contain a readable worksheet.', 'error');
+      loadWorkbookSheet(nextWorkbook, firstSheetName);
+      addToast(`Loaded ${file.name}. Map the columns before importing.`, 'info');
+    } catch { addToast('We could not read that Excel file.', 'error'); }
+  };
+
+  const handleExcelImport = event => {
+    event.preventDefault();
+    if (!workbook || !sheetRows.length || Object.values(columnMap).some(column => !column)) return addToast('Upload a workbook and map all four required columns first.', 'error');
+    const indexByHeader = Object.fromEntries(sheetHeaders.map((header, index) => [header, index]));
+    const newMembersList = []; let errorCount = 0;
+    sheetRows.forEach(row => {
+      const memberNumber = normalizeMemberNumber(row[indexByHeader[columnMap.memberNumber]]);
+      const lastName = String(row[indexByHeader[columnMap.lastName]] || '').trim();
+      const firstName = String(row[indexByHeader[columnMap.firstName]] || '').trim();
+      const email = String(row[indexByHeader[columnMap.email]] || '').trim().toLowerCase();
+      const duplicate = members.some(member => normalizeMemberNumber(member.memberNumber) === memberNumber) || newMembersList.some(member => member.memberNumber === memberNumber);
+      if (!memberNumber || !lastName || !firstName || !/^\S+@\S+\.\S+$/.test(email) || duplicate) { errorCount++; return; }
+      newMembersList.push({ memberNumber, lastName, firstName, email, password: '', registeredAt: '' });
+    });
+    newMembersList.forEach(member => onAddMember(member));
+    if (newMembersList.length) addToast(`Excel roster imported: ${newMembersList.length} added, ${errorCount} skipped.`, 'success');
+    else addToast('No valid new members were found. Check the mapped columns and duplicate rows.', 'error');
+  };
 
   // Statistics calculations
   const totalPhotos = photos.length;
@@ -50,13 +107,13 @@ export default function AdminPortal({
     }
 
     // Check if member number already exists
-    if (members.some(m => m.memberNumber.trim() === newMemberNum.trim())) {
+    if (members.some(m => normalizeMemberNumber(m.memberNumber) === normalizeMemberNumber(newMemberNum))) {
       addToast(`Member number ${newMemberNum} already exists.`, 'error');
       return;
     }
 
     const newMember = {
-      memberNumber: newMemberNum.trim(),
+      memberNumber: normalizeMemberNumber(newMemberNum),
       lastName: newLastName.trim(),
       firstName: newFirstName.trim(),
       email: newEmail.trim().toLowerCase(),
@@ -95,7 +152,7 @@ export default function AdminPortal({
 
       // Expected: MemberNumber, LastName, FirstName, Email
       if (parts.length >= 4) {
-        const memberNum = parts[0];
+        const memberNum = normalizeMemberNumber(parts[0]);
         const lName = parts[1];
         const fName = parts[2];
         const memberEmail = parts[3].toLowerCase();
@@ -107,7 +164,7 @@ export default function AdminPortal({
 
         // Validate duplicates
         if (!/^\S+@\S+\.\S+$/.test(memberEmail) ||
-          members.some(m => m.memberNumber === memberNum) ||
+          members.some(m => normalizeMemberNumber(m.memberNumber) === memberNum) ||
           newMembersList.some(m => m.memberNumber === memberNum)
         ) {
           errorCount++;
@@ -380,6 +437,22 @@ export default function AdminPortal({
               <button type="submit" className="btn-primary" style={{ height: '46px' }}>
                 <Plus size={16} /> Add Member
               </button>
+            </form>
+
+            {/* Excel Roster Import */}
+            <h3 style={{ fontSize: '16px', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <FileSpreadsheet size={16} style={{ color: 'var(--club-gold-dark)' }} /> Import Roster from Excel
+            </h3>
+            <form onSubmit={handleExcelImport} style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px', background: 'var(--club-gray-light)', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--club-gray)' }}>
+              <p style={{ fontSize: '12px', color: 'var(--club-gray-dark)' }}>Upload an `.xlsx` workbook. We will preview the first sheet and let you identify which columns contain the member number, names, and roster email.</p>
+              <input type="file" accept=".xlsx" onChange={handleWorkbookChange} />
+              {workbook && <>
+                <strong style={{ fontSize: '13px' }}>{workbookName}</strong>
+                {workbook.length > 1 && <label className="form-group"><span style={{ fontSize: '12px' }}>Worksheet</span><select className="input-field" value={sheetName} onChange={event => loadWorkbookSheet(workbook, event.target.value)}>{workbook.map(sheet => <option key={sheet.sheet}>{sheet.sheet}</option>)}</select></label>}
+                <div className="excel-column-map"><strong>Identify columns</strong>{[['memberNumber', 'Member number'], ['lastName', 'Last name'], ['firstName', 'First name'], ['email', 'Roster email']].map(([key, label]) => <label key={key}><span>{label}</span><select value={columnMap[key]} onChange={event => setColumnMap(previous => ({ ...previous, [key]: event.target.value }))}><option value="">Choose column…</option>{sheetHeaders.map(header => <option key={`${key}-${header}`} value={header}>{header}</option>)}</select></label>)}</div>
+                <div className="excel-preview"><strong>Preview ({Math.min(sheetRows.length, 5)} of {sheetRows.length} rows)</strong><div className="table-wrapper"><table className="admin-table"><thead><tr>{sheetHeaders.slice(0, 6).map(header => <th key={header}>{header}</th>)}</tr></thead><tbody>{sheetRows.slice(0, 5).map((row, rowIndex) => <tr key={rowIndex}>{sheetHeaders.slice(0, 6).map((header, columnIndex) => <td key={`${rowIndex}-${header}`}>{String(row[columnIndex] || '')}</td>)}</tr>)}</tbody></table></div></div>
+                <button type="submit" className="btn-secondary" style={{ alignSelf: 'flex-start' }}><Upload size={14} /> Map & Import Roster</button>
+              </>}
             </form>
 
             {/* CSV Roster Bulk Import */}
