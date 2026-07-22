@@ -556,17 +556,14 @@ export default function AdminPortal({
               </div>
 
               <div style={{ lineHeight: '1.5', fontSize: '14px', color: 'var(--club-charcoal)' }}>
-                <p style={{ marginBottom: '10px' }}>
-                  By default, all photos are stored locally on this machine using browser <strong>IndexedDB</strong>.
-                  This is perfect for staging and offline demonstrations, but to allow members to scan your QR code and upload photos from their own mobile phones, you should link this hub to a central cloud storage.
-                </p>
-                  <p style={{ fontWeight: '600', marginBottom: '8px' }}>Prototype storage:</p>
-                  <ol style={{ paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <li>Photos are stored in Cloudflare R2.</li>
-                    <li>Photo metadata and members are stored in Cloudflare D1.</li>
-                    <li>Set <code>VITE_API_BASE_URL</code> to the deployed Worker API URL.</li>
-                  </ol>
-                </div>
+                {firebaseConfig ? <>
+                  <p style={{ marginBottom: '10px' }}><strong>Cloud uploads are live.</strong> Photos uploaded by members are stored in Cloudflare R2, while member records, captions, likes and activity are stored in Cloudflare D1.</p>
+                  <p>Members can upload from their own phones and computers, and the gallery is shared across the organization.</p>
+                </> : <>
+                  <p style={{ marginBottom: '10px' }}>This browser is currently in local offline mode. Photos are stored in browser IndexedDB and will not be shared with members on other devices.</p>
+                  <p>Connect the deployed Cloudflare Worker through <code>VITE_API_BASE_URL</code> to enable shared member uploads.</p>
+                </>}
+              </div>
               <div className="login-info" style={{ marginTop: '12px' }}>
                 Cloud configuration is deployed through environment variables and the Cloudflare Worker. It is not editable from the browser.
               </div>
