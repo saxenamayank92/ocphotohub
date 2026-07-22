@@ -33,9 +33,9 @@ export default function Login({
   clubs = [], members, onLoginSuccess, onCloudLogin, onCloudCheckMember,
   onCloudRequestRegistrationCode, onCloudRegister, onRequestPasswordReset,
   onCompletePasswordReset, onRequestAdminPasswordReset, onCompleteAdminPasswordReset,
-  onRegisterPassword, onCreateClub, firebaseEnabled
+  onRegisterPassword, onCreateClub, firebaseEnabled, directClubId = null
 }) {
-  const [clubId, setClubId] = useState('');
+  const [clubId, setClubId] = useState(directClubId || '');
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [lastName, setLastName] = useState('');
   const [memberNumber, setMemberNumber] = useState('');
@@ -163,7 +163,7 @@ export default function Login({
       <Field id="resetConfirmPassword" label="Confirm password" type="password" value={confirmPassword} onChange={event => setConfirmPassword(event.target.value)} minLength={10} required />
       <button className="btn-primary login-btn">Set new password</button>
     </form> : <form className="login-form" onSubmit={handleResetRequest}>
-      <ClubPicker clubs={clubs} clubId={clubId} setClubId={setClubId} />
+      <ClubPicker clubs={clubs} clubId={clubId} setClubId={setClubId} disabled={Boolean(directClubId)} />
       {adminResetMode
         ? <Field id="resetAdminEmail" label="Administrator email" type="email" icon={Mail} value={adminEmail} onChange={event => setAdminEmail(event.target.value)} required />
         : <><Field id="resetMemberNumber" label="Member number" value={memberNumber} onChange={event => setMemberNumber(event.target.value)} required /><Field id="resetLastName" label="Last name" value={lastName} onChange={event => setLastName(event.target.value)} required /></>}
@@ -196,20 +196,20 @@ export default function Login({
       </>}
       <button type="button" className="btn-text" onClick={resetMemberFlow}>Back to sign in</button>
     </form> : !isAdminMode ? <form className="login-form" onSubmit={handleMemberSubmit}>
-      <ClubPicker clubs={clubs} clubId={clubId} setClubId={value => { setClubId(value); resetMemberFlow(); }} disabled={showPassword} />
+      <ClubPicker clubs={clubs} clubId={clubId} setClubId={value => { setClubId(value); resetMemberFlow(); }} disabled={showPassword || Boolean(directClubId)} />
       <Field id="memberNumber" label="Member number" icon={User} placeholder="e.g. 1001" value={memberNumber} onChange={event => { setMemberNumber(event.target.value); setShowPassword(false); }} disabled={showPassword} required />
       <Field id="lastName" label="Last name" icon={User} placeholder="e.g. Smith" value={lastName} onChange={event => { setLastName(event.target.value); setShowPassword(false); }} disabled={showPassword} required />
       {showPassword && <Field id="password" label="Password" icon={Lock} type="password" placeholder="Enter your password" value={password} onChange={event => setPassword(event.target.value)} autoFocus required />}
       <button className="btn-primary login-btn">{showPassword ? 'Sign in' : 'Continue'}</button>
       {showPassword && <><button type="button" className="btn-text" onClick={() => { setAdminResetMode(false); setResetMode(true); }}>Forgot password?</button><button type="button" className="btn-text" onClick={resetMemberFlow}>Use different details</button></>}
     </form> : <form className="login-form" onSubmit={handleAdminSubmit}>
-      <ClubPicker clubs={clubs} clubId={clubId} setClubId={setClubId} />
+      <ClubPicker clubs={clubs} clubId={clubId} setClubId={setClubId} disabled={Boolean(directClubId)} />
       <Field id="adminEmail" label="Admin email" icon={User} type="email" placeholder="admin@yourclub.com" value={adminEmail} onChange={event => setAdminEmail(event.target.value)} required />
       <Field id="adminPassword" label="Password" icon={Lock} type="password" value={adminPassword} onChange={event => setAdminPassword(event.target.value)} required />
       <button className="btn-gold login-btn">Open admin portal</button>
       {firebaseEnabled && <button type="button" className="btn-text" onClick={() => { setAdminResetMode(true); setResetMode(true); setError(''); }}>Forgot administrator password?</button>}
     </form>}
     <div className="admin-toggle-link"><button onClick={() => { setIsAdminMode(value => !value); resetMemberFlow(); }}>{isAdminMode ? '← Back to member access' : 'Access admin portal →'}</button></div>
-    {firebaseEnabled && <div className="club-signup-link"><span>Represent a club or organization?</span><button type="button" onClick={onCreateClub}>Create your workspace</button></div>}
+    {firebaseEnabled && !directClubId && <div className="club-signup-link"><span>Represent a club or organization?</span><button type="button" onClick={onCreateClub}>Create your workspace</button></div>}
   </div></div>;
 }

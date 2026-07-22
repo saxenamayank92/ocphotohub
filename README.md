@@ -71,6 +71,8 @@ Club PhotoHub is operated by xTide Apps, uses `support@xtide.io` for support and
 
 During the DNS transition, the Worker accepts both `https://ocphotohub.xtide.io` and `https://clubphotohub.xtide.io`. `APP_ORIGIN` remains on the currently live `ocphotohub.xtide.io` fallback; reset emails use the validated request origin automatically. After the new DNS record is live, update `APP_ORIGIN` to `https://clubphotohub.xtide.io`.
 
+The generic `clubphotohub.xtide.io` host serves the product landing page and organization signup. The `ocphotohub.xtide.io` host opens the direct Oakville member login and locks the organization selector to the `oakville-club` slug. Create the replacement Oakville workspace from the generic host using the exact name `Oakville Club` so that slug is restored.
+
 ## Native mobile shell
 
 `capacitor.config.json` reserves `com.clubphotohub.app` and uses the Vite `dist` output. The current sandbox cannot reach npm, so the native packages and generated Xcode/Android Studio projects have not been installed in this checkout. When registry access is available:

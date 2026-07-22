@@ -23,6 +23,7 @@ const PhotoUpload = lazy(() => import('./components/PhotoUpload'));
 const AdminPortal = lazy(() => import('./components/AdminPortal'));
 
 export default function App() {
+  const directClubId = window.location.hostname === 'ocphotohub.xtide.io' ? 'oakville-club' : null;
   const demoMode = new URLSearchParams(window.location.search).get('demo') === '1';
   const [currentUser, setCurrentUser] = useState(demoMode ? demoUser : null);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -307,7 +308,7 @@ export default function App() {
 
   if (!currentUser) {
     if (showClubOnboarding) return <ClubOnboarding onStart={startClubOnboarding} onComplete={handleCompleteClubOnboarding} onCancel={() => { setShowClubOnboarding(false); window.history.replaceState({}, '', '/app'); }} />;
-    return <Login clubs={clubs} members={members} onLoginSuccess={handleLoginSuccess} onCloudLogin={handleCloudLogin} onCloudCheckMember={checkCloudMember} onCloudRequestRegistrationCode={requestRegistrationCode} onCloudRegister={handleCloudRegister} onRequestPasswordReset={requestCloudPasswordReset} onCompletePasswordReset={completeCloudPasswordReset} onRequestAdminPasswordReset={requestAdminPasswordReset} onCompleteAdminPasswordReset={completeAdminPasswordReset} onRegisterPassword={handleRegisterPassword} onCreateClub={() => { setShowClubOnboarding(true); window.history.replaceState({}, '', '/app?onboard=club'); }} firebaseEnabled={cloudApiEnabled} />;
+    return <Login clubs={clubs} directClubId={directClubId} members={members} onLoginSuccess={handleLoginSuccess} onCloudLogin={handleCloudLogin} onCloudCheckMember={checkCloudMember} onCloudRequestRegistrationCode={requestRegistrationCode} onCloudRegister={handleCloudRegister} onRequestPasswordReset={requestCloudPasswordReset} onCompletePasswordReset={completeCloudPasswordReset} onRequestAdminPasswordReset={requestAdminPasswordReset} onCompleteAdminPasswordReset={completeAdminPasswordReset} onRegisterPassword={handleRegisterPassword} onCreateClub={() => { setShowClubOnboarding(true); window.history.replaceState({}, '', '/app?onboard=club'); }} firebaseEnabled={cloudApiEnabled} />;
   }
 
   return (

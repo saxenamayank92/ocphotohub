@@ -6,7 +6,9 @@ const MemberApp = lazy(() => import('./App.jsx'));
 
 export default function Root() {
   const currentUrl = new URL(window.location.href);
-  const isMemberApp = currentUrl.pathname === '/app'
+  const isOakvilleHost = currentUrl.hostname === 'ocphotohub.xtide.io';
+  const isMemberApp = isOakvilleHost
+    || currentUrl.pathname === '/app'
     || currentUrl.pathname.startsWith('/app/')
     || currentUrl.searchParams.has('reset')
     || currentUrl.searchParams.get('demo') === '1';
