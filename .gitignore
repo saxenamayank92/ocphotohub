@@ -32,3 +32,6 @@ dist-ssr
 # Local deployment and Worker state
 .vercel
 .wrangler
+
+# Reproducible feature-video exports and intermediates
+artifacts/

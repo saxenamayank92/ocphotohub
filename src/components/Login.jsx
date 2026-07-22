@@ -32,7 +32,8 @@ function Field({ id, label, icon: Icon, ...props }) {
 export default function Login({
   clubs = [], members, onLoginSuccess, onCloudLogin, onCloudCheckMember,
   onCloudRequestRegistrationCode, onCloudRegister, onRequestPasswordReset,
-  onCompletePasswordReset, onRegisterPassword, firebaseEnabled
+  onCompletePasswordReset, onRequestAdminPasswordReset, onCompleteAdminPasswordReset,
+  onRegisterPassword, onCreateClub, firebaseEnabled
 }) {
   const [clubId, setClubId] = useState('');
   const [isAdminMode, setIsAdminMode] = useState(false);
@@ -47,14 +48,19 @@ export default function Login({
   const [codeSent, setCodeSent] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [resetMode, setResetMode] = useState(() => Boolean(new URLSearchParams(window.location.search).get('reset')));
+  const [adminResetMode, setAdminResetMode] = useState(() => Boolean(new URLSearchParams(window.location.search).get('adminReset')));
+  const [resetMode, setResetMode] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return Boolean(params.get('reset') || params.get('adminReset'));
+  });
   const [resetMessage, setResetMessage] = useState('');
   const [adminEmail, setAdminEmail] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
   const [error, setError] = useState('');
   const [infoMessage, setInfoMessage] = useState('');
   const selectedClub = clubs.find(club => club.id === clubId);
-  const resetToken = new URLSearchParams(window.location.search).get('reset');
+  const resetParams = new URLSearchParams(window.location.search);
+  const resetToken = resetParams.get(adminResetMode ? 'adminReset' : 'reset');
 
   const clearMessages = () => { setError(''); setInfoMessage(''); };
   const resetMemberFlow = () => {
@@ -129,7 +135,12 @@ export default function Login({
   const handleResetRequest = async event => {
     event.preventDefault(); setError('');
     if (!clubId) return setError('Choose your club.');
-    try { setResetMessage((await onRequestPasswordReset({ clubId, lastName, memberNumber })).message); }
+    try {
+      const result = adminResetMode
+        ? await onRequestAdminPasswordReset({ clubId, email: adminEmail })
+        : await onRequestPasswordReset({ clubId, lastName, memberNumber });
+      setResetMessage(result.message);
+    }
     catch (resetError) { setResetMessage(resetError.message || 'If your details are registered, a reset email will be sent.'); }
   };
 
@@ -137,13 +148,14 @@ export default function Login({
     event.preventDefault(); setError('');
     if (newPassword.length < 10 || newPassword !== confirmPassword) return setError('Use a matching password of at least 10 characters.');
     try {
-      await onCompletePasswordReset({ token: resetToken, password: newPassword });
-      window.history.replaceState({}, '', window.location.pathname); setResetMode(false); setResetMessage('Password reset successfully. You can now sign in.'); setNewPassword(''); setConfirmPassword('');
+      if (adminResetMode) await onCompleteAdminPasswordReset({ token: resetToken, password: newPassword });
+      else await onCompletePasswordReset({ token: resetToken, password: newPassword });
+      window.history.replaceState({}, '', window.location.pathname); setResetMode(false); setAdminResetMode(false); setResetMessage('Password reset successfully. You can now sign in.'); setNewPassword(''); setConfirmPassword('');
     } catch (resetError) { setError(resetError.message || 'This reset link is invalid or expired.'); }
   };
 
   if (resetMode) return <div className="login-screen"><div className="login-card">
-    <LoginBrand compact /><h2 className="login-section-title">Reset your password</h2>
+    <LoginBrand compact /><h2 className="login-section-title">Reset your {adminResetMode ? 'administrator ' : ''}password</h2>
     {error && <div className="login-error" role="alert"><AlertCircle size={16} /><span>{error}</span></div>}
     {resetMessage && <div className="login-info"><ShieldCheck size={16} /><span>{resetMessage}</span></div>}
     {resetToken ? <form className="login-form" onSubmit={handleResetComplete}>
@@ -152,9 +164,10 @@ export default function Login({
       <button className="btn-primary login-btn">Set new password</button>
     </form> : <form className="login-form" onSubmit={handleResetRequest}>
       <ClubPicker clubs={clubs} clubId={clubId} setClubId={setClubId} />
-      <Field id="resetMemberNumber" label="Member number" value={memberNumber} onChange={event => setMemberNumber(event.target.value)} required />
-      <Field id="resetLastName" label="Last name" value={lastName} onChange={event => setLastName(event.target.value)} required />
-      <button className="btn-primary login-btn">Email reset link</button><button type="button" className="btn-text" onClick={() => setResetMode(false)}>Back to sign in</button>
+      {adminResetMode
+        ? <Field id="resetAdminEmail" label="Administrator email" type="email" icon={Mail} value={adminEmail} onChange={event => setAdminEmail(event.target.value)} required />
+        : <><Field id="resetMemberNumber" label="Member number" value={memberNumber} onChange={event => setMemberNumber(event.target.value)} required /><Field id="resetLastName" label="Last name" value={lastName} onChange={event => setLastName(event.target.value)} required /></>}
+      <button className="btn-primary login-btn">Email reset link</button><button type="button" className="btn-text" onClick={() => { setResetMode(false); setAdminResetMode(false); }}>Back to sign in</button>
     </form>}
   </div></div>;
 
@@ -188,13 +201,15 @@ export default function Login({
       <Field id="lastName" label="Last name" icon={User} placeholder="e.g. Smith" value={lastName} onChange={event => { setLastName(event.target.value); setShowPassword(false); }} disabled={showPassword} required />
       {showPassword && <Field id="password" label="Password" icon={Lock} type="password" placeholder="Enter your password" value={password} onChange={event => setPassword(event.target.value)} autoFocus required />}
       <button className="btn-primary login-btn">{showPassword ? 'Sign in' : 'Continue'}</button>
-      {showPassword && <><button type="button" className="btn-text" onClick={() => setResetMode(true)}>Forgot password?</button><button type="button" className="btn-text" onClick={resetMemberFlow}>Use different details</button></>}
+      {showPassword && <><button type="button" className="btn-text" onClick={() => { setAdminResetMode(false); setResetMode(true); }}>Forgot password?</button><button type="button" className="btn-text" onClick={resetMemberFlow}>Use different details</button></>}
     </form> : <form className="login-form" onSubmit={handleAdminSubmit}>
       <ClubPicker clubs={clubs} clubId={clubId} setClubId={setClubId} />
       <Field id="adminEmail" label="Admin email" icon={User} type="email" placeholder="admin@yourclub.com" value={adminEmail} onChange={event => setAdminEmail(event.target.value)} required />
       <Field id="adminPassword" label="Password" icon={Lock} type="password" value={adminPassword} onChange={event => setAdminPassword(event.target.value)} required />
       <button className="btn-gold login-btn">Open admin portal</button>
+      {firebaseEnabled && <button type="button" className="btn-text" onClick={() => { setAdminResetMode(true); setResetMode(true); setError(''); }}>Forgot administrator password?</button>}
     </form>}
     <div className="admin-toggle-link"><button onClick={() => { setIsAdminMode(value => !value); resetMemberFlow(); }}>{isAdminMode ? '← Back to member access' : 'Access admin portal →'}</button></div>
+    {firebaseEnabled && <div className="club-signup-link"><span>Approved for the private pilot?</span><button type="button" onClick={onCreateClub}>Enter your access code</button></div>}
   </div></div>;
 }

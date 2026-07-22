@@ -1,5 +1,5 @@
 import React from 'react';
-import { LogOut, Image, Upload, Shield, User } from 'lucide-react';
+import { LogOut, Image, Upload, Shield, User, Settings } from 'lucide-react';
 import { platformBrand } from '../brand';
 
 export default function Header({ user, club, isAdmin, activeTab, setActiveTab, onLogout }) {
@@ -61,12 +61,13 @@ export default function Header({ user, club, isAdmin, activeTab, setActiveTab, o
         </nav>
 
         <div className="user-controls">
-          <div className="user-badge">
+          <button className={`user-badge ${activeTab === 'account' ? 'active' : ''}`} onClick={() => setActiveTab('account')} aria-label="Account settings">
             {isAdmin ? <Shield size={14} /> : <User size={14} />}
             <span>
               {isAdmin ? 'Management' : `${user.firstName} ${user.lastName}`}
             </span>
-          </div>
+            <Settings size={13} />
+          </button>
 
           <button onClick={onLogout} className="btn-secondary header-signout" aria-label="Sign out">
             <LogOut size={14} /> Sign Out

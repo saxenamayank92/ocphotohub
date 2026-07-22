@@ -6,6 +6,27 @@
   width: 100%;
 }
 
+.demo-mode-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 9px 14px;
+  color: #fff;
+  background: var(--brand-teal-dark);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.demo-mode-banner span,
+.demo-mode-banner a { display: inline-flex; align-items: center; gap: 6px; }
+.demo-mode-banner a { padding: 5px 9px; border-radius: 999px; color: var(--club-green-dark); background: #fff; font-weight: 750; text-decoration: none; }
+
+@media (max-width: 560px) {
+  .demo-mode-banner { justify-content: space-between; font-size: 9px; }
+  .demo-mode-banner a { font-size: 9px; }
+}
+
 .content-wrapper {
   flex: 1;
   max-width: 1200px;
@@ -381,6 +402,66 @@
 .club-directory-list span { display: flex; flex-direction: column; gap: 2px; }
 .club-directory-list small { color: var(--club-gray-dark); }
 @media (min-width: 800px) { .club-add-form { grid-template-columns: repeat(3, minmax(0, 1fr)) auto; align-items: end; } }
+
+.club-signup-link { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--club-gray); color: var(--club-gray-dark); font-size: 13px; }
+.club-signup-link button { border: 0; color: var(--club-green); background: transparent; font: inherit; font-weight: 750; cursor: pointer; }
+.club-signup-link button:hover { text-decoration: underline; }
+
+.onboarding-screen { padding: 32px 16px; overflow-y: auto; }
+.onboarding-card { width: min(720px, 100%); max-height: none; }
+.onboarding-progress { display: grid; grid-template-columns: repeat(3, 1fr); margin: 22px 0 26px; }
+.onboarding-progress > div { position: relative; display: flex; align-items: center; flex-direction: column; gap: 5px; color: var(--club-gray-dark); }
+.onboarding-progress > div:not(:last-child)::after { position: absolute; top: 14px; left: calc(50% + 18px); width: calc(100% - 36px); height: 2px; content: ''; background: var(--club-gray); }
+.onboarding-progress > div.active:not(:last-child)::after { background: var(--club-gold); }
+.onboarding-progress span { z-index: 1; display: grid; place-items: center; width: 30px; height: 30px; border: 2px solid var(--club-gray); border-radius: 50%; background: white; font-size: 12px; font-weight: 800; }
+.onboarding-progress .active span { border-color: var(--club-gold); color: white; background: var(--club-gold-dark); }
+.onboarding-progress small { font-size: 11px; font-weight: 750; text-transform: uppercase; letter-spacing: .06em; }
+.onboarding-section-heading { margin-top: 4px; }
+.onboarding-section-heading span { color: var(--club-green-dark); font-size: 16px; font-weight: 800; }
+.onboarding-section-heading p { margin-top: 4px; color: var(--club-gray-dark); font-size: 13px; line-height: 1.5; }
+.onboarding-two-column { display: grid; gap: 14px; }
+.onboarding-club-summary { display: flex; align-items: center; gap: 12px; padding: 14px; border: 1px solid var(--club-gray); border-radius: var(--radius-md); background: var(--club-gray-light); }
+.onboarding-club-summary span { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.onboarding-club-summary small { overflow: hidden; color: var(--club-gray-dark); text-overflow: ellipsis; white-space: nowrap; }
+.onboarding-back { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; margin-top: 18px; border: 0; color: var(--club-gray-dark); background: transparent; font-weight: 650; cursor: pointer; }
+.onboarding-trial-note { display: flex; align-items: center; justify-content: center; gap: 6px; color: var(--club-gray-dark); font-size: 11px; }
+.onboarding-pilot-notice { display: flex; align-items: center; gap: 12px; padding: 13px 14px; border: 1px solid rgba(40,92,89,.24); border-radius: 11px; color: var(--brand-teal-dark); background: rgba(57,120,116,.07); }
+.onboarding-pilot-notice > span { display: grid; gap: 2px; }
+.onboarding-pilot-notice small { color: var(--club-gray-dark); }
+.trial-status-banner { display: flex; align-items: center; justify-content: center; gap: 14px; padding: 8px 14px; color: #5f471c; background: #f4e8cc; font-size: 11px; font-weight: 700; }
+.trial-status-banner.expired { color: #fff; background: #8e2f2f; }
+.trial-status-banner a { padding: 4px 9px; border-radius: 999px; color: inherit; background: rgba(255,255,255,.7); text-decoration: none; }
+
+.account-settings { display: grid; gap: 16px; width: min(760px, 100%); margin: 0 auto; }
+.account-heading { margin-bottom: 12px; }
+.account-heading > span { color: var(--club-gold-dark); font-size: 10px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.account-heading h1 { margin-top: 8px; font-size: clamp(34px, 6vw, 48px); }
+.account-heading p { margin-top: 8px; color: var(--club-gray-dark); font-size: 13px; }
+.account-identity, .account-security, .danger-zone { display: flex; align-items: center; gap: 15px; padding: 22px; border: 1px solid var(--club-gray); border-radius: 16px; background: white; }
+.account-identity > div { display: grid; width: 48px; height: 48px; place-items: center; border-radius: 50%; color: white; background: var(--club-green); }
+.account-identity span { display: grid; gap: 3px; }
+.account-identity small { color: var(--club-gray-dark); }
+.account-security { align-items: flex-start; color: var(--brand-teal-dark); background: #edf5f2; }
+.account-security h2, .danger-zone h2 { font-family: var(--font-sans); font-size: 15px; }
+.account-security p, .danger-zone p { margin-top: 5px; color: var(--club-gray-dark); font-size: 12px; line-height: 1.6; }
+.danger-zone { justify-content: space-between; border-color: #ebcdcd; }
+.danger-zone > div { display: flex; align-items: flex-start; gap: 12px; }
+.danger-zone svg { flex: 0 0 auto; color: var(--club-danger); }
+.danger-zone button { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 6px; padding: 9px 12px; border: 1px solid var(--club-danger); border-radius: 9px; color: var(--club-danger); background: white; font-size: 11px; font-weight: 750; cursor: pointer; }
+.organization-delete { background: #fff9f9; }
+@media (max-width: 620px) { .danger-zone { align-items: stretch; flex-direction: column; } .danger-zone button { justify-content: center; } }
+
+.setup-checklist { display: grid; gap: 10px; margin: 0 0 22px; }
+.setup-checklist > div { display: flex; align-items: center; gap: 12px; padding: 13px 14px; border: 1px solid var(--club-gray); border-radius: var(--radius-md); background: var(--club-gray-light); }
+.setup-checklist > div > span { display: grid; place-items: center; width: 28px; height: 28px; flex: 0 0 28px; border: 2px solid var(--club-gray); border-radius: 50%; font-size: 12px; font-weight: 800; }
+.setup-checklist > div.complete > span { border-color: var(--club-success); color: white; background: var(--club-success); }
+.setup-checklist p { display: flex; flex-direction: column; gap: 2px; }
+.setup-checklist small { color: var(--club-gray-dark); }
+.setup-roster-cta { margin-top: 18px; }
+
+@media (min-width: 620px) {
+  .onboarding-two-column { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 
 .tenant-brand-card span,
 .tenant-brand-card strong {

@@ -7,10 +7,10 @@ import {
 import { photoDownloadName } from '../brand';
 
 export default function AdminPortal({
-  club, clubs, members, photos, onAddClub, onAddMember, onUpdateMember, onDeleteMember, onSetMemberPassword, onDeletePhoto,
+  club, members, photos, onUpdateClub, onAddMember, onUpdateMember, onDeleteMember, onSetMemberPassword, onDeletePhoto,
   firebaseConfig, onResetDatabase, addToast
 }) {
-  const [activeSubTab, setActiveSubTab] = useState('dashboard');
+  const [activeSubTab, setActiveSubTab] = useState(members.length === 0 ? 'clubs' : 'dashboard');
   const [selectedPhoto, setSelectedPhoto] = useState(null);
 
   // Member Form State
@@ -18,9 +18,9 @@ export default function AdminPortal({
   const [newLastName, setNewLastName] = useState('');
   const [newFirstName, setNewFirstName] = useState('');
   const [newEmail, setNewEmail] = useState('');
-  const [newClubName, setNewClubName] = useState('');
-  const [newClubShortName, setNewClubShortName] = useState('');
-  const [newClubLogoUrl, setNewClubLogoUrl] = useState('');
+  const [clubName, setClubName] = useState(club.name);
+  const [clubShortName, setClubShortName] = useState(club.shortName);
+  const [clubLogoUrl, setClubLogoUrl] = useState(club.logoUrl || '');
 
   // CSV Import State
   const [csvText, setCsvText] = useState('');
@@ -144,14 +144,13 @@ export default function AdminPortal({
     }
   };
 
-  const handleAddClubSubmit = async event => {
+  const handleClubSetupSubmit = async event => {
     event.preventDefault();
-    if (newClubName.trim().length < 2) return addToast('Enter a club name.', 'error');
+    if (clubName.trim().length < 2) return addToast('Enter a club name.', 'error');
     try {
-      const created = await onAddClub({ name: newClubName.trim(), shortName: newClubShortName.trim() || newClubName.trim(), logoUrl: newClubLogoUrl.trim() });
-      addToast(`${created.name} is ready for roster setup.`, 'success');
-      setNewClubName(''); setNewClubShortName(''); setNewClubLogoUrl('');
-    } catch (error) { addToast(error.message || 'Could not create the club.', 'error'); }
+      await onUpdateClub({ name: clubName.trim(), shortName: clubShortName.trim() || clubName.trim(), logoUrl: clubLogoUrl.trim() });
+      addToast('Club branding updated.', 'success');
+    } catch (error) { addToast(error.message || 'Could not update the club.', 'error'); }
   };
 
   return (
@@ -162,7 +161,7 @@ export default function AdminPortal({
           className={`admin-menu-btn ${activeSubTab === 'clubs' ? 'active' : ''}`}
           onClick={() => setActiveSubTab('clubs')}
         >
-          <Building2 size={16} /> Club Onboarding
+          <Building2 size={16} /> Club Setup
         </button>
         <button
           className={`admin-menu-btn ${activeSubTab === 'dashboard' ? 'active' : ''}`}
@@ -308,15 +307,20 @@ export default function AdminPortal({
         {/* --- 2. MEMBER DIRECTORY --- */}
         {activeSubTab === 'clubs' && (
           <div>
-            <div className="admin-section-header"><h2 className="admin-section-title">Club Onboarding</h2><span>{clubs.length} active clubs</span></div>
-            <p className="admin-help-copy">Create the club here first. It will immediately appear in the member sign-in selector. Sign out and select that club to load its roster and gallery.</p>
-            <form className="club-add-form" onSubmit={handleAddClubSubmit}>
-              <div className="form-group"><label htmlFor="newClubName">Club name</label><input id="newClubName" className="input-field" placeholder="Harbour Club" value={newClubName} onChange={event => setNewClubName(event.target.value)} required /></div>
-              <div className="form-group"><label htmlFor="newClubShortName">Short name</label><input id="newClubShortName" className="input-field" placeholder="Harbour" value={newClubShortName} onChange={event => setNewClubShortName(event.target.value)} /></div>
-              <div className="form-group"><label htmlFor="newClubLogoUrl">Logo URL (optional)</label><input id="newClubLogoUrl" className="input-field" type="url" placeholder="https://…" value={newClubLogoUrl} onChange={event => setNewClubLogoUrl(event.target.value)} /></div>
-              <button className="btn-primary"><Plus size={16} /> Create club</button>
+            <div className="admin-section-header"><h2 className="admin-section-title">Set up {club.name}</h2><span>Private club workspace</span></div>
+            <div className="setup-checklist">
+              <div className="complete"><span>1</span><p><strong>Administrator verified</strong><small>Your club account owns this workspace.</small></p></div>
+              <div className={club.logoUrl ? 'complete' : ''}><span>2</span><p><strong>Add club branding</strong><small>Set the member-facing name and crest.</small></p></div>
+              <div className={members.length > 0 ? 'complete' : ''}><span>3</span><p><strong>Load the member roster</strong><small>Add members with their registered email addresses.</small></p></div>
+            </div>
+            <p className="admin-help-copy">Only administrators verified for this club can change these settings or access its member directory.</p>
+            <form className="club-add-form" onSubmit={handleClubSetupSubmit}>
+              <div className="form-group"><label htmlFor="clubName">Club name</label><input id="clubName" className="input-field" value={clubName} onChange={event => setClubName(event.target.value)} required /></div>
+              <div className="form-group"><label htmlFor="clubShortName">Short name</label><input id="clubShortName" className="input-field" value={clubShortName} onChange={event => setClubShortName(event.target.value)} /></div>
+              <div className="form-group"><label htmlFor="clubLogoUrl">Logo URL (optional)</label><input id="clubLogoUrl" className="input-field" type="url" placeholder="https://…" value={clubLogoUrl} onChange={event => setClubLogoUrl(event.target.value)} /></div>
+              <button className="btn-primary">Save club settings</button>
             </form>
-            <div className="club-directory-list">{clubs.map(item => <div key={item.id}><div className="tenant-brand-fallback"><Building2 size={18} /></div><span><strong>{item.name}</strong><small>{item.id === club.id ? 'Current admin workspace' : 'Available at sign in'}</small></span></div>)}</div>
+            {members.length === 0 && <button className="btn-secondary setup-roster-cta" onClick={() => setActiveSubTab('members')}><Users size={16} /> Add your first members</button>}
           </div>
         )}
 

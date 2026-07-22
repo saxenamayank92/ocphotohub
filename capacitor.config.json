@@ -1,0 +1,8 @@
+{
+  "appId": "com.clubphotohub.app",
+  "appName": "Club PhotoHub",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  }
+}
