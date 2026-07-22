@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
-  <title id="title">Club Photo Hub</title>
+  <title id="title">Club PhotoHub</title>
   <desc id="desc">A camera lens shaped like the letter C inside a rounded square.</desc>
   <rect width="512" height="512" rx="124" fill="#172238"/>
   <path d="M350 151a144 144 0 1 0 0 210" fill="none" stroke="#C8A76B" stroke-width="48" stroke-linecap="round"/>

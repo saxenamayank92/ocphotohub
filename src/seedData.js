@@ -6,6 +6,76 @@ export const seedMembers = [
   { memberNumber: '1005', lastName: 'Wilson', firstName: 'David', password: '', registeredAt: '' }
 ];
 
+export const demoClub = {
+  id: 'your-club-demo',
+  slug: 'your-club-demo',
+  name: 'Your Club',
+  shortName: 'Your Club',
+  logoUrl: '',
+  organizationType: 'Private Club',
+  planStatus: 'demo'
+};
+
+export const demoUser = {
+  memberNumber: 'DEMO-1001',
+  firstName: 'Alex',
+  lastName: 'Morgan',
+  email: 'member@example.com'
+};
+
+export const demoMembers = [
+  { memberNumber: 'DEMO-1001', firstName: 'Alex', lastName: 'Morgan', email: 'member@example.com', registeredAt: '2026-06-14T14:00:00.000Z', role: 'member' },
+  { memberNumber: 'DEMO-1002', firstName: 'Jordan', lastName: 'Lee', email: 'jordan@example.com', registeredAt: '2026-06-18T14:00:00.000Z', role: 'member' },
+  { memberNumber: 'DEMO-1003', firstName: 'Taylor', lastName: 'Chen', email: 'taylor@example.com', registeredAt: '2026-06-20T14:00:00.000Z', role: 'member' }
+];
+
+export const demoPhotos = [
+  {
+    id: 'demo-lakeside-social',
+    url: './demo/lakeside-social.jpg',
+    caption: 'Golden hour on the terrace with friends. This is what summer at the club feels like.',
+    category: 'Events',
+    uploaderName: 'Alex Morgan',
+    uploaderId: 'DEMO-1001',
+    createdAt: '2026-07-20T22:15:00.000Z',
+    hearts: 28,
+    heartUsers: ['DEMO-1002', 'DEMO-1003']
+  },
+  {
+    id: 'demo-golf-morning',
+    url: './demo/golf-morning.jpg',
+    caption: 'First group out and a beautiful start to championship weekend.',
+    category: 'Golf',
+    uploaderName: 'Jordan Lee',
+    uploaderId: 'DEMO-1002',
+    createdAt: '2026-07-19T11:40:00.000Z',
+    hearts: 19,
+    heartUsers: ['DEMO-1001']
+  },
+  {
+    id: 'demo-tennis-social',
+    url: './demo/tennis-social.jpg',
+    caption: 'A close match, a lot of laughs, and the best kind of Saturday afternoon.',
+    category: 'Tennis',
+    uploaderName: 'Taylor Chen',
+    uploaderId: 'DEMO-1003',
+    createdAt: '2026-07-18T20:05:00.000Z',
+    hearts: 34,
+    heartUsers: ['DEMO-1001', 'DEMO-1002']
+  },
+  {
+    id: 'demo-garden-dinner',
+    url: './demo/garden-dinner.jpg',
+    caption: 'The annual garden dinner brought the whole community together.',
+    category: 'Dining',
+    uploaderName: 'Club Team',
+    uploaderId: 'demo-admin',
+    createdAt: '2026-07-17T23:30:00.000Z',
+    hearts: 46,
+    heartUsers: ['DEMO-1001', 'DEMO-1002', 'DEMO-1003']
+  }
+];
+
 export const seedPhotos = [
   {
     id: 'seed-1',

@@ -1,8 +1,8 @@
 import React from 'react';
-import { LogOut, Image, Upload, Shield, User } from 'lucide-react';
-import { clubBrand, platformBrand } from '../brand';
+import { LogOut, Image, Upload, Shield, User, Settings } from 'lucide-react';
+import { platformBrand } from '../brand';
 
-export default function Header({ user, isAdmin, activeTab, setActiveTab, onLogout }) {
+export default function Header({ user, club, isAdmin, activeTab, setActiveTab, onLogout }) {
   return (
     <header className="club-header">
       <div className="header-content">
@@ -14,7 +14,7 @@ export default function Header({ user, isAdmin, activeTab, setActiveTab, onLogou
           />
           <div className="brand-titles">
             <span className="brand-title">{platformBrand.name}</span>
-            <span className="brand-subtitle">{clubBrand.name} · Private gallery</span>
+            <span className="brand-subtitle">{club?.name || 'Private club'} · Private gallery</span>
           </div>
         </div>
 
@@ -61,12 +61,13 @@ export default function Header({ user, isAdmin, activeTab, setActiveTab, onLogou
         </nav>
 
         <div className="user-controls">
-          <div className="user-badge">
+          <button className={`user-badge ${activeTab === 'account' ? 'active' : ''}`} onClick={() => setActiveTab('account')} aria-label="Account settings">
             {isAdmin ? <Shield size={14} /> : <User size={14} />}
             <span>
               {isAdmin ? 'Management' : `${user.firstName} ${user.lastName}`}
             </span>
-          </div>
+            <Settings size={13} />
+          </button>
 
           <button onClick={onLogout} className="btn-secondary header-signout" aria-label="Sign out">
             <LogOut size={14} /> Sign Out

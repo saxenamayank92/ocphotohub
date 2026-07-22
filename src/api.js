@@ -28,6 +28,7 @@ const request = async (path, options = {}) => {
 };
 
 export const loadCloudData = () => request('/bootstrap');
+export const listCloudClubs = () => request('/clubs');
 
 export const cloudLogin = async credentials => {
   const result = await request('/auth/login', { method: 'POST', body: JSON.stringify(credentials) });
@@ -36,6 +37,13 @@ export const cloudLogin = async credentials => {
 };
 
 export const checkCloudMember = details => request('/auth/member-check', { method: 'POST', body: JSON.stringify(details) });
+export const requestRegistrationCode = details => request('/auth/registration-code', { method: 'POST', body: JSON.stringify(details) });
+export const startClubOnboarding = details => request('/onboarding/start', { method: 'POST', body: JSON.stringify(details) });
+export const completeClubOnboarding = async details => {
+  const result = await request('/onboarding/complete', { method: 'POST', body: JSON.stringify(details) });
+  csrfToken = result.csrfToken || '';
+  return result;
+};
 
 export const cloudRegister = async details => {
   const result = await request('/auth/register', { method: 'POST', body: JSON.stringify(details) });
@@ -46,6 +54,8 @@ export const cloudRegister = async details => {
 export const requestCloudPasswordReset = details => request('/auth/password-reset/request', { method: 'POST', body: JSON.stringify(details) });
 
 export const completeCloudPasswordReset = details => request('/auth/password-reset/complete', { method: 'POST', body: JSON.stringify(details) });
+export const requestAdminPasswordReset = details => request('/auth/admin-password-reset/request', { method: 'POST', body: JSON.stringify(details) });
+export const completeAdminPasswordReset = details => request('/auth/admin-password-reset/complete', { method: 'POST', body: JSON.stringify(details) });
 
 export const cloudSession = async () => {
   const result = await request('/auth/me');
@@ -67,9 +77,21 @@ export const addCloudMember = (member) => request('/members', {
   body: JSON.stringify(member)
 });
 
+export const updateCurrentClub = club => request('/clubs/current', {
+  method: 'PATCH',
+  headers: { 'X-CSRF-Token': csrfToken },
+  body: JSON.stringify(club)
+});
+
 export const deleteCloudMember = (memberNumber) => request(`/members/${encodeURIComponent(memberNumber)}`, {
   method: 'DELETE',
   headers: { 'X-CSRF-Token': csrfToken }
+});
+
+export const updateCloudMember = (memberNumber, changes) => request(`/members/${encodeURIComponent(memberNumber)}`, {
+  method: 'PATCH',
+  headers: { 'X-CSRF-Token': csrfToken },
+  body: JSON.stringify(changes)
 });
 
 export const uploadCloudPhoto = (photo) => {
@@ -102,3 +124,11 @@ export const toggleCloudHeart = (photoId, memberNumber) => request(`/photos/${en
 });
 
 export const resetCloudData = () => request('/reset', { method: 'POST', headers: { 'X-CSRF-Token': csrfToken } });
+
+export const deleteCloudAccount = () => request('/account', { method: 'DELETE', headers: { 'X-CSRF-Token': csrfToken } }).finally(() => { csrfToken = ''; });
+
+export const deleteCloudOrganization = confirmName => request('/organization', {
+  method: 'DELETE',
+  headers: { 'X-CSRF-Token': csrfToken },
+  body: JSON.stringify({ confirmName })
+}).finally(() => { csrfToken = ''; });

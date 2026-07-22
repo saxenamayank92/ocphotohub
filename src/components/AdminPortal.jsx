@@ -2,21 +2,25 @@ import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Users, Image as ImageIcon, Plus, Trash2,
-  Upload, Database, CloudLightning, FileSpreadsheet, RefreshCw, BarChart3, X, Download
+  Upload, Database, CloudLightning, FileSpreadsheet, RefreshCw, BarChart3, X, Download, Building2
 } from 'lucide-react';
-import { clubBrand, photoDownloadName } from '../brand';
+import { photoDownloadName } from '../brand';
 
 export default function AdminPortal({
-  members, photos, onAddMember, onDeleteMember, onSetMemberPassword, onDeletePhoto,
+  club, members, photos, onUpdateClub, onAddMember, onUpdateMember, onDeleteMember, onSetMemberPassword, onDeletePhoto,
   firebaseConfig, onResetDatabase, addToast
 }) {
-  const [activeSubTab, setActiveSubTab] = useState('dashboard');
+  const [activeSubTab, setActiveSubTab] = useState(members.length === 0 ? 'clubs' : 'dashboard');
   const [selectedPhoto, setSelectedPhoto] = useState(null);
 
   // Member Form State
   const [newMemberNum, setNewMemberNum] = useState('');
   const [newLastName, setNewLastName] = useState('');
   const [newFirstName, setNewFirstName] = useState('');
+  const [newEmail, setNewEmail] = useState('');
+  const [clubName, setClubName] = useState(club.name);
+  const [clubShortName, setClubShortName] = useState(club.shortName);
+  const [clubLogoUrl, setClubLogoUrl] = useState(club.logoUrl || '');
 
   // CSV Import State
   const [csvText, setCsvText] = useState('');
@@ -24,7 +28,7 @@ export default function AdminPortal({
   // Statistics calculations
   const totalPhotos = photos.length;
   const totalMembers = members.length;
-  const registeredCount = members.filter(m => m.password).length;
+  const registeredCount = members.filter(m => m.registeredAt).length;
   const totalLikes = photos.reduce((acc, p) => acc + (p.hearts || 0), 0);
 
   const topPhotos = [...photos]
@@ -40,7 +44,7 @@ export default function AdminPortal({
 
   const handleAddMemberSubmit = (e) => {
     e.preventDefault();
-    if (!newMemberNum || !newLastName || !newFirstName) {
+    if (!newMemberNum || !newLastName || !newFirstName || !/^\S+@\S+\.\S+$/.test(newEmail)) {
       addToast('Please fill out all member fields.', 'error');
       return;
     }
@@ -55,6 +59,7 @@ export default function AdminPortal({
       memberNumber: newMemberNum.trim(),
       lastName: newLastName.trim(),
       firstName: newFirstName.trim(),
+      email: newEmail.trim().toLowerCase(),
       password: '',
       registeredAt: ''
     };
@@ -66,6 +71,7 @@ export default function AdminPortal({
     setNewMemberNum('');
     setNewLastName('');
     setNewFirstName('');
+    setNewEmail('');
   };
 
   const handleCsvImportSubmit = (e) => {
@@ -87,11 +93,12 @@ export default function AdminPortal({
       // Parse commas. Support quotes if needed, but a simple split works for standard lists
       const parts = trimmed.split(',').map(p => p.replace(/^["']|["']$/g, '').trim());
 
-      // Expected: MemberNumber, LastName, FirstName
-      if (parts.length >= 3) {
+      // Expected: MemberNumber, LastName, FirstName, Email
+      if (parts.length >= 4) {
         const memberNum = parts[0];
         const lName = parts[1];
         const fName = parts[2];
+        const memberEmail = parts[3].toLowerCase();
 
         // Skip header if present
         if (memberNum.toLowerCase() === 'membernumber' || memberNum.toLowerCase() === 'number' || memberNum.toLowerCase() === 'id') {
@@ -99,7 +106,7 @@ export default function AdminPortal({
         }
 
         // Validate duplicates
-        if (
+        if (!/^\S+@\S+\.\S+$/.test(memberEmail) ||
           members.some(m => m.memberNumber === memberNum) ||
           newMembersList.some(m => m.memberNumber === memberNum)
         ) {
@@ -111,6 +118,7 @@ export default function AdminPortal({
           memberNumber: memberNum,
           lastName: lName,
           firstName: fName,
+          email: memberEmail,
           password: '',
           registeredAt: ''
         });
@@ -136,10 +144,25 @@ export default function AdminPortal({
     }
   };
 
+  const handleClubSetupSubmit = async event => {
+    event.preventDefault();
+    if (clubName.trim().length < 2) return addToast('Enter a club name.', 'error');
+    try {
+      await onUpdateClub({ name: clubName.trim(), shortName: clubShortName.trim() || clubName.trim(), logoUrl: clubLogoUrl.trim() });
+      addToast('Club branding updated.', 'success');
+    } catch (error) { addToast(error.message || 'Could not update the club.', 'error'); }
+  };
+
   return (
     <div className="admin-grid animate-fade-in">
       {/* Sidebar Panel */}
       <div className="admin-sidebar">
+        <button
+          className={`admin-menu-btn ${activeSubTab === 'clubs' ? 'active' : ''}`}
+          onClick={() => setActiveSubTab('clubs')}
+        >
+          <Building2 size={16} /> Club Setup
+        </button>
         <button
           className={`admin-menu-btn ${activeSubTab === 'dashboard' ? 'active' : ''}`}
           onClick={() => setActiveSubTab('dashboard')}
@@ -183,7 +206,7 @@ export default function AdminPortal({
         {activeSubTab === 'dashboard' && (
           <div>
             <div className="admin-section-header">
-              <h2 className="admin-section-title">{clubBrand.name} Hub Metrics</h2>
+              <h2 className="admin-section-title">{club.name} Hub Metrics</h2>
             </div>
 
             <div className="admin-stats-row">
@@ -282,6 +305,26 @@ export default function AdminPortal({
         )}
 
         {/* --- 2. MEMBER DIRECTORY --- */}
+        {activeSubTab === 'clubs' && (
+          <div>
+            <div className="admin-section-header"><h2 className="admin-section-title">Set up {club.name}</h2><span>Private club workspace</span></div>
+            <div className="setup-checklist">
+              <div className="complete"><span>1</span><p><strong>Administrator verified</strong><small>Your club account owns this workspace.</small></p></div>
+              <div className={club.logoUrl ? 'complete' : ''}><span>2</span><p><strong>Add club branding</strong><small>Set the member-facing name and crest.</small></p></div>
+              <div className={members.length > 0 ? 'complete' : ''}><span>3</span><p><strong>Load the member roster</strong><small>Add members with their registered email addresses.</small></p></div>
+            </div>
+            <p className="admin-help-copy">Only administrators verified for this club can change these settings or access its member directory.</p>
+            <form className="club-add-form" onSubmit={handleClubSetupSubmit}>
+              <div className="form-group"><label htmlFor="clubName">Club name</label><input id="clubName" className="input-field" value={clubName} onChange={event => setClubName(event.target.value)} required /></div>
+              <div className="form-group"><label htmlFor="clubShortName">Short name</label><input id="clubShortName" className="input-field" value={clubShortName} onChange={event => setClubShortName(event.target.value)} /></div>
+              <div className="form-group"><label htmlFor="clubLogoUrl">Logo URL (optional)</label><input id="clubLogoUrl" className="input-field" type="url" placeholder="https://…" value={clubLogoUrl} onChange={event => setClubLogoUrl(event.target.value)} /></div>
+              <button className="btn-primary">Save club settings</button>
+            </form>
+            {members.length === 0 && <button className="btn-secondary setup-roster-cta" onClick={() => setActiveSubTab('members')}><Users size={16} /> Add your first members</button>}
+          </div>
+        )}
+
+        {/* --- 3. MEMBER DIRECTORY --- */}
         {activeSubTab === 'members' && (
           <div>
             <div className="admin-section-header">
@@ -301,6 +344,16 @@ export default function AdminPortal({
                   placeholder="Member Number (e.g. 1006)"
                   value={newMemberNum}
                   onChange={(e) => setNewMemberNum(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <input
+                  type="email"
+                  className="input-field"
+                  placeholder="Roster Email"
+                  value={newEmail}
+                  onChange={(e) => setNewEmail(e.target.value)}
                   required
                 />
               </div>
@@ -335,11 +388,11 @@ export default function AdminPortal({
             </h3>
             <form onSubmit={handleCsvImportSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '32px', background: 'var(--club-gray-light)', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--club-gray)' }}>
               <p style={{ fontSize: '12px', color: 'var(--club-gray-dark)' }}>
-                Paste lines in format: <strong>MemberNumber, LastName, FirstName</strong>. (One member per line. Headers are ignored automatically).
+                Paste lines in format: <strong>MemberNumber, LastName, FirstName, Email</strong>. The roster email is required for secure first-time verification.
               </p>
               <textarea
                 className="textarea-field"
-                placeholder="1006, Doe, Jane&#10;1007, Simpson, Bart&#10;1008, Vance, Bob"
+                placeholder="1006, Doe, Jane, jane@example.com&#10;1007, Simpson, Bart, bart@example.com"
                 value={csvText}
                 onChange={(e) => setCsvText(e.target.value)}
               ></textarea>
@@ -357,6 +410,7 @@ export default function AdminPortal({
                     <th>Member Number</th>
                     <th>Last Name</th>
                     <th>First Name</th>
+                    <th>Roster Email</th>
                     <th>Hub Status</th>
                     <th style={{ textAlign: 'right' }}>Actions</th>
                   </tr>
@@ -367,6 +421,7 @@ export default function AdminPortal({
                       <td style={{ fontWeight: '600' }}>#{member.memberNumber}</td>
                       <td>{member.lastName}</td>
                       <td>{member.firstName}</td>
+                      <td>{member.email}</td>
                       <td>
                         <span
                           style={{
@@ -383,6 +438,19 @@ export default function AdminPortal({
                         </span>
                       </td>
                       <td style={{ textAlign: 'right' }}>
+                        <button
+                          className="btn-text"
+                          style={{ color: 'var(--club-green)', padding: '4px', marginRight: '6px' }}
+                          onClick={async () => {
+                            const nextEmail = window.prompt(`Roster email for ${member.firstName} ${member.lastName}:`, member.email || '');
+                            if (nextEmail === null) return;
+                            if (!/^\S+@\S+\.\S+$/.test(nextEmail.trim())) return addToast('Enter a valid email address.', 'error');
+                            try { await onUpdateMember(member.memberNumber, { email: nextEmail.trim().toLowerCase() }); addToast('Roster email updated.', 'success'); }
+                            catch (error) { addToast(error.message || 'Could not update roster email.', 'error'); }
+                          }}
+                        >
+                          Edit email
+                        </button>
                         <button
                           className="btn-text"
                           style={{ color: 'var(--club-green)', padding: '4px', marginRight: '6px' }}

@@ -1,0 +1,9 @@
+ALTER TABLE clubs ADD COLUMN organization_type TEXT NOT NULL DEFAULT 'Private Club';
+ALTER TABLE clubs ADD COLUMN plan_status TEXT NOT NULL DEFAULT 'active';
+ALTER TABLE clubs ADD COLUMN trial_started_at TEXT NOT NULL DEFAULT '';
+ALTER TABLE clubs ADD COLUMN trial_ends_at TEXT NOT NULL DEFAULT '';
+ALTER TABLE clubs ADD COLUMN storage_limit_bytes INTEGER NOT NULL DEFAULT 26843545600;
+
+ALTER TABLE club_admins ADD COLUMN role TEXT NOT NULL DEFAULT 'owner';
+ALTER TABLE club_signup_challenges ADD COLUMN organization_type TEXT NOT NULL DEFAULT 'Private Club';
+ALTER TABLE photos ADD COLUMN byte_size INTEGER NOT NULL DEFAULT 0;

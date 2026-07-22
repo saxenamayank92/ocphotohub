@@ -1,19 +1,22 @@
 export const platformBrand = {
-  name: 'Club Photo Hub',
+  name: 'Club PhotoHub',
   shortName: 'Photo Hub',
   descriptor: 'The private photo hub for clubs',
   tagline: 'Private moments. Shared with members.',
-  mark: '/club-photo-hub-mark.svg'
+  mark: '/club-photo-hub-mark.svg',
+  siteUrl: 'https://clubphotohub.xtide.io',
+  operator: 'xTide Apps',
+  supportEmail: 'support@xtide.io'
 };
 
 export const clubBrand = {
-  name: import.meta.env.VITE_CLUB_NAME || 'Oakville Club',
-  shortName: import.meta.env.VITE_CLUB_SHORT_NAME || 'Oakville',
-  logo: import.meta.env.VITE_CLUB_LOGO_URL || '/oakville-logo.jpg'
+  id: 'local-demo',
+  name: import.meta.env.VITE_CLUB_NAME || 'Demo Club',
+  shortName: import.meta.env.VITE_CLUB_SHORT_NAME || 'Club',
+  logoUrl: import.meta.env.VITE_CLUB_LOGO_URL || ''
 };
 
 export const photoDownloadName = (category = 'Photo') => {
-  const safeClubName = clubBrand.shortName.replace(/[^a-zA-Z0-9]+/g, '_');
   const safeCategory = category.replace(/[^a-zA-Z0-9]+/g, '_');
-  return `${safeClubName}_${safeCategory}_Photo.jpg`;
+  return `Club_PhotoHub_${safeCategory}_Photo.jpg`;
 };
