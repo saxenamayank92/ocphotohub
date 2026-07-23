@@ -23,7 +23,7 @@ const PhotoUpload = lazy(() => import('./components/PhotoUpload'));
 const AdminPortal = lazy(() => import('./components/AdminPortal'));
 
 export default function App() {
-  const directClubId = window.location.hostname === 'ocphotohub.xtide.io' ? 'oakville-club' : null;
+  const directClubId = window.location.hostname === 'ocphotohub.xtide.io' ? 'oakville' : null;
   const demoMode = new URLSearchParams(window.location.search).get('demo') === '1';
   const [currentUser, setCurrentUser] = useState(demoMode ? demoUser : null);
   const [isAdmin, setIsAdmin] = useState(false);

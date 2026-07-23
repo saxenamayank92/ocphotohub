@@ -214,7 +214,7 @@ async function login(request, env, origin) {
   if (body.mode === 'admin') {
     let admin = await env.DB.prepare("SELECT * FROM club_admins WHERE club_id = ? AND email = ? AND status = 'active'").bind(club.id, normalize(body.email)).first();
     const adminCount = admin ? 1 : Number((await env.DB.prepare("SELECT COUNT(*) AS count FROM club_admins WHERE club_id = ? AND status = 'active'").bind(club.id).first())?.count || 0);
-    if (!admin && adminCount === 0 && club.id === 'oakville-club' && env.ADMIN_EMAIL && env.ADMIN_PASSWORD && normalize(body.email) === normalize(env.ADMIN_EMAIL) && await safeEqual(body.password || '', env.ADMIN_PASSWORD)) {
+    if (!admin && adminCount === 0 && club.id === 'oakville' && env.ADMIN_EMAIL && env.ADMIN_PASSWORD && normalize(body.email) === normalize(env.ADMIN_EMAIL) && await safeEqual(body.password || '', env.ADMIN_PASSWORD)) {
       const adminId = randomToken(12);
       const salt = randomToken(16);
       const now = new Date().toISOString();
