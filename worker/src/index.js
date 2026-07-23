@@ -169,6 +169,17 @@ async function sendMail(env, { to, subject, text, html }) {
   if (!response.ok) throw new Error(`MailerSend rejected the message (${response.status}).`);
 }
 
+const emailEscape = value => escapeHtml(String(value ?? ''));
+const clubPhotoHubEmail = ({ eyebrow = 'Secure member access', title, intro, code, details, actionLabel, actionUrl }) => {
+  const codeMarkup = code
+    ? `<div style="margin:28px 0 24px;padding:18px 22px;background:#f7f3eb;border:1px solid #d8c39a;border-radius:14px;color:#17133f;font-family:Arial,sans-serif;font-size:34px;font-weight:700;letter-spacing:9px;text-align:center">${emailEscape(code)}</div>`
+    : '';
+  const actionMarkup = actionUrl
+    ? `<div style="margin:28px 0"><a href="${emailEscape(actionUrl)}" style="display:inline-block;background:#29216b;color:#ffffff;text-decoration:none;padding:14px 24px;border-radius:9px;font-family:Arial,sans-serif;font-size:16px;font-weight:700">${emailEscape(actionLabel || 'Continue')}</a></div>`
+    : '';
+  return `<!doctype html><html><body style="margin:0;background:#f5f2ed;color:#24213f;font-family:Arial,Helvetica,sans-serif"><div style="padding:32px 16px"><div style="max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #e0e4df;border-top:8px solid #c8a354;border-radius:22px;overflow:hidden;box-shadow:0 10px 28px rgba(23,19,63,.08)"><div style="padding:28px 32px 24px;background:#29216b;color:#ffffff"><div style="display:inline-block;width:44px;height:44px;line-height:44px;border-radius:50%;background:#c8a354;color:#29216b;font-family:Georgia,serif;font-size:18px;font-weight:700;text-align:center">CP</div><div style="margin-top:18px;color:#e9d9b3;font-family:Arial,sans-serif;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase">Club PhotoHub</div><div style="margin-top:8px;font-family:Georgia,'Times New Roman',serif;font-size:28px;line-height:1.2">${emailEscape(title)}</div></div><div style="padding:32px"><div style="color:#a27a2b;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase">${emailEscape(eyebrow)}</div><p style="margin:16px 0 0;font-size:17px;line-height:1.6">${emailEscape(intro)}</p>${codeMarkup}${details ? `<p style="margin:0;color:#6f7e76;font-size:14px;line-height:1.6">${emailEscape(details)}</p>` : ''}${actionMarkup}<p style="margin:28px 0 0;color:#6f7e76;font-size:13px;line-height:1.6">If you did not request this email, you can safely ignore it. For help, contact <a href="mailto:support@xtide.io" style="color:#29216b">support@xtide.io</a>.</p></div><div style="padding:18px 32px;background:#faf9f6;border-top:1px solid #e6e8e4;color:#7c8b83;font-size:12px;line-height:1.5">Private photo sharing for clubs and member organizations.<br><span style="color:#a27a2b">xTide Apps</span></div></div></div></body></html>`;
+};
+
 async function createSession(env, clubId, principalId, role) {
   const token = randomToken();
   const csrf = randomToken(24);
@@ -252,7 +263,7 @@ async function startClubOnboarding(request, env, origin) {
       to: email,
       subject: 'Verify your Club PhotoHub workspace',
       text: `Your Club PhotoHub verification code is ${code}. It expires in 10 minutes.`,
-      html: `<p>Welcome to <strong>Club PhotoHub</strong>.</p><p>Use this code to verify the administrator email for ${escapeHtml(clubName)}:</p><p style="font-size:28px;font-weight:700;letter-spacing:6px">${code}</p><p>It expires in 10 minutes.</p>`
+      html: clubPhotoHubEmail({ eyebrow: 'Workspace setup', title: 'Verify your administrator email', intro: `Use this code to finish setting up ${clubName}.`, code, details: 'This code expires in 10 minutes.' })
     });
   } catch (error) {
     await env.DB.prepare('DELETE FROM club_signup_challenges WHERE id = ?').bind(signupId).run();
@@ -307,7 +318,7 @@ async function requestRegistrationCode(request, env, origin) {
       to: member.email,
       subject: `Your ${club.name} verification code`,
       text: `Your Club PhotoHub verification code is ${code}. It expires in 10 minutes.`,
-      html: `<p>Your <strong>Club PhotoHub</strong> verification code for ${club.name} is:</p><p style="font-size:28px;font-weight:700;letter-spacing:6px">${code}</p><p>It expires in 10 minutes. If you did not request this, you can ignore this email.</p>`
+      html: clubPhotoHubEmail({ eyebrow: 'Member verification', title: 'Confirm your member access', intro: `Use this code to finish creating your ${club.name} member account.`, code, details: 'This code expires in 10 minutes.' })
     });
   } catch (error) {
     await env.DB.prepare('DELETE FROM registration_challenges WHERE club_id = ? AND member_number = ? COLLATE NOCASE').bind(club.id, storedMemberNumber).run();
@@ -350,7 +361,7 @@ async function requestPasswordReset(request, env, origin) {
     const resetOrigin = origin || env.APP_ORIGIN || 'https://clubphotohub.xtide.io';
     const resetUrl = `${resetOrigin}/app?reset=${encodeURIComponent(rawToken)}`;
     try {
-      await sendMail(env, { to: member.email, subject: 'Reset your Club PhotoHub password', text: `Use this link to reset your Club PhotoHub password. It expires in 30 minutes: ${resetUrl}`, html: `<p>Use this link to reset your Club PhotoHub password. It expires in 30 minutes and can only be used once.</p><p><a href="${resetUrl}">Reset password</a></p>` });
+      await sendMail(env, { to: member.email, subject: 'Reset your Club PhotoHub password', text: `Use this link to reset your Club PhotoHub password. It expires in 30 minutes: ${resetUrl}`, html: clubPhotoHubEmail({ eyebrow: 'Account security', title: 'Reset your password', intro: 'Use the button below to choose a new Club PhotoHub password.', details: 'This link expires in 30 minutes and can only be used once.', actionLabel: 'Reset password', actionUrl: resetUrl }) });
     } catch (error) {
       console.error('Password reset email failed', { clubId: club.id, memberNumber, message: error.message });
       await env.DB.prepare('DELETE FROM password_resets WHERE club_id = ? AND member_number = ?').bind(club.id, member.member_number).run();
@@ -386,7 +397,7 @@ async function requestAdminPasswordReset(request, env, origin) {
     const resetOrigin = origin || env.APP_ORIGIN || 'https://clubphotohub.xtide.io';
     const resetUrl = `${resetOrigin}/app?adminReset=${encodeURIComponent(rawToken)}`;
     try {
-      await sendMail(env, { to: admin.email, subject: 'Reset your Club PhotoHub administrator password', text: `Use this link to reset your Club PhotoHub administrator password. It expires in 30 minutes: ${resetUrl}`, html: `<p>Use this link to reset your Club PhotoHub administrator password. It expires in 30 minutes and can only be used once.</p><p><a href="${resetUrl}">Reset administrator password</a></p>` });
+      await sendMail(env, { to: admin.email, subject: 'Reset your Club PhotoHub administrator password', text: `Use this link to reset your Club PhotoHub administrator password. It expires in 30 minutes: ${resetUrl}`, html: clubPhotoHubEmail({ eyebrow: 'Administrator security', title: 'Reset your administrator password', intro: 'Use the button below to choose a new administrator password.', details: 'This link expires in 30 minutes and can only be used once.', actionLabel: 'Reset administrator password', actionUrl: resetUrl }) });
     } catch (error) {
       console.error('Administrator password reset email failed', { clubId: club.id, adminId: admin.id, message: error.message });
       await env.DB.prepare('DELETE FROM admin_password_resets WHERE club_id = ? AND admin_id = ?').bind(club.id, admin.id).run();
