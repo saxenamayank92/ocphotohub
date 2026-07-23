@@ -444,6 +444,13 @@
 .excel-column-map select { min-height: 36px; padding: 0 9px; border: 1px solid var(--club-gray); border-radius: 8px; background: white; }
 .excel-preview { display: grid; gap: 8px; font-size: 12px; }
 .excel-preview .table-wrapper { max-height: 220px; overflow: auto; }
+.excel-preview .admin-table { min-width: 760px; }
+.excel-import-summary { display: grid; gap: 4px; padding: 11px 12px; border: 1px solid rgba(31,79,74,.2); border-radius: 10px; color: var(--club-green-dark); background: rgba(31,79,74,.06); font-size: 12px; }
+.excel-import-summary span { color: var(--club-gray-dark); }
+.member-directory-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.member-directory-heading > span { color: var(--club-gray-dark); font-size: 12px; }
+.member-directory-table { max-height: 560px; overflow: auto; }
+.member-directory-table thead th { position: sticky; top: 0; z-index: 1; }
 .trial-status-banner { display: flex; align-items: center; justify-content: center; gap: 14px; padding: 8px 14px; color: #5f471c; background: #f4e8cc; font-size: 11px; font-weight: 700; }
 .trial-status-banner.expired { color: #fff; background: #8e2f2f; }
 .trial-status-banner a { padding: 4px 9px; border-radius: 999px; color: inherit; background: rgba(255,255,255,.7); text-decoration: none; }

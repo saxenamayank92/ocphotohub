@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import readXlsxFile from 'read-excel-file/browser';
+import readXlsxFile, { readSheet } from 'read-excel-file/browser';
 import { createPortal } from 'react-dom';
 import {
   Users, Image as ImageIcon, Plus, Trash2,
@@ -31,6 +31,8 @@ export default function AdminPortal({
   const [sheetHeaders, setSheetHeaders] = useState([]);
   const [sheetRows, setSheetRows] = useState([]);
   const [columnMap, setColumnMap] = useState({ memberNumber: '', lastName: '', firstName: '', email: '' });
+  const [excelStatus, setExcelStatus] = useState('');
+  const [excelImportSummary, setExcelImportSummary] = useState(null);
   const [photoEdits, setPhotoEdits] = useState({});
 
   const normalizeMemberNumber = value => String(value || '').trim().toUpperCase();
@@ -52,34 +54,49 @@ export default function AdminPortal({
   const handleWorkbookChange = async event => {
     const file = event.target.files?.[0];
     if (!file) return;
+    setExcelStatus(`Reading ${file.name}…`);
+    setWorkbook(null); setSheetHeaders([]); setSheetRows([]); setSheetName('');
     try {
-      if (!/\.xlsx$/i.test(file.name)) return addToast('Please choose an Excel .xlsx workbook. CSV paste import is available below.', 'error');
-      if (file.size > 10 * 1024 * 1024) return addToast('Please choose an Excel workbook smaller than 10 MB.', 'error');
-      const nextWorkbook = await readXlsxFile(file);
+      if (!/\.xlsx$/i.test(file.name)) { setExcelStatus('Please choose an Excel .xlsx workbook. CSV paste import is available below.'); return addToast('Please choose an Excel .xlsx workbook. CSV paste import is available below.', 'error'); }
+      if (file.size > 10 * 1024 * 1024) { setExcelStatus('This workbook is larger than 10 MB.'); return addToast('Please choose an Excel workbook smaller than 10 MB.', 'error'); }
+      let nextWorkbook;
+      try {
+        nextWorkbook = await readXlsxFile(file);
+      } catch {
+        const firstSheetRows = await readSheet(file, 1);
+        nextWorkbook = [{ sheet: 'First worksheet', data: firstSheetRows }];
+      }
       setWorkbook(nextWorkbook); setWorkbookName(file.name);
       const firstSheetName = nextWorkbook[0]?.sheet;
-      if (!firstSheetName) return addToast('That workbook does not contain a readable worksheet.', 'error');
+      if (!firstSheetName) { setExcelStatus('That workbook does not contain a readable worksheet.'); return addToast('That workbook does not contain a readable worksheet.', 'error'); }
       loadWorkbookSheet(nextWorkbook, firstSheetName);
+      setExcelStatus(`Loaded ${file.name}. Map the four required columns below.`);
       addToast(`Loaded ${file.name}. Map the columns before importing.`, 'info');
-    } catch { addToast('We could not read that Excel file.', 'error'); }
+    } catch { setExcelStatus('We could not read this workbook. Open it in Excel and save it again as .xlsx, then retry.'); addToast('We could not read that Excel file. Try saving it again as .xlsx.', 'error'); }
   };
 
   const handleExcelImport = event => {
     event.preventDefault();
     if (!workbook || !sheetRows.length || Object.values(columnMap).some(column => !column)) return addToast('Upload a workbook and map all four required columns first.', 'error');
     const indexByHeader = Object.fromEntries(sheetHeaders.map((header, index) => [header, index]));
-    const newMembersList = []; let errorCount = 0;
+    const newMembersList = []; const skippedReasons = {};
+    const skip = reason => { skippedReasons[reason] = (skippedReasons[reason] || 0) + 1; };
     sheetRows.forEach(row => {
       const memberNumber = normalizeMemberNumber(row[indexByHeader[columnMap.memberNumber]]);
       const lastName = String(row[indexByHeader[columnMap.lastName]] || '').trim();
       const firstName = String(row[indexByHeader[columnMap.firstName]] || '').trim();
       const email = String(row[indexByHeader[columnMap.email]] || '').trim().toLowerCase();
       const duplicate = members.some(member => normalizeMemberNumber(member.memberNumber) === memberNumber) || newMembersList.some(member => member.memberNumber === memberNumber);
-      if (!memberNumber || !lastName || !firstName || !/^\S+@\S+\.\S+$/.test(email) || duplicate) { errorCount++; return; }
+      if (!memberNumber) { skip('missing member number'); return; }
+      if (!lastName || !firstName) { skip('missing name'); return; }
+      if (!/^\S+@\S+\.\S+$/.test(email)) { skip('missing or invalid email'); return; }
+      if (duplicate) { skip('duplicate member number'); return; }
       newMembersList.push({ memberNumber, lastName, firstName, email, password: '', registeredAt: '' });
     });
     newMembersList.forEach(member => onAddMember(member));
-    if (newMembersList.length) addToast(`Excel roster imported: ${newMembersList.length} added, ${errorCount} skipped.`, 'success');
+    const skippedCount = Object.values(skippedReasons).reduce((total, count) => total + count, 0);
+    setExcelImportSummary({ total: sheetRows.length, added: newMembersList.length, skipped: skippedCount, reasons: skippedReasons });
+    if (newMembersList.length) addToast(`Excel roster imported: ${newMembersList.length} added, ${skippedCount} skipped.`, 'success');
     else addToast('No valid new members were found. Check the mapped columns and duplicate rows.', 'error');
   };
 
@@ -206,9 +223,20 @@ export default function AdminPortal({
     event.preventDefault();
     if (clubName.trim().length < 2) return addToast('Enter a club name.', 'error');
     try {
-      await onUpdateClub({ name: clubName.trim(), shortName: clubShortName.trim() || clubName.trim(), logoUrl: clubLogoUrl.trim() });
+      await onUpdateClub({ name: clubName.trim(), shortName: clubShortName.trim() || clubName.trim(), logoUrl: clubLogoUrl });
       addToast('Club branding updated.', 'success');
     } catch (error) { addToast(error.message || 'Could not update the club.', 'error'); }
+  };
+
+  const handleClubLogoChange = event => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) return addToast('Choose a PNG, JPG, or WebP logo.', 'error');
+    if (file.size > 256 * 1024) return addToast('Please choose a logo smaller than 256 KB.', 'error');
+    const reader = new FileReader();
+    reader.onload = () => setClubLogoUrl(String(reader.result || ''));
+    reader.onerror = () => addToast('We could not read that logo file.', 'error');
+    reader.readAsDataURL(file);
   };
 
   return (
@@ -375,7 +403,7 @@ export default function AdminPortal({
             <form className="club-add-form" onSubmit={handleClubSetupSubmit}>
               <div className="form-group"><label htmlFor="clubName">Club name</label><input id="clubName" className="input-field" value={clubName} onChange={event => setClubName(event.target.value)} required /></div>
               <div className="form-group"><label htmlFor="clubShortName">Short name</label><input id="clubShortName" className="input-field" value={clubShortName} onChange={event => setClubShortName(event.target.value)} /></div>
-              <div className="form-group"><label htmlFor="clubLogoUrl">Logo URL (optional)</label><input id="clubLogoUrl" className="input-field" type="url" placeholder="https://…" value={clubLogoUrl} onChange={event => setClubLogoUrl(event.target.value)} /></div>
+              <div className="form-group logo-upload-field"><label htmlFor="clubLogoFile">Club logo (optional)</label><input id="clubLogoFile" className="input-field" type="file" accept="image/png,image/jpeg,image/webp" onChange={handleClubLogoChange} /><small>Upload a PNG, JPG, or WebP up to 256 KB.</small>{clubLogoUrl && <img className="onboarding-logo-preview" src={clubLogoUrl} alt="Current club logo preview" />}</div>
               <button className="btn-primary">Save club settings</button>
             </form>
             {members.length === 0 && <button className="btn-secondary setup-roster-cta" onClick={() => setActiveSubTab('members')}><Users size={16} /> Add your first members</button>}
@@ -447,12 +475,14 @@ export default function AdminPortal({
             <form onSubmit={handleExcelImport} style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px', background: 'var(--club-gray-light)', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--club-gray)' }}>
               <p style={{ fontSize: '12px', color: 'var(--club-gray-dark)' }}>Upload an `.xlsx` workbook. We will preview the first sheet and let you identify which columns contain the member number, names, and roster email.</p>
               <input type="file" accept=".xlsx" onChange={handleWorkbookChange} />
+              {excelStatus && <p role="status" style={{ margin: 0, fontSize: '12px', color: excelStatus.startsWith('We could not') || excelStatus.startsWith('Please') || excelStatus.startsWith('This workbook') ? '#9c2c2c' : 'var(--club-gray-dark)' }}>{excelStatus}</p>}
               {workbook && <>
                 <strong style={{ fontSize: '13px' }}>{workbookName}</strong>
                 {workbook.length > 1 && <label className="form-group"><span style={{ fontSize: '12px' }}>Worksheet</span><select className="input-field" value={sheetName} onChange={event => loadWorkbookSheet(workbook, event.target.value)}>{workbook.map(sheet => <option key={sheet.sheet}>{sheet.sheet}</option>)}</select></label>}
                 <div className="excel-column-map"><strong>Identify columns</strong>{[['memberNumber', 'Member number'], ['lastName', 'Last name'], ['firstName', 'First name'], ['email', 'Roster email']].map(([key, label]) => <label key={key}><span>{label}</span><select value={columnMap[key]} onChange={event => setColumnMap(previous => ({ ...previous, [key]: event.target.value }))}><option value="">Choose column…</option>{sheetHeaders.map(header => <option key={`${key}-${header}`} value={header}>{header}</option>)}</select></label>)}</div>
                 <div className="excel-preview"><strong>Preview ({Math.min(sheetRows.length, 5)} of {sheetRows.length} rows)</strong><div className="table-wrapper"><table className="admin-table"><thead><tr>{sheetHeaders.slice(0, 6).map(header => <th key={header}>{header}</th>)}</tr></thead><tbody>{sheetRows.slice(0, 5).map((row, rowIndex) => <tr key={rowIndex}>{sheetHeaders.slice(0, 6).map((header, columnIndex) => <td key={`${rowIndex}-${header}`}>{String(row[columnIndex] || '')}</td>)}</tr>)}</tbody></table></div></div>
                 <button type="submit" className="btn-secondary" style={{ alignSelf: 'flex-start' }}><Upload size={14} /> Map & Import Roster</button>
+                {excelImportSummary && <div className="excel-import-summary" role="status"><strong>Import complete: {excelImportSummary.added} added, {excelImportSummary.skipped} skipped</strong><span>{Object.entries(excelImportSummary.reasons).map(([reason, count]) => `${count} ${reason}`).join(' · ') || 'All rows passed validation.'}</span></div>}
               </>}
             </form>
 
@@ -476,8 +506,8 @@ export default function AdminPortal({
             </form>
 
             {/* Members Directory Table */}
-            <h3 style={{ fontSize: '16px', marginBottom: '12px' }}>Active Member List</h3>
-            <div className="table-wrapper">
+            <div className="member-directory-heading"><h3 style={{ fontSize: '16px', margin: 0 }}>Active Member List</h3><span>{members.length.toLocaleString()} enrolled member{members.length === 1 ? '' : 's'}</span></div>
+            <div className="table-wrapper member-directory-table">
               <table className="admin-table">
                 <thead>
                   <tr>

@@ -176,10 +176,12 @@ export default function App() {
   };
 
   const handleAddMember = async (member) => {
-    const updatedMembers = [...members, member];
     if (cloudActive) await addCloudMember(member);
-    else localStorage.setItem('oakville_members', JSON.stringify(updatedMembers));
-    setMembers(updatedMembers);
+    setMembers(previous => {
+      const updatedMembers = [...previous, member];
+      if (!cloudActive) localStorage.setItem('oakville_members', JSON.stringify(updatedMembers));
+      return updatedMembers;
+    });
   };
 
   const handleCompleteClubOnboarding = async details => {
