@@ -3,7 +3,7 @@ import readXlsxFile, { readSheet } from 'read-excel-file/browser';
 import { createPortal } from 'react-dom';
 import {
   Users, Image as ImageIcon, Plus, Trash2,
-  Upload, Database, CloudLightning, FileSpreadsheet, RefreshCw, BarChart3, X, Download, Building2
+  Upload, Database, CloudLightning, FileSpreadsheet, RefreshCw, BarChart3, X, Download, Building2, Pencil
 } from 'lucide-react';
 import { photoDownloadName } from '../brand';
 
@@ -400,11 +400,11 @@ export default function AdminPortal({
               <div className={members.length > 0 ? 'complete' : ''}><span>3</span><p><strong>Load the member roster</strong><small>Add members with their registered email addresses.</small></p></div>
             </div>
             <p className="admin-help-copy">Only administrators verified for this club can change these settings or access its member directory.</p>
-            <form className="club-add-form" onSubmit={handleClubSetupSubmit}>
-              <div className="form-group"><label htmlFor="clubName">Club name</label><input id="clubName" className="input-field" value={clubName} onChange={event => setClubName(event.target.value)} required /></div>
-              <div className="form-group"><label htmlFor="clubShortName">Short name</label><input id="clubShortName" className="input-field" value={clubShortName} onChange={event => setClubShortName(event.target.value)} /></div>
-              <div className="form-group logo-upload-field"><label htmlFor="clubLogoFile">Club logo (optional)</label><input id="clubLogoFile" className="input-field" type="file" accept="image/png,image/jpeg,image/webp" onChange={handleClubLogoChange} /><small>Upload a PNG, JPG, or WebP up to 256 KB.</small>{clubLogoUrl && <img className="onboarding-logo-preview" src={clubLogoUrl} alt="Current club logo preview" />}</div>
-              <button className="btn-primary">Save club settings</button>
+            <form className="club-add-form club-setup-form" onSubmit={handleClubSetupSubmit}>
+              <div className="form-group club-setup-field"><label htmlFor="clubName">Club name</label><input id="clubName" className="input-field" value={clubName} onChange={event => setClubName(event.target.value)} required /></div>
+              <div className="form-group club-setup-field"><label htmlFor="clubShortName">Short name</label><input id="clubShortName" className="input-field" value={clubShortName} onChange={event => setClubShortName(event.target.value)} /></div>
+              <div className="form-group logo-upload-field club-setup-logo"><label htmlFor="clubLogoFile">Club logo (optional)</label><input id="clubLogoFile" className="input-field" type="file" accept="image/png,image/jpeg,image/webp" onChange={handleClubLogoChange} /><small>Upload a PNG, JPG, or WebP up to 256 KB.</small>{clubLogoUrl && <img className="onboarding-logo-preview" src={clubLogoUrl} alt="Current club logo preview" />}</div>
+              <button className="btn-primary club-setup-save">Save club settings</button>
             </form>
             {members.length === 0 && <button className="btn-secondary setup-roster-cta" onClick={() => setActiveSubTab('members')}><Users size={16} /> Add your first members</button>}
           </div>
@@ -611,7 +611,10 @@ export default function AdminPortal({
                     </div>
                     <div className="mod-photo-fields">
                       <div className="mod-photo-meta"><span className="mod-photo-avatar">{String(photo.uploaderName || '?').trim().charAt(0).toUpperCase()}</span><span><strong>{photo.uploaderName || 'Member'}</strong><small>{photo.createdAt ? new Date(photo.createdAt).toLocaleDateString() : 'Recently uploaded'}</small></span><em>{photo.category}</em></div>
-                      <label>Caption<textarea rows="3" placeholder="Add a caption for this photo" value={photoEdits[photo.id]?.caption ?? photo.caption} onChange={event => setPhotoEdits(previous => ({ ...previous, [photo.id]: { ...previous[photo.id], caption: event.target.value } }))} maxLength={500} /></label>
+                      <div className="mod-caption-editor">
+                        <div className="mod-field-heading"><span>Caption</span><button type="button" className="btn-text mod-edit-caption" onClick={() => setPhotoEdits(previous => ({ ...previous, [photo.id]: { ...previous[photo.id], editingCaption: true, caption: previous[photo.id]?.caption ?? photo.caption } }))}><Pencil size={13} /> Edit caption</button></div>
+                        {photoEdits[photo.id]?.editingCaption ? <textarea rows="3" placeholder="Add a caption for this photo" value={photoEdits[photo.id]?.caption ?? photo.caption} onChange={event => setPhotoEdits(previous => ({ ...previous, [photo.id]: { ...previous[photo.id], caption: event.target.value } }))} maxLength={500} /> : <p className="mod-caption-preview">{photo.caption || 'No caption added.'}</p>}
+                      </div>
                       <label>Category<select value={photoEdits[photo.id]?.category ?? photo.category} onChange={event => setPhotoEdits(previous => ({ ...previous, [photo.id]: { ...previous[photo.id], category: event.target.value } }))}>{['General', 'Tennis', 'Golf', 'Dining', 'Clubhouse', 'Events'].map(category => <option key={category}>{category}</option>)}</select></label>
                     </div>
                     <div className="mod-actions">
@@ -656,33 +659,33 @@ export default function AdminPortal({
         {activeSubTab === 'cloud' && (
           <div>
             <div className="admin-section-header">
-              <h2 className="admin-section-title">Live Cloud Database Sync</h2>
+              <h2 className="admin-section-title">Shared Gallery Storage</h2>
             </div>
 
             <div className="db-config-grid">
               <div>
                 {firebaseConfig ? (
                   <div className="db-badge-cloud">
-                    <CloudLightning size={14} /> Cloud Active (Cloudflare R2 + D1)
+                    <CloudLightning size={14} /> Shared storage active
                   </div>
                 ) : (
                   <div className="db-badge-local">
-                    <Database size={14} /> Local Offline (Saving in browser IndexedDB database)
+                    <Database size={14} /> Offline mode (saved on this device)
                   </div>
                 )}
               </div>
 
               <div style={{ lineHeight: '1.5', fontSize: '14px', color: 'var(--club-charcoal)' }}>
                 {firebaseConfig ? <>
-                  <p style={{ marginBottom: '10px' }}><strong>Cloud uploads are live.</strong> Photos uploaded by members are stored in Cloudflare R2, while member records, captions, likes and activity are stored in Cloudflare D1.</p>
+                  <p style={{ marginBottom: '10px' }}><strong>Shared gallery uploads are live.</strong> Photos, member records, captions, likes and activity are securely synchronized for your organization.</p>
                   <p>Members can upload from their own phones and computers, and the gallery is shared across the organization.</p>
                 </> : <>
-                  <p style={{ marginBottom: '10px' }}>This browser is currently in local offline mode. Photos are stored in browser IndexedDB and will not be shared with members on other devices.</p>
-                  <p>Connect the deployed Cloudflare Worker through <code>VITE_API_BASE_URL</code> to enable shared member uploads.</p>
+                  <p style={{ marginBottom: '10px' }}>This browser is currently in offline mode. Photos are saved on this device and will not be shared with members on other devices.</p>
+                  <p>Connect the organization to shared storage to enable member uploads across devices.</p>
                 </>}
               </div>
               <div className="login-info" style={{ marginTop: '12px' }}>
-                Cloud configuration is deployed through environment variables and the Cloudflare Worker. It is not editable from the browser.
+                Storage is managed securely by Club PhotoHub and is not editable from the browser.
               </div>
             </div>
           </div>
