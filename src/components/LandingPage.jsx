@@ -54,7 +54,7 @@ export default function LandingPage() {
         <div className="marketing-hero-copy">
           <div className="marketing-eyebrow"><ShieldCheck size={15} /> Private photo sharing for real communities</div>
           <h1>Your members. Your moments. Your PhotoHub.</h1>
-          <p>Give every organization a private, beautifully branded place to collect and enjoy the photos that make its community special—without public social media or messy shared folders.</p>
+          <p>Give every organization a private, beautifully branded place to collect and enjoy the photos that make its community special, without public social media or messy shared folders.</p>
           <div className="marketing-hero-actions"><a className="marketing-primary-cta" href="/app?onboard=club">Create your organization workspace <ArrowRight size={18} /></a><a className="marketing-secondary-cta" href="/app?demo=1">Explore the live demo</a></div>
           <div className="marketing-trust-row"><span><Check size={15} /> No credit card</span><span><Check size={15} /> 25 GB included</span><span><Check size={15} /> CAD pricing</span></div>
         </div>
@@ -77,12 +77,12 @@ export default function LandingPage() {
       <section className="marketing-club-types"><p>Built for communities that value belonging</p><div>{audiences.map(item => <span key={item}>{item}</span>)}</div></section>
 
       <section className="marketing-section" id="features">
-        <div className="marketing-section-heading"><span>Everything in one focused product</span><h2>Sharing memories should feel effortless—not improvised.</h2><p>Club PhotoHub combines the simplicity members expect with the identity and controls organizations need.</p></div>
+        <div className="marketing-section-heading"><span>Everything in one focused product</span><h2>Sharing memories should feel effortless and organized.</h2><p>Club PhotoHub combines the simplicity members expect with the identity and controls organizations need.</p></div>
         <div className="marketing-feature-grid">{features.map(([Icon, title, copy]) => <article className="marketing-feature-card" key={title}><div className="marketing-feature-icon"><Icon size={22} /></div><h3>{title}</h3><p>{copy}</p></article>)}</div>
       </section>
 
       <section className="product-showcase">
-        <div className="product-showcase-copy"><span>Meet Your Club</span><h2>A real demo, filled with moments—not placeholders.</h2><p>Explore the same private feed your members will use. Browse categories, open photos, pinch to zoom, like a moment and try the mobile layout.</p><a href="/app?demo=1">Open the interactive demo <ArrowRight size={17} /></a></div>
+        <div className="product-showcase-copy"><span>Meet Your Club</span><h2>A real demo, filled with moments, not placeholders.</h2><p>Explore the same private feed your members will use. Browse categories, open photos, pinch to zoom, like a moment and try the mobile layout.</p><a href="/app?demo=1">Open the interactive demo <ArrowRight size={17} /></a></div>
         <div className="showcase-feed">
           <DemoPost image="./demo/tennis-social.jpg" initials="TC" name="Taylor Chen" category="TENNIS" likes="34" caption="A close match and the best kind of Saturday afternoon." />
           <DemoPost image="./demo/garden-dinner.jpg" initials="CT" name="Club Team" category="DINING" likes="46" caption="The annual garden dinner brought everyone together." />
@@ -107,7 +107,7 @@ export default function LandingPage() {
 
       <section className="pricing-section" id="pricing">
         <div className="pricing-copy"><span>Simple launch pricing</span><h2>One plan. Every core feature.</h2><p>Try the complete product for 30 days. No credit card and no cut-down trial.</p></div>
-        <div className="pricing-card"><div><span>Club PhotoHub</span><p><strong>$60</strong> CAD / month</p><small>or $600 CAD billed annually—save $120</small></div><ul><li><Check size={16} /> Unlimited members during launch</li><li><Check size={16} /> 25 GB fair-use photo storage</li><li><Check size={16} /> Branded organization workspace</li><li><Check size={16} /> Member verification and moderation</li><li><Check size={16} /> Admin and member help centre</li></ul><a href="/app?onboard=club">Start your 30-day trial <ArrowRight size={17} /></a><small>No credit card required</small></div>
+        <div className="pricing-card"><div><span>Club PhotoHub</span><p><strong>$60</strong> CAD / month</p><small>or $600 CAD billed annually, save $120</small></div><ul><li><Check size={16} /> Unlimited members during launch</li><li><Check size={16} /> 25 GB fair-use photo storage</li><li><Check size={16} /> Branded organization workspace</li><li><Check size={16} /> Member verification and moderation</li><li><Check size={16} /> Admin and member help centre</li></ul><a href="/app?onboard=club">Start your 30-day trial <ArrowRight size={17} /></a><small>No credit card required</small></div>
       </section>
 
       <section className="marketing-final-cta"><div><span>Start your organization trial</span><h2>Give every moment a place to belong.</h2><p>Create your workspace in minutes, or explore Your Club before you decide.</p></div><div className="final-actions"><a href="/app?onboard=club">Create workspace <ArrowRight size={18} /></a><a href="/app?demo=1">View demo</a></div></section>
