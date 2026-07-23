@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Heart, Trash2, X, Image as ImageIcon,
-  Download, Search, LayoutGrid, Layers, Play
+  Download, Search, LayoutGrid, ListFilter, Play, Flame, ThumbsUp, Star
 } from 'lucide-react';
 import { photoDownloadName } from '../brand';
 import StoryShowcase from './StoryShowcase';
@@ -12,7 +12,7 @@ export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhot
   const [showOnlyMine, setShowOnlyMine] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('newest'); // 'newest' | 'popular' | 'oldest'
-  const [layoutMode, setLayoutMode] = useState('grid'); // 'grid' | 'masonry'
+  const [layoutMode, setLayoutMode] = useState('grid'); // 'grid' | 'feed'
   const [showStoryShowcase, setShowStoryShowcase] = useState(false);
 
   // Lightbox & Feed tracking
@@ -85,7 +85,7 @@ export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhot
   }, [activeLightboxIndex, sortedPhotos.length]);
 
   const handleHeartClick = (e, photoId) => {
-    e.stopPropagation();
+    if (e) e.stopPropagation();
     if (currentUser?.memberNumber === 'admin') return;
     onHeartPhoto(photoId);
   };
@@ -117,7 +117,7 @@ export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhot
   };
 
   const handleDeleteClick = (e, photoId) => {
-    e.stopPropagation();
+    if (e) e.stopPropagation();
     if (window.confirm('Are you sure you want to permanently delete this photo?')) {
       onDeletePhoto(photoId);
       if (activeLightboxPhoto && activeLightboxPhoto.id === photoId) {
@@ -176,7 +176,7 @@ export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhot
             <option value="oldest">Oldest First</option>
           </select>
 
-          {/* Layout Toggle */}
+          {/* Layout Toggle: Grid vs Feed */}
           <div className="gallery-layout-toggle">
             <button 
               type="button" 
@@ -184,15 +184,15 @@ export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhot
               onClick={() => setLayoutMode('grid')}
               title="Grid View"
             >
-              <LayoutGrid size={16} />
+              <LayoutGrid size={16} /> Grid
             </button>
             <button 
               type="button" 
-              className={`layout-btn ${layoutMode === 'masonry' ? 'active' : ''}`}
-              onClick={() => setLayoutMode('masonry')}
-              title="Masonry View"
+              className={`layout-btn ${layoutMode === 'feed' ? 'active' : ''}`}
+              onClick={() => setLayoutMode('feed')}
+              title="Scroll Feed View"
             >
-              <Layers size={16} />
+              <ListFilter size={16} /> Feed
             </button>
           </div>
 
@@ -239,15 +239,16 @@ export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhot
         )}
       </div>
 
-      {/* Gallery Grid or Masonry */}
+      {/* Gallery Content: Grid Mode vs Feed Mode */}
       {sortedPhotos.length > 0 ? (
-        <div className={layoutMode === 'masonry' ? 'gallery-masonry' : 'gallery-grid photo-gallery-grid'}>
-          {sortedPhotos.map(photo => {
-            return (
+        layoutMode === 'grid' ? (
+          /* Grid View Mode */
+          <div className="gallery-grid photo-gallery-grid">
+            {sortedPhotos.map(photo => (
               <button 
                 key={photo.id} 
                 type="button" 
-                className={`photo-card gallery-grid-card ${layoutMode === 'masonry' ? 'masonry-card' : ''}`} 
+                className="photo-card gallery-grid-card" 
                 onClick={() => handleCardClick(photo)} 
                 aria-label={`Open photo from ${photo.uploaderName || 'club member'}`}
               >
@@ -264,9 +265,69 @@ export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhot
                   </span>
                 </span>
               </button>
-            );
-          })}
-        </div>
+            ))}
+          </div>
+        ) : (
+          /* Scroll Feed View Mode */
+          <div className="gallery-feed-container">
+            {sortedPhotos.map(photo => {
+              const isOwner = currentUser && photo.uploaderId === currentUser.memberNumber;
+              const canDelete = isAdmin || isOwner;
+              const userLiked = hasLiked(photo);
+
+              return (
+                <article key={photo.id} className="feed-card-item">
+                  <header className="feed-card-header">
+                    <div className="photo-post-avatar">{(photo.uploaderName || 'C').charAt(0).toUpperCase()}</div>
+                    <div className="photo-post-author">
+                      <strong>{photo.uploaderName || 'Club Member'}</strong>
+                      <span>{new Date(photo.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                    </div>
+                    <span className="photo-post-category">{photo.category}</span>
+                  </header>
+
+                  <div className="feed-card-image-wrap" onClick={() => handleCardClick(photo)}>
+                    <img src={photo.url} alt={photo.caption} className="feed-card-img" loading="lazy" />
+                  </div>
+
+                  <div className="feed-card-body">
+                    <div className="photo-post-actions-wrapper">
+                      <div className="photo-post-actions">
+                        <button 
+                          type="button" 
+                          className={`feed-action ${userLiked ? 'liked' : ''}`} 
+                          onClick={(e) => handleHeartClick(e, photo.id)} 
+                          disabled={isAdmin}
+                        >
+                          <Heart size={22} fill={userLiked ? 'currentColor' : 'none'} />
+                          <span>{photo.hearts || 0}</span>
+                        </button>
+                        <a href={photo.downloadUrl || photo.url} download={photo.fileName || photoDownloadName(photo.category)} className="feed-action" title="Download photo">
+                          <Download size={22} />
+                        </a>
+                        {canDelete && (
+                          <button type="button" className="feed-action feed-delete" onClick={(e) => handleDeleteClick(e, photo.id)} title="Delete photo">
+                            <Trash2 size={21} />
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="emoji-reaction-bar">
+                        {['🔥', '👏', '🎾', '🥂', '⭐'].map(emoji => (
+                          <button key={emoji} type="button" className="emoji-chip" onClick={() => handleAddEmojiReaction(photo.id, emoji)}>
+                            {emoji}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <p className="photo-post-caption"><strong>{photo.uploaderName || 'Club Member'}</strong> {photo.caption}</p>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        )
       ) : (
         <div className="gallery-empty">
           <ImageIcon size={48} />

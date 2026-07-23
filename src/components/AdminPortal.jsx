@@ -1,30 +1,44 @@
 import React, { useState } from 'react';
-import readXlsxFile, { readSheet } from 'read-excel-file/browser';
-import { createPortal } from 'react-dom';
 import {
-  Users, Image as ImageIcon, Plus, Trash2,
-  Upload, Database, CloudLightning, FileSpreadsheet, RefreshCw, BarChart3, X, Download, Building2, Pencil
+  Users, Image as ImageIcon, BarChart3,
+  Building2, Trash2, Plus, RefreshCw, Upload, FileSpreadsheet, Key, Database, AlertCircle, X, FileText, UserPlus
 } from 'lucide-react';
-import { photoDownloadName } from '../brand';
+
+const normalizeMemberNumber = num => String(num || '').trim();
 
 export default function AdminPortal({
-  club, members, photos, onUpdateClub, onAddMember, onUpdateMember, onDeleteMember, onSetMemberPassword, onDeletePhoto,
-  onUpdatePhoto, firebaseConfig, onResetDatabase, addToast
+  club,
+  members,
+  photos,
+  onUpdateClub,
+  onAddMember,
+  onUpdateMember,
+  onDeleteMember,
+  onSetMemberPassword,
+  onDeletePhoto,
+  onUpdatePhoto,
+  firebaseConfig,
+  onResetDatabase,
+  addToast
 }) {
-  const [activeSubTab, setActiveSubTab] = useState(members.length === 0 ? 'clubs' : 'dashboard');
-  const [selectedPhoto, setSelectedPhoto] = useState(null);
+  const [activeSubTab, setActiveSubTab] = useState('clubs'); // 'clubs' | 'dashboard' | 'members' | 'moderation' | 'cloud'
 
-  // Member Form State
+  // Club settings state
+  const [clubName, setClubName] = useState(club.name || '');
+  const [clubShortName, setClubShortName] = useState(club.shortName || '');
+  const [clubLogoUrl, setClubLogoUrl] = useState(club.logoUrl || '');
+
+  // Member management state
   const [newMemberNum, setNewMemberNum] = useState('');
   const [newLastName, setNewLastName] = useState('');
   const [newFirstName, setNewFirstName] = useState('');
   const [newEmail, setNewEmail] = useState('');
-  const [clubName, setClubName] = useState(club.name);
-  const [clubShortName, setClubShortName] = useState(club.shortName);
-  const [clubLogoUrl, setClubLogoUrl] = useState(club.logoUrl || '');
-
-  // CSV Import State
   const [csvText, setCsvText] = useState('');
+
+  // Active Member Modal State ('add' | 'csv' | 'excel' | null)
+  const [activeModal, setActiveModal] = useState(null);
+
+  // Excel state
   const [workbook, setWorkbook] = useState(null);
   const [workbookName, setWorkbookName] = useState('');
   const [sheetName, setSheetName] = useState('');
@@ -33,74 +47,166 @@ export default function AdminPortal({
   const [columnMap, setColumnMap] = useState({ memberNumber: '', lastName: '', firstName: '', email: '' });
   const [excelStatus, setExcelStatus] = useState('');
   const [excelImportSummary, setExcelImportSummary] = useState(null);
-  const [photoEdits, setPhotoEdits] = useState({});
 
-  const normalizeMemberNumber = value => String(value || '').trim().toUpperCase();
-  const normalizeHeader = value => String(value || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
-  const findHeader = (headers, aliases) => headers.find(header => aliases.includes(normalizeHeader(header))) || '';
+  // Moderation filter state
+  const [categoryFilter, setCategoryFilter] = useState('All');
+  const [selectedPhoto, setSelectedPhoto] = useState(null);
+  const [editCaption, setEditCaption] = useState('');
 
-  const loadWorkbookSheet = (nextWorkbook, nextSheetName) => {
-    const matrix = nextWorkbook.find(sheet => sheet.sheet === nextSheetName)?.data || [];
-    const headers = (matrix[0] || []).map((header, index) => String(header || `Column ${index + 1}`).trim());
-    setSheetName(nextSheetName); setSheetHeaders(headers); setSheetRows(matrix.slice(1).filter(row => row.some(value => String(value || '').trim())));
-    setColumnMap({
-      memberNumber: findHeader(headers, ['membernumber', 'memberno', 'memberid', 'number', 'id']),
-      lastName: findHeader(headers, ['lastname', 'surname', 'familyname']),
-      firstName: findHeader(headers, ['firstname', 'givenname', 'name']),
-      email: findHeader(headers, ['email', 'emailaddress', 'rosteremail'])
-    });
-  };
-
-  const handleWorkbookChange = async event => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    setExcelStatus(`Reading ${file.name}…`);
-    setWorkbook(null); setSheetHeaders([]); setSheetRows([]); setSheetName('');
+  const handleClubSetupSubmit = async (e) => {
+    e.preventDefault();
     try {
-      if (!/\.xlsx$/i.test(file.name)) { setExcelStatus('Please choose an Excel .xlsx workbook. CSV paste import is available below.'); return addToast('Please choose an Excel .xlsx workbook. CSV paste import is available below.', 'error'); }
-      if (file.size > 10 * 1024 * 1024) { setExcelStatus('This workbook is larger than 10 MB.'); return addToast('Please choose an Excel workbook smaller than 10 MB.', 'error'); }
-      let nextWorkbook;
-      try {
-        nextWorkbook = await readXlsxFile(file);
-      } catch {
-        const firstSheetRows = await readSheet(file, 1);
-        nextWorkbook = [{ sheet: 'First worksheet', data: firstSheetRows }];
+      await onUpdateClub({
+        name: clubName.trim() || club.name,
+        shortName: clubShortName.trim() || club.shortName,
+        logoUrl: clubLogoUrl
+      });
+      addToast('Club configuration saved successfully!', 'success');
+    } catch (err) {
+      console.error(err);
+      addToast('Failed to save club settings.', 'error');
+    }
+  };
+
+  const handleClubLogoChange = (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 256 * 1024) {
+      addToast('Image size exceeds 256 KB limit.', 'error');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setClubLogoUrl(event.target.result);
+      addToast('New club logo uploaded.', 'info');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleWorkbookChange = async (e) => {
+    const file = e.target.files && e.target.files[0];
+    setExcelImportSummary(null);
+    if (!file) {
+      setWorkbook(null);
+      setExcelStatus('');
+      return;
+    }
+
+    try {
+      setExcelStatus('Reading Excel file...');
+      const { default: readXlsxFile } = await import('read-excel-file/browser');
+
+      const rows = await readXlsxFile(file);
+      if (!rows || rows.length === 0) {
+        setExcelStatus('This workbook appears to be empty.');
+        setWorkbook(null);
+        return;
       }
-      setWorkbook(nextWorkbook); setWorkbookName(file.name);
-      const firstSheetName = nextWorkbook[0]?.sheet;
-      if (!firstSheetName) { setExcelStatus('That workbook does not contain a readable worksheet.'); return addToast('That workbook does not contain a readable worksheet.', 'error'); }
-      loadWorkbookSheet(nextWorkbook, firstSheetName);
-      setExcelStatus(`Loaded ${file.name}. Map the four required columns below.`);
-      addToast(`Loaded ${file.name}. Map the columns before importing.`, 'info');
-    } catch { setExcelStatus('We could not read this workbook. Open it in Excel and save it again as .xlsx, then retry.'); addToast('We could not read that Excel file. Try saving it again as .xlsx.', 'error'); }
+
+      sheets = [{ sheet: 'Sheet 1', rows }];
+      setWorkbook(sheets);
+      setWorkbookName(file.name);
+      setSheetName(sheets[0].sheet);
+      loadSheetData(sheets[0].rows);
+      setExcelStatus('');
+    } catch (error) {
+      console.error('Failed reading Excel file', error);
+      setExcelStatus('We could not read this file. Ensure it is a valid .xlsx spreadsheet.');
+      setWorkbook(null);
+    }
   };
 
-  const handleExcelImport = event => {
-    event.preventDefault();
-    if (!workbook || !sheetRows.length || Object.values(columnMap).some(column => !column)) return addToast('Upload a workbook and map all four required columns first.', 'error');
-    const indexByHeader = Object.fromEntries(sheetHeaders.map((header, index) => [header, index]));
-    const newMembersList = []; const skippedReasons = {};
-    const skip = reason => { skippedReasons[reason] = (skippedReasons[reason] || 0) + 1; };
-    sheetRows.forEach(row => {
-      const memberNumber = normalizeMemberNumber(row[indexByHeader[columnMap.memberNumber]]);
-      const lastName = String(row[indexByHeader[columnMap.lastName]] || '').trim();
-      const firstName = String(row[indexByHeader[columnMap.firstName]] || '').trim();
-      const email = String(row[indexByHeader[columnMap.email]] || '').trim().toLowerCase();
-      const duplicate = members.some(member => normalizeMemberNumber(member.memberNumber) === memberNumber) || newMembersList.some(member => member.memberNumber === memberNumber);
-      if (!memberNumber) { skip('missing member number'); return; }
-      if (!lastName || !firstName) { skip('missing name'); return; }
-      if (!/^\S+@\S+\.\S+$/.test(email)) { skip('missing or invalid email'); return; }
-      if (duplicate) { skip('duplicate member number'); return; }
-      newMembersList.push({ memberNumber, lastName, firstName, email, password: '', registeredAt: '' });
+  const loadSheetData = (rows) => {
+    if (!rows || rows.length === 0) {
+      setSheetHeaders([]);
+      setSheetRows([]);
+      return;
+    }
+
+    const rawHeaders = rows[0].map((cell, idx) => (cell !== null && cell !== undefined ? String(cell).trim() : `Column ${idx + 1}`));
+    const rawData = rows.slice(1);
+
+    setSheetHeaders(rawHeaders);
+    setSheetRows(rawData);
+
+    // Auto-map header names if matching
+    const nextMap = { memberNumber: '', lastName: '', firstName: '', email: '' };
+    rawHeaders.forEach(h => {
+      const lower = h.toLowerCase();
+      if (!nextMap.memberNumber && (lower.includes('number') || lower.includes('id') || lower.includes('member'))) nextMap.memberNumber = h;
+      if (!nextMap.lastName && (lower.includes('last') || lower.includes('surname'))) nextMap.lastName = h;
+      if (!nextMap.firstName && (lower.includes('first') || lower.includes('given'))) nextMap.firstName = h;
+      if (!nextMap.email && (lower.includes('email') || lower.includes('mail'))) nextMap.email = h;
     });
-    newMembersList.forEach(member => onAddMember(member));
-    const skippedCount = Object.values(skippedReasons).reduce((total, count) => total + count, 0);
-    setExcelImportSummary({ total: sheetRows.length, added: newMembersList.length, skipped: skippedCount, reasons: skippedReasons });
-    if (newMembersList.length) addToast(`Excel roster imported: ${newMembersList.length} added, ${skippedCount} skipped.`, 'success');
-    else addToast('No valid new members were found. Check the mapped columns and duplicate rows.', 'error');
+    setColumnMap(nextMap);
   };
 
-  // Statistics calculations
+  const handleExcelImport = (e) => {
+    e.preventDefault();
+    if (!workbook || sheetRows.length === 0) return setExcelStatus('Please select an Excel workbook first.');
+
+    const colIdx = {
+      memberNumber: sheetHeaders.indexOf(columnMap.memberNumber),
+      lastName: sheetHeaders.indexOf(columnMap.lastName),
+      firstName: sheetHeaders.indexOf(columnMap.firstName),
+      email: sheetHeaders.indexOf(columnMap.email)
+    };
+
+    if (colIdx.memberNumber === -1 || colIdx.lastName === -1 || colIdx.firstName === -1 || colIdx.email === -1) {
+      return setExcelStatus('Please select a valid column for Member number, Last name, First name, and Email.');
+    }
+
+    let addedCount = 0;
+    let skippedCount = 0;
+    const reasons = {};
+
+    sheetRows.forEach((row) => {
+      const numRaw = row[colIdx.memberNumber];
+      const lNameRaw = row[colIdx.lastName];
+      const fNameRaw = row[colIdx.firstName];
+      const emailRaw = row[colIdx.email];
+
+      if (!numRaw || !lNameRaw || !fNameRaw || !emailRaw) {
+        skippedCount++;
+        reasons['missing required field'] = (reasons['missing required field'] || 0) + 1;
+        return;
+      }
+
+      const memberNum = normalizeMemberNumber(String(numRaw).trim());
+      const emailVal = String(emailRaw).trim().toLowerCase();
+
+      if (!/^\S+@\S+\.\S+$/.test(emailVal)) {
+        skippedCount++;
+        reasons['invalid email format'] = (reasons['invalid email format'] || 0) + 1;
+        return;
+      }
+
+      if (members.some(m => normalizeMemberNumber(m.memberNumber) === memberNum)) {
+        skippedCount++;
+        reasons['member number already exists'] = (reasons['member number already exists'] || 0) + 1;
+        return;
+      }
+
+      onAddMember({
+        memberNumber: memberNum,
+        lastName: String(lNameRaw).trim(),
+        firstName: String(fNameRaw).trim(),
+        email: emailVal,
+        password: '',
+        registeredAt: ''
+      });
+      addedCount++;
+    });
+
+    setExcelImportSummary({ added: addedCount, skipped: skippedCount, reasons });
+    if (addedCount > 0) {
+      addToast(`Imported ${addedCount} members from Excel!`, 'success');
+      setActiveModal(null);
+    } else addToast('No valid new members found in spreadsheet.', 'error');
+  };
+
   const totalPhotos = photos.length;
   const totalMembers = members.length;
   const registeredCount = members.filter(m => m.registeredAt).length;
@@ -111,7 +217,6 @@ export default function AdminPortal({
     .sort((a, b) => (b.hearts || 0) - (a.hearts || 0))
     .slice(0, 3);
 
-  // Category counts
   const categoryCounts = photos.reduce((acc, p) => {
     acc[p.category] = (acc[p.category] || 0) + 1;
     return acc;
@@ -124,7 +229,6 @@ export default function AdminPortal({
       return;
     }
 
-    // Check if member number already exists
     if (members.some(m => normalizeMemberNumber(m.memberNumber) === normalizeMemberNumber(newMemberNum))) {
       addToast(`Member number ${newMemberNum} already exists.`, 'error');
       return;
@@ -142,11 +246,11 @@ export default function AdminPortal({
     onAddMember(newMember);
     addToast(`Member ${newFirstName} ${newLastName} added!`, 'success');
 
-    // Clear inputs
     setNewMemberNum('');
     setNewLastName('');
     setNewFirstName('');
     setNewEmail('');
+    setActiveModal(null);
   };
 
   const handleCsvImportSubmit = (e) => {
@@ -158,38 +262,22 @@ export default function AdminPortal({
 
     const lines = csvText.split('\n');
     let importCount = 0;
-    let errorCount = 0;
-    const newMembersList = [];
 
     lines.forEach(line => {
       const trimmed = line.trim();
-      if (!trimmed) return; // Skip empty lines
-
-      // Parse commas. Support quotes if needed, but a simple split works for standard lists
+      if (!trimmed) return;
       const parts = trimmed.split(',').map(p => p.replace(/^["']|["']$/g, '').trim());
 
-      // Expected: MemberNumber, LastName, FirstName, Email
       if (parts.length >= 4) {
         const memberNum = normalizeMemberNumber(parts[0]);
         const lName = parts[1];
         const fName = parts[2];
         const memberEmail = parts[3].toLowerCase();
 
-        // Skip header if present
-        if (memberNum.toLowerCase() === 'membernumber' || memberNum.toLowerCase() === 'number' || memberNum.toLowerCase() === 'id') {
-          return;
-        }
+        if (memberNum.toLowerCase() === 'membernumber' || memberNum.toLowerCase() === 'number') return;
+        if (!/^\S+@\S+\.\S+$/.test(memberEmail) || members.some(m => normalizeMemberNumber(m.memberNumber) === memberNum)) return;
 
-        // Validate duplicates
-        if (!/^\S+@\S+\.\S+$/.test(memberEmail) ||
-          members.some(m => normalizeMemberNumber(m.memberNumber) === memberNum) ||
-          newMembersList.some(m => m.memberNumber === memberNum)
-        ) {
-          errorCount++;
-          return;
-        }
-
-        newMembersList.push({
+        onAddMember({
           memberNumber: memberNum,
           lastName: lName,
           firstName: fName,
@@ -198,88 +286,60 @@ export default function AdminPortal({
           registeredAt: ''
         });
         importCount++;
-      } else {
-        errorCount++;
       }
     });
 
-    if (newMembersList.length > 0) {
-      newMembersList.forEach(m => onAddMember(m));
-      addToast(`Roster imported! Added ${importCount} members. Skipped ${errorCount} duplicates/errors.`, 'success');
+    if (importCount > 0) {
+      addToast(`Successfully imported ${importCount} members!`, 'success');
       setCsvText('');
+      setActiveModal(null);
     } else {
-      addToast('No new valid members found in the pasted data. Check formatting.', 'error');
+      addToast('No valid new members found in CSV.', 'error');
     }
   };
 
-  const handleResetDatabaseClick = () => {
-    if (window.confirm('WARNING: This will delete all custom members and photos and restore the original seed data. Do you want to continue?')) {
-      onResetDatabase();
-      addToast('Database reset to initial club seed data.', 'info');
+  const handleResetDatabaseClick = async () => {
+    if (window.confirm('Are you sure you want to reset the database? All custom photos and uploaded roster members will be cleared.')) {
+      await onResetDatabase();
+      addToast('Hub database reset to seed data.', 'info');
     }
-  };
-
-  const handleClubSetupSubmit = async event => {
-    event.preventDefault();
-    if (clubName.trim().length < 2) return addToast('Enter a club name.', 'error');
-    try {
-      await onUpdateClub({ name: clubName.trim(), shortName: clubShortName.trim() || clubName.trim(), logoUrl: clubLogoUrl });
-      addToast('Club branding updated.', 'success');
-    } catch (error) { addToast(error.message || 'Could not update the club.', 'error'); }
-  };
-
-  const handleClubLogoChange = event => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) return addToast('Choose a PNG, JPG, or WebP logo.', 'error');
-    if (file.size > 256 * 1024) return addToast('Please choose a logo smaller than 256 KB.', 'error');
-    const reader = new FileReader();
-    reader.onload = () => setClubLogoUrl(String(reader.result || ''));
-    reader.onerror = () => addToast('We could not read that logo file.', 'error');
-    reader.readAsDataURL(file);
   };
 
   return (
-    <div className="admin-grid animate-fade-in">
-      {/* Sidebar Panel */}
+    <div className="admin-portal-layout animate-fade-in">
+      
+      {/* Sidebar Navigation */}
       <div className="admin-sidebar">
-        <button
-          className={`admin-menu-btn ${activeSubTab === 'clubs' ? 'active' : ''}`}
-          onClick={() => setActiveSubTab('clubs')}
-        >
+        <div className="admin-sidebar-header">
+          {club.logoUrl ? (
+            <img src={club.logoUrl} alt={club.name} className="admin-sidebar-logo" />
+          ) : (
+            <div className="admin-sidebar-logo-fallback">{(club.name || 'C').charAt(0)}</div>
+          )}
+          <div className="admin-sidebar-club-info">
+            <span className="admin-sidebar-club-name">{club.name}</span>
+            <span className="admin-sidebar-badge">Club Admin</span>
+          </div>
+        </div>
+
+        <button className={`admin-menu-btn ${activeSubTab === 'clubs' ? 'active' : ''}`} onClick={() => setActiveSubTab('clubs')}>
           <Building2 size={16} /> Club Setup
         </button>
-        <button
-          className={`admin-menu-btn ${activeSubTab === 'dashboard' ? 'active' : ''}`}
-          onClick={() => setActiveSubTab('dashboard')}
-        >
+        <button className={`admin-menu-btn ${activeSubTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveSubTab('dashboard')}>
           <BarChart3 size={16} /> Overview
         </button>
-        <button
-          className={`admin-menu-btn ${activeSubTab === 'members' ? 'active' : ''}`}
-          onClick={() => setActiveSubTab('members')}
-        >
+        <button className={`admin-menu-btn ${activeSubTab === 'members' ? 'active' : ''}`} onClick={() => setActiveSubTab('members')}>
           <Users size={16} /> Member Directory
         </button>
-        <button
-          className={`admin-menu-btn ${activeSubTab === 'moderation' ? 'active' : ''}`}
-          onClick={() => setActiveSubTab('moderation')}
-        >
+        <button className={`admin-menu-btn ${activeSubTab === 'moderation' ? 'active' : ''}`} onClick={() => setActiveSubTab('moderation')}>
           <ImageIcon size={16} /> Moderate Photos
         </button>
-        <button
-          className={`admin-menu-btn ${activeSubTab === 'cloud' ? 'active' : ''}`}
-          onClick={() => setActiveSubTab('cloud')}
-        >
-          <Database size={16} /> Cloud Storage (Sync)
+        <button className={`admin-menu-btn ${activeSubTab === 'cloud' ? 'active' : ''}`} onClick={() => setActiveSubTab('cloud')}>
+          <Database size={16} /> Cloud Storage
         </button>
 
         <div style={{ marginTop: 'auto', paddingTop: '20px' }}>
-          <button
-            className="btn-danger"
-            style={{ width: '100%', justifyContent: 'center', backgroundColor: '#8B5CF6' }}
-            onClick={handleResetDatabaseClick}
-          >
+          <button className="btn-danger" style={{ width: '100%', justifyContent: 'center', backgroundColor: '#8B5CF6' }} onClick={handleResetDatabaseClick}>
             <RefreshCw size={14} /> Reset Hub Data
           </button>
         </div>
@@ -310,12 +370,11 @@ export default function AdminPortal({
               </div>
               <div className="stat-card">
                 <div className="stat-val">{totalLikes}</div>
-                <div className="stat-label">Total Heart Reactions</div>
+                <div className="stat-label">Heart Reactions</div>
               </div>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px', marginTop: '24px' }}>
-              {/* Category distribution */}
               <div style={{ background: 'var(--club-gray-light)', padding: '20px', borderRadius: 'var(--radius-md)', border: '1px solid var(--club-gray)' }}>
                 <h3 style={{ marginBottom: '16px', fontSize: '18px' }}>Category Distribution</h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -335,54 +394,23 @@ export default function AdminPortal({
                 </div>
               </div>
 
-              {/* Spotlight: Top 3 liked photos */}
               {topPhotos.length > 0 && (
-                <div style={{ background: 'var(--club-gray-light)', padding: '20px', borderRadius: 'var(--radius-md)', border: '1px solid var(--club-gray)', display: 'flex', flexDirection: 'column' }}>
-                  <h3 style={{ marginBottom: '16px', fontSize: '18px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    🏆 Top 3 Most Liked Photos
-                  </h3>
+                <div style={{ background: 'var(--club-gray-light)', padding: '20px', borderRadius: 'var(--radius-md)', border: '1px solid var(--club-gray)' }}>
+                  <h3 style={{ marginBottom: '16px', fontSize: '18px' }}>🏆 Top Most Liked Photos</h3>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {topPhotos.map((photo, index) => {
-                      const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉';
-                      return (
-                        <div
-                          key={photo.id}
-                          className="top-photo-row"
-                          style={{
-                            display: 'flex',
-                            gap: '12px',
-                            alignItems: 'center',
-                            background: 'var(--club-white)',
-                            padding: '10px',
-                            borderRadius: 'var(--radius-md)',
-                            border: '1px solid var(--club-gray)',
-                            cursor: 'pointer',
-                            transition: 'var(--transition-fast)'
-                          }}
-                          onClick={() => setSelectedPhoto(photo)}
-                          title="Click to view photo"
-                        >
-                          <span style={{ fontSize: '20px', fontWeight: '700', width: '24px', textAlign: 'center' }}>{medal}</span>
-                          <div style={{ width: '50px', height: '50px', borderRadius: '4px', overflow: 'hidden', flexShrink: 0, border: '1px solid var(--club-gray)' }}>
-                            <img src={photo.url} alt={photo.caption} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          </div>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <span style={{ fontSize: '9px', textTransform: 'uppercase', color: 'var(--club-gold-dark)', fontWeight: '700', letterSpacing: '0.05em' }}>
-                              {photo.category}
-                            </span>
-                            <p style={{ fontSize: '13px', fontWeight: '600', color: 'var(--club-green-dark)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', margin: 0, lineHeight: '1.2' }}>
-                              "{photo.caption}"
-                            </p>
-                            <span style={{ fontSize: '11px', color: 'var(--club-gray-dark)' }}>
-                              By: {photo.uploaderName}
-                            </span>
-                          </div>
-                          <span style={{ fontSize: '12px', color: 'var(--club-danger)', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' }}>
-                            ❤️ {photo.hearts}
-                          </span>
+                    {topPhotos.map((photo, index) => (
+                      <div key={photo.id} style={{ display: 'flex', gap: '12px', alignItems: 'center', background: 'var(--club-white)', padding: '10px', borderRadius: 'var(--radius-md)', border: '1px solid var(--club-gray)' }}>
+                        <span style={{ fontSize: '18px', fontWeight: '700', width: '24px' }}>{index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}</span>
+                        <div style={{ width: '48px', height: '48px', borderRadius: '4px', overflow: 'hidden', flexShrink: 0 }}>
+                          <img src={photo.url} alt={photo.caption} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         </div>
-                      );
-                    })}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ fontSize: '13px', fontWeight: '600', color: 'var(--club-green-dark)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>"{photo.caption}"</p>
+                          <span style={{ fontSize: '11px', color: 'var(--club-gray-dark)' }}>By: {photo.uploaderName}</span>
+                        </div>
+                        <span style={{ fontSize: '12px', color: 'var(--club-danger)', fontWeight: '700' }}>❤️ {photo.hearts}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
@@ -390,124 +418,106 @@ export default function AdminPortal({
           </div>
         )}
 
-        {/* --- 2. MEMBER DIRECTORY --- */}
+        {/* --- 2. REORGANIZED CLUB SETUP --- */}
         {activeSubTab === 'clubs' && (
-          <div>
-            <div className="admin-section-header"><h2 className="admin-section-title">Set up {club.name}</h2><span>Private club workspace</span></div>
-            <div className="setup-checklist">
-              <div className="complete"><span>1</span><p><strong>Administrator verified</strong><small>Your club account owns this workspace.</small></p></div>
-              <div className={club.logoUrl ? 'complete' : ''}><span>2</span><p><strong>Add club branding</strong><small>Set the member-facing name and crest.</small></p></div>
-              <div className={members.length > 0 ? 'complete' : ''}><span>3</span><p><strong>Load the member roster</strong><small>Add members with their registered email addresses.</small></p></div>
+          <div className="club-setup-panel">
+            <div className="admin-section-header">
+              <div>
+                <h2 className="admin-section-title">Club Configuration & Branding</h2>
+                <p style={{ fontSize: '13px', color: 'var(--club-gray-dark)', margin: '4px 0 0' }}>
+                  Manage public club name, short abbreviation, and member logo crest.
+                </p>
+              </div>
             </div>
-            <p className="admin-help-copy">Only administrators verified for this club can change these settings or access its member directory.</p>
-            <form className="club-add-form club-setup-form" onSubmit={handleClubSetupSubmit}>
-              <div className="form-group club-setup-field"><label htmlFor="clubName">Club name</label><input id="clubName" className="input-field" value={clubName} onChange={event => setClubName(event.target.value)} required /></div>
-              <div className="form-group club-setup-field"><label htmlFor="clubShortName">Short name</label><input id="clubShortName" className="input-field" value={clubShortName} onChange={event => setClubShortName(event.target.value)} /></div>
-              <div className="form-group logo-upload-field club-setup-logo"><label htmlFor="clubLogoFile">Club logo (optional)</label><input id="clubLogoFile" className="input-field" type="file" accept="image/png,image/jpeg,image/webp" onChange={handleClubLogoChange} /><small>Upload a PNG, JPG, or WebP up to 256 KB.</small>{clubLogoUrl && <img className="onboarding-logo-preview" src={clubLogoUrl} alt="Current club logo preview" />}</div>
-              <button className="btn-primary club-setup-save">Save club settings</button>
+
+            <form className="club-setup-clean-card" onSubmit={handleClubSetupSubmit}>
+              <div className="club-setup-fields-grid">
+                <div className="form-group">
+                  <label htmlFor="clubName">Club Name</label>
+                  <input
+                    id="clubName"
+                    type="text"
+                    className="input-field"
+                    value={clubName}
+                    onChange={e => setClubName(e.target.value)}
+                    placeholder="e.g. Oakville Club"
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="clubShortName">Short Abbreviation</label>
+                  <input
+                    id="clubShortName"
+                    type="text"
+                    className="input-field"
+                    value={clubShortName}
+                    onChange={e => setClubShortName(e.target.value)}
+                    placeholder="e.g. OC"
+                  />
+                </div>
+              </div>
+
+              <div className="club-setup-logo-box">
+                <div className="logo-preview-wrapper">
+                  {clubLogoUrl ? (
+                    <img src={clubLogoUrl} alt="Club Crest" className="club-setup-logo-preview" />
+                  ) : (
+                    <div className="logo-placeholder-avatar">{(clubName || 'C').charAt(0)}</div>
+                  )}
+                </div>
+
+                <div className="logo-upload-controls">
+                  <label htmlFor="clubLogoFile" className="logo-upload-label">
+                    <Upload size={14} /> Choose Club Crest Logo
+                  </label>
+                  <input
+                    id="clubLogoFile"
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    onChange={handleClubLogoChange}
+                    style={{ display: 'none' }}
+                  />
+                  <span className="logo-upload-hint">Upload a transparent PNG, JPG, or WebP (Max size 256 KB)</span>
+                </div>
+              </div>
+
+              <div className="club-setup-footer">
+                <button type="submit" className="btn-primary" style={{ padding: '10px 24px' }}>
+                  Save Club Settings
+                </button>
+              </div>
             </form>
-            {members.length === 0 && <button className="btn-secondary setup-roster-cta" onClick={() => setActiveSubTab('members')}><Users size={16} /> Add your first members</button>}
           </div>
         )}
 
-        {/* --- 3. MEMBER DIRECTORY --- */}
+        {/* --- 3. REORGANIZED MEMBER DIRECTORY --- */}
         {activeSubTab === 'members' && (
           <div>
-            <div className="admin-section-header">
-              <h2 className="admin-section-title">Club Member Registry</h2>
-              <span style={{ fontSize: '14px', color: 'var(--club-gray-dark)', fontWeight: '600' }}>
-                {totalMembers} total members loaded
-              </span>
+            <div className="admin-section-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+              <div>
+                <h2 className="admin-section-title">Club Member Roster</h2>
+                <span style={{ fontSize: '13px', color: 'var(--club-gray-dark)', fontWeight: '600' }}>
+                  {totalMembers} total members enrolled • {registeredCount} registered
+                </span>
+              </div>
+
+              {/* Top Action Buttons to open import modals */}
+              <div className="admin-actions-bar">
+                <button type="button" className="btn-primary" onClick={() => setActiveModal('add')}>
+                  <UserPlus size={15} /> Add Member
+                </button>
+                <button type="button" className="btn-secondary" onClick={() => setActiveModal('csv')}>
+                  <FileText size={15} /> Import CSV
+                </button>
+                <button type="button" className="btn-secondary" onClick={() => setActiveModal('excel')}>
+                  <FileSpreadsheet size={15} /> Import Excel
+                </button>
+              </div>
             </div>
 
-            {/* Individual Add Form */}
-            <h3 style={{ fontSize: '16px', marginBottom: '8px' }}>Add Individual Member</h3>
-            <form className="member-add-form" onSubmit={handleAddMemberSubmit}>
-              <div className="form-group">
-                <input
-                  type="text"
-                  className="input-field"
-                  placeholder="Member Number (e.g. 1006)"
-                  value={newMemberNum}
-                  onChange={(e) => setNewMemberNum(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <input
-                  type="email"
-                  className="input-field"
-                  placeholder="Roster Email"
-                  value={newEmail}
-                  onChange={(e) => setNewEmail(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <input
-                  type="text"
-                  className="input-field"
-                  placeholder="Last Name (e.g. Doe)"
-                  value={newLastName}
-                  onChange={(e) => setNewLastName(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <input
-                  type="text"
-                  className="input-field"
-                  placeholder="First Name (e.g. Jane)"
-                  value={newFirstName}
-                  onChange={(e) => setNewFirstName(e.target.value)}
-                  required
-                />
-              </div>
-              <button type="submit" className="btn-primary" style={{ height: '46px' }}>
-                <Plus size={16} /> Add Member
-              </button>
-            </form>
-
-            {/* Excel Roster Import */}
-            <h3 style={{ fontSize: '16px', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <FileSpreadsheet size={16} style={{ color: 'var(--club-gold-dark)' }} /> Import Roster from Excel
-            </h3>
-            <form onSubmit={handleExcelImport} style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px', background: 'var(--club-gray-light)', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--club-gray)' }}>
-              <p style={{ fontSize: '12px', color: 'var(--club-gray-dark)' }}>Upload an `.xlsx` workbook. We will preview the first sheet and let you identify which columns contain the member number, names, and roster email.</p>
-              <input type="file" accept=".xlsx" onChange={handleWorkbookChange} />
-              {excelStatus && <p role="status" style={{ margin: 0, fontSize: '12px', color: excelStatus.startsWith('We could not') || excelStatus.startsWith('Please') || excelStatus.startsWith('This workbook') ? '#9c2c2c' : 'var(--club-gray-dark)' }}>{excelStatus}</p>}
-              {workbook && <>
-                <strong style={{ fontSize: '13px' }}>{workbookName}</strong>
-                {workbook.length > 1 && <label className="form-group"><span style={{ fontSize: '12px' }}>Worksheet</span><select className="input-field" value={sheetName} onChange={event => loadWorkbookSheet(workbook, event.target.value)}>{workbook.map(sheet => <option key={sheet.sheet}>{sheet.sheet}</option>)}</select></label>}
-                <div className="excel-column-map"><strong>Identify columns</strong>{[['memberNumber', 'Member number'], ['lastName', 'Last name'], ['firstName', 'First name'], ['email', 'Roster email']].map(([key, label]) => <label key={key}><span>{label}</span><select value={columnMap[key]} onChange={event => setColumnMap(previous => ({ ...previous, [key]: event.target.value }))}><option value="">Choose column…</option>{sheetHeaders.map(header => <option key={`${key}-${header}`} value={header}>{header}</option>)}</select></label>)}</div>
-                <div className="excel-preview"><strong>Preview ({Math.min(sheetRows.length, 5)} of {sheetRows.length} rows)</strong><div className="table-wrapper"><table className="admin-table"><thead><tr>{sheetHeaders.slice(0, 6).map(header => <th key={header}>{header}</th>)}</tr></thead><tbody>{sheetRows.slice(0, 5).map((row, rowIndex) => <tr key={rowIndex}>{sheetHeaders.slice(0, 6).map((header, columnIndex) => <td key={`${rowIndex}-${header}`}>{String(row[columnIndex] || '')}</td>)}</tr>)}</tbody></table></div></div>
-                <button type="submit" className="btn-secondary" style={{ alignSelf: 'flex-start' }}><Upload size={14} /> Map & Import Roster</button>
-                {excelImportSummary && <div className="excel-import-summary" role="status"><strong>Import complete: {excelImportSummary.added} added, {excelImportSummary.skipped} skipped</strong><span>{Object.entries(excelImportSummary.reasons).map(([reason, count]) => `${count} ${reason}`).join(' · ') || 'All rows passed validation.'}</span></div>}
-              </>}
-            </form>
-
-            {/* CSV Roster Bulk Import */}
-            <h3 style={{ fontSize: '16px', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <FileSpreadsheet size={16} style={{ color: 'var(--club-gold-dark)' }} /> Bulk Import Club Roster (CSV)
-            </h3>
-            <form onSubmit={handleCsvImportSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '32px', background: 'var(--club-gray-light)', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--club-gray)' }}>
-              <p style={{ fontSize: '12px', color: 'var(--club-gray-dark)' }}>
-                Paste lines in format: <strong>MemberNumber, LastName, FirstName, Email</strong>. The roster email is required for secure first-time verification.
-              </p>
-              <textarea
-                className="textarea-field"
-                placeholder="1006, Doe, Jane, jane@example.com&#10;1007, Simpson, Bart, bart@example.com"
-                value={csvText}
-                onChange={(e) => setCsvText(e.target.value)}
-              ></textarea>
-              <button type="submit" className="btn-secondary" style={{ alignSelf: 'flex-start' }}>
-                <Upload size={14} /> Parse & Add Roster
-              </button>
-            </form>
-
-            {/* Members Directory Table */}
-            <div className="member-directory-heading"><h3 style={{ fontSize: '16px', margin: 0 }}>Active Member List</h3><span>{members.length.toLocaleString()} enrolled member{members.length === 1 ? '' : 's'}</span></div>
-            <div className="table-wrapper member-directory-table">
+            {/* Main Focus: Member Directory Table */}
+            <div className="table-wrapper member-directory-table" style={{ marginTop: '16px' }}>
               <table className="admin-table">
                 <thead>
                   <tr>
@@ -522,7 +532,7 @@ export default function AdminPortal({
                 <tbody>
                   {[...members].sort((a, b) => a.lastName.localeCompare(b.lastName)).map(member => (
                     <tr key={member.memberNumber}>
-                      <td style={{ fontWeight: '600' }}>#{member.memberNumber}</td>
+                      <td style={{ fontWeight: '700' }}>#{member.memberNumber}</td>
                       <td>{member.lastName}</td>
                       <td>{member.firstName}</td>
                       <td>{member.email}</td>
@@ -538,7 +548,7 @@ export default function AdminPortal({
                             color: member.registeredAt ? 'var(--club-success)' : 'var(--club-gold-dark)'
                           }}
                         >
-                          {member.registeredAt ? 'Registered' : 'Password not set'}
+                          {member.registeredAt ? 'Registered' : 'Password Pending'}
                         </span>
                       </td>
                       <td style={{ textAlign: 'right' }}>
@@ -546,37 +556,34 @@ export default function AdminPortal({
                           className="btn-text"
                           style={{ color: 'var(--club-green)', padding: '4px', marginRight: '6px' }}
                           onClick={async () => {
-                            const nextEmail = window.prompt(`Roster email for ${member.firstName} ${member.lastName}:`, member.email || '');
+                            const nextEmail = window.prompt(`Update roster email for ${member.firstName} ${member.lastName}:`, member.email || '');
                             if (nextEmail === null) return;
-                            if (!/^\S+@\S+\.\S+$/.test(nextEmail.trim())) return addToast('Enter a valid email address.', 'error');
-                            try { await onUpdateMember(member.memberNumber, { email: nextEmail.trim().toLowerCase() }); addToast('Roster email updated.', 'success'); }
-                            catch (error) { addToast(error.message || 'Could not update roster email.', 'error'); }
+                            await onUpdateMember(member.memberNumber, { email: nextEmail.trim().toLowerCase() });
+                            addToast('Member email updated.', 'success');
                           }}
                         >
-                          Edit email
+                          Edit
                         </button>
+
                         <button
                           className="btn-text"
-                          style={{ color: 'var(--club-green)', padding: '4px', marginRight: '6px' }}
+                          style={{ color: 'var(--club-gold-dark)', padding: '4px', marginRight: '6px' }}
                           onClick={async () => {
-                            const newPassword = window.prompt(`Set a password for ${member.firstName} ${member.lastName} (minimum 10 characters):`);
-                            if (!newPassword) return;
-                            try {
-                              await onSetMemberPassword(member.memberNumber, newPassword);
-                              addToast('Member password updated.', 'success');
-                            } catch (error) {
-                              addToast(error.message || 'Could not update member password.', 'error');
-                            }
+                            const pwd = window.prompt(`Set password for ${member.firstName} ${member.lastName}:`);
+                            if (!pwd) return;
+                            await onSetMemberPassword(member.memberNumber, pwd);
+                            addToast('Password set!', 'success');
                           }}
                         >
-                          Set password
+                          <Key size={14} /> Password
                         </button>
+
                         <button
                           className="btn-text"
                           style={{ color: 'var(--club-danger)', padding: '4px' }}
-                          onClick={() => {
-                            if (window.confirm(`Remove member ${member.firstName} ${member.lastName} (#${member.memberNumber})?`)) {
-                              onDeleteMember(member.memberNumber);
+                          onClick={async () => {
+                            if (window.confirm(`Delete member ${member.firstName} ${member.lastName}?`)) {
+                              await onDeleteMember(member.memberNumber);
                               addToast('Member removed from roster.', 'info');
                             }
                           }}
@@ -592,168 +599,135 @@ export default function AdminPortal({
           </div>
         )}
 
-        {/* --- 3. PHOTO MODERATION --- */}
+        {/* --- MODAL DRAWER FOR ADD MEMBER --- */}
+        {activeModal === 'add' && (
+          <div className="admin-modal-backdrop" onClick={() => setActiveModal(null)}>
+            <div className="admin-modal-card" onClick={e => e.stopPropagation()}>
+              <div className="admin-modal-header">
+                <h3><UserPlus size={18} /> Add Individual Member</h3>
+                <button type="button" className="admin-modal-close" onClick={() => setActiveModal(null)}><X size={18} /></button>
+              </div>
+              <form className="admin-modal-body" onSubmit={handleAddMemberSubmit}>
+                <div className="form-group">
+                  <label>Member Number</label>
+                  <input type="text" className="input-field" placeholder="e.g. 1006" value={newMemberNum} onChange={e => setNewMemberNum(e.target.value)} required />
+                </div>
+                <div className="form-group">
+                  <label>Roster Email</label>
+                  <input type="email" className="input-field" placeholder="e.g. member@example.com" value={newEmail} onChange={e => setNewEmail(e.target.value)} required />
+                </div>
+                <div className="form-group">
+                  <label>Last Name</label>
+                  <input type="text" className="input-field" placeholder="e.g. Smith" value={newLastName} onChange={e => setNewLastName(e.target.value)} required />
+                </div>
+                <div className="form-group">
+                  <label>First Name</label>
+                  <input type="text" className="input-field" placeholder="e.g. Jane" value={newFirstName} onChange={e => setNewFirstName(e.target.value)} required />
+                </div>
+                <div className="admin-modal-footer">
+                  <button type="button" className="btn-secondary" onClick={() => setActiveModal(null)}>Cancel</button>
+                  <button type="submit" className="btn-primary">Save Member</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* --- MODAL DRAWER FOR CSV IMPORT --- */}
+        {activeModal === 'csv' && (
+          <div className="admin-modal-backdrop" onClick={() => setActiveModal(null)}>
+            <div className="admin-modal-card" onClick={e => e.stopPropagation()}>
+              <div className="admin-modal-header">
+                <h3><FileText size={18} /> Bulk Import CSV Roster</h3>
+                <button type="button" className="admin-modal-close" onClick={() => setActiveModal(null)}><X size={18} /></button>
+              </div>
+              <form className="admin-modal-body" onSubmit={handleCsvImportSubmit}>
+                <p style={{ fontSize: '13px', color: 'var(--club-gray-dark)', margin: 0 }}>
+                  Paste CSV lines in format: <strong>MemberNumber, LastName, FirstName, Email</strong>
+                </p>
+                <textarea
+                  className="textarea-field"
+                  rows={6}
+                  placeholder="1006, Doe, Jane, jane@example.com&#10;1007, Simpson, Bart, bart@example.com"
+                  value={csvText}
+                  onChange={e => setCsvText(e.target.value)}
+                ></textarea>
+                <div className="admin-modal-footer">
+                  <button type="button" className="btn-secondary" onClick={() => setActiveModal(null)}>Cancel</button>
+                  <button type="submit" className="btn-primary"><Upload size={14} /> Parse & Import</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* --- MODAL DRAWER FOR EXCEL IMPORT --- */}
+        {activeModal === 'excel' && (
+          <div className="admin-modal-backdrop" onClick={() => setActiveModal(null)}>
+            <div className="admin-modal-card" style={{ maxWidth: '640px' }} onClick={e => e.stopPropagation()}>
+              <div className="admin-modal-header">
+                <h3><FileSpreadsheet size={18} /> Import Roster from Excel (.xlsx)</h3>
+                <button type="button" className="admin-modal-close" onClick={() => setActiveModal(null)}><X size={18} /></button>
+              </div>
+              <form className="admin-modal-body" onSubmit={handleExcelImport}>
+                <p style={{ fontSize: '12px', color: 'var(--club-gray-dark)' }}>Upload an `.xlsx` workbook to auto-map columns and import member rows.</p>
+                <input type="file" accept=".xlsx" onChange={handleWorkbookChange} />
+                {excelStatus && <p style={{ fontSize: '12px', color: '#9c2c2c', margin: 0 }}>{excelStatus}</p>}
+                {workbook && (
+                  <>
+                    <strong style={{ fontSize: '13px' }}>{workbookName}</strong>
+                    <div className="excel-column-map">
+                      <strong>Map Columns</strong>
+                      {[['memberNumber', 'Member number'], ['lastName', 'Last name'], ['firstName', 'First name'], ['email', 'Roster email']].map(([key, label]) => (
+                        <label key={key}><span>{label}</span><select value={columnMap[key]} onChange={event => setColumnMap(previous => ({ ...previous, [key]: event.target.value }))}><option value="">Choose column…</option>{sheetHeaders.map(header => <option key={`${key}-${header}`} value={header}>{header}</option>)}</select></label>
+                      ))}
+                    </div>
+                  </>
+                )}
+                <div className="admin-modal-footer">
+                  <button type="button" className="btn-secondary" onClick={() => setActiveModal(null)}>Cancel</button>
+                  <button type="submit" className="btn-primary" disabled={!workbook}><Upload size={14} /> Map & Import Roster</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* --- 4. PHOTO MODERATION --- */}
         {activeSubTab === 'moderation' && (
           <div>
             <div className="admin-section-header">
               <h2 className="admin-section-title">Photo Moderation</h2>
-              <span style={{ fontSize: '14px', color: 'var(--club-gray-dark)', fontWeight: '600' }}>
-                {totalPhotos} total photos submitted
-              </span>
             </div>
-
-            {photos.length > 0 ? (
-              <div className="moderation-grid">
-                {photos.map(photo => (
-                  <div key={photo.id} className="mod-photo-card">
-                    <div className="mod-img-wrapper">
-                      <img src={photo.url} alt={photo.caption} className="mod-img" />
-                    </div>
-                    <div className="mod-photo-fields">
-                      <div className="mod-photo-meta"><span className="mod-photo-avatar">{String(photo.uploaderName || '?').trim().charAt(0).toUpperCase()}</span><span><strong>{photo.uploaderName || 'Member'}</strong><small>{photo.createdAt ? new Date(photo.createdAt).toLocaleDateString() : 'Recently uploaded'}</small></span><em>{photo.category}</em></div>
-                      <div className="mod-caption-editor">
-                        <div className="mod-field-heading"><span>Caption</span><button type="button" className="btn-text mod-edit-caption" onClick={() => setPhotoEdits(previous => ({ ...previous, [photo.id]: { ...previous[photo.id], editingCaption: true, caption: previous[photo.id]?.caption ?? photo.caption } }))}><Pencil size={13} /> Edit caption</button></div>
-                        {photoEdits[photo.id]?.editingCaption ? <textarea rows="3" placeholder="Add a caption for this photo" value={photoEdits[photo.id]?.caption ?? photo.caption} onChange={event => setPhotoEdits(previous => ({ ...previous, [photo.id]: { ...previous[photo.id], caption: event.target.value } }))} maxLength={500} /> : <p className="mod-caption-preview">{photo.caption || 'No caption added.'}</p>}
-                      </div>
-                      <label>Category<select value={photoEdits[photo.id]?.category ?? photo.category} onChange={event => setPhotoEdits(previous => ({ ...previous, [photo.id]: { ...previous[photo.id], category: event.target.value } }))}>{['General', 'Tennis', 'Golf', 'Dining', 'Clubhouse', 'Events'].map(category => <option key={category}>{category}</option>)}</select></label>
-                    </div>
-                    <div className="mod-actions">
-                      <button
-                        className="btn-secondary"
-                        style={{ padding: '6px', fontSize: '11px', flex: '1', justifyContent: 'center' }}
-                        onClick={async () => {
-                          const changes = photoEdits[photo.id] || {};
-                          try {
-                            await onUpdatePhoto(photo.id, { caption: String(changes.caption ?? photo.caption).trim(), category: changes.category ?? photo.category });
-                            setPhotoEdits(previous => { const next = { ...previous }; delete next[photo.id]; return next; });
-                            addToast('Photo text updated.', 'success');
-                          } catch (error) { addToast(error.message || 'Could not update photo text.', 'error'); }
-                        }}
-                      >Save</button>
-                      <button
-                        className="btn-danger"
-                        style={{ padding: '6px', fontSize: '11px', flex: '1', justifyContent: 'center' }}
-                        onClick={() => {
-                          if (window.confirm('Delete this photo permanently?')) {
-                            onDeletePhoto(photo.id);
-                            addToast('Photo deleted by moderator.', 'info');
-                          }
-                        }}
-                      >
-                        <Trash2 size={14} /> Delete photo
-                      </button>
-                    </div>
+            <div className="gallery-grid photo-gallery-grid">
+              {photos.map(photo => (
+                <div key={photo.id} className="photo-card">
+                  <img src={photo.url} alt={photo.caption} className="photo-card-img" />
+                  <div className="photo-card-details">
+                    <p className="photo-card-caption"><strong>{photo.uploaderName}</strong>: {photo.caption}</p>
+                    <button className="btn-danger" style={{ marginTop: '8px', padding: '6px 12px', fontSize: '12px' }} onClick={() => onDeletePhoto(photo.id)}>
+                      <Trash2 size={13} /> Delete Photo
+                    </button>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div style={{ textAlign: 'center', padding: '40px' }}>
-                <ImageIcon size={32} style={{ color: 'var(--club-gold)', marginBottom: '8px' }} />
-                <p style={{ fontWeight: '600' }}>No photos uploaded yet.</p>
-              </div>
-            )}
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
-        {/* --- 4. CLOUD CONFIGURATION --- */}
+        {/* --- 5. CLOUD STORAGE --- */}
         {activeSubTab === 'cloud' && (
           <div>
             <div className="admin-section-header">
-              <h2 className="admin-section-title">Shared Gallery Storage</h2>
+              <h2 className="admin-section-title">Cloud Storage & API Status</h2>
             </div>
-
-            <div className="db-config-grid">
-              <div>
-                {firebaseConfig ? (
-                  <div className="db-badge-cloud">
-                    <CloudLightning size={14} /> Shared storage active
-                  </div>
-                ) : (
-                  <div className="db-badge-local">
-                    <Database size={14} /> Offline mode (saved on this device)
-                  </div>
-                )}
-              </div>
-
-              <div style={{ lineHeight: '1.5', fontSize: '14px', color: 'var(--club-charcoal)' }}>
-                {firebaseConfig ? <>
-                  <p style={{ marginBottom: '10px' }}><strong>Shared gallery uploads are live.</strong> Photos, member records, captions, likes and activity are securely synchronized for your organization.</p>
-                  <p>Members can upload from their own phones and computers, and the gallery is shared across the organization.</p>
-                </> : <>
-                  <p style={{ marginBottom: '10px' }}>This browser is currently in offline mode. Photos are saved on this device and will not be shared with members on other devices.</p>
-                  <p>Connect the organization to shared storage to enable member uploads across devices.</p>
-                </>}
-              </div>
-              <div className="login-info" style={{ marginTop: '12px' }}>
-                Storage is managed securely by Club PhotoHub and is not editable from the browser.
-              </div>
+            <div style={{ background: 'var(--club-gray-light)', padding: '20px', borderRadius: 'var(--radius-md)', border: '1px solid var(--club-gray)' }}>
+              <p><strong>Cloud Storage:</strong> {firebaseConfig ? 'Cloudflare Worker & R2 Bucket Active' : 'Local IndexedDB Mode (Offline)'}</p>
             </div>
           </div>
         )}
 
       </div>
-      {/* Lightbox modal overlay for admin dashboard spotlight */}
-      {selectedPhoto && createPortal(
-        <div className="lightbox-backdrop" onClick={() => setSelectedPhoto(null)}>
-          <div className="lightbox-container animate-fade-in" onClick={e => e.stopPropagation()}>
-            <button className="lightbox-close" onClick={() => setSelectedPhoto(null)}>
-              <X size={20} />
-            </button>
-            <div className="lightbox-image-pane">
-              <img src={selectedPhoto.url} alt={selectedPhoto.caption} className="lightbox-img" />
-            </div>
-            <div className="lightbox-info-pane" style={{ padding: '24px' }}>
-              <div className="lightbox-meta" style={{ marginBottom: '10px' }}>
-                <div>
-                  <span style={{ fontWeight: '700', fontSize: '15px', color: 'var(--club-green-dark)' }}>{selectedPhoto.uploaderName}</span>
-                  <div style={{ fontSize: '11px', color: 'var(--club-gray-dark)' }}>{new Date(selectedPhoto.createdAt).toLocaleDateString()}</div>
-                </div>
-                <span className="lightbox-category-badge">{selectedPhoto.category}</span>
-              </div>
-              <p style={{ fontStyle: 'italic', fontSize: '15px', color: 'var(--club-charcoal)', marginBottom: '12px' }}>"{selectedPhoto.caption}"</p>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px', borderTop: '1px solid var(--club-gray-light)', paddingTop: '12px' }}>
-                <span style={{ color: 'var(--club-danger)', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px' }}>
-                  ❤️ {selectedPhoto.hearts} likes
-                </span>
-
-                <a
-                  href={selectedPhoto.downloadUrl || selectedPhoto.url}
-                  download={selectedPhoto.fileName || photoDownloadName(selectedPhoto.category)}
-                  className="btn-secondary"
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '6px',
-                    padding: '6px 12px',
-                    textDecoration: 'none',
-                    borderRadius: 'var(--radius-md)',
-                    fontWeight: '600',
-                    fontSize: '12px',
-                    border: '1px solid var(--club-gray)',
-                    backgroundColor: 'var(--club-white)',
-                    color: 'var(--club-charcoal)',
-                    cursor: 'pointer',
-                    transition: 'var(--transition-fast)'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = 'var(--club-gray-light)';
-                    e.currentTarget.style.borderColor = 'var(--club-gold)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'var(--club-white)';
-                    e.currentTarget.style.borderColor = 'var(--club-gray)';
-                  }}
-                >
-                  <Download size={14} />
-                  <span>Download</span>
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
     </div>
   );
 }
