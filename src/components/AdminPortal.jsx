@@ -610,8 +610,8 @@ export default function AdminPortal({
                       <img src={photo.url} alt={photo.caption} className="mod-img" />
                     </div>
                     <div className="mod-photo-fields">
-                      <p className="mod-photo-uploader">{photo.uploaderName}</p>
-                      <label>Caption<textarea value={photoEdits[photo.id]?.caption ?? photo.caption} onChange={event => setPhotoEdits(previous => ({ ...previous, [photo.id]: { ...previous[photo.id], caption: event.target.value } }))} maxLength={500} /></label>
+                      <div className="mod-photo-meta"><span className="mod-photo-avatar">{String(photo.uploaderName || '?').trim().charAt(0).toUpperCase()}</span><span><strong>{photo.uploaderName || 'Member'}</strong><small>{photo.createdAt ? new Date(photo.createdAt).toLocaleDateString() : 'Recently uploaded'}</small></span><em>{photo.category}</em></div>
+                      <label>Caption<textarea rows="3" placeholder="Add a caption for this photo" value={photoEdits[photo.id]?.caption ?? photo.caption} onChange={event => setPhotoEdits(previous => ({ ...previous, [photo.id]: { ...previous[photo.id], caption: event.target.value } }))} maxLength={500} /></label>
                       <label>Category<select value={photoEdits[photo.id]?.category ?? photo.category} onChange={event => setPhotoEdits(previous => ({ ...previous, [photo.id]: { ...previous[photo.id], category: event.target.value } }))}>{['General', 'Tennis', 'Golf', 'Dining', 'Clubhouse', 'Events'].map(category => <option key={category}>{category}</option>)}</select></label>
                     </div>
                     <div className="mod-actions">
@@ -626,7 +626,7 @@ export default function AdminPortal({
                             addToast('Photo text updated.', 'success');
                           } catch (error) { addToast(error.message || 'Could not update photo text.', 'error'); }
                         }}
-                      >Save changes</button>
+                      >Save</button>
                       <button
                         className="btn-danger"
                         style={{ padding: '6px', fontSize: '11px', flex: '1', justifyContent: 'center' }}
@@ -637,7 +637,7 @@ export default function AdminPortal({
                           }
                         }}
                       >
-                        <Trash2 size={12} /> Remove
+                        <Trash2 size={14} /> Delete photo
                       </button>
                     </div>
                   </div>

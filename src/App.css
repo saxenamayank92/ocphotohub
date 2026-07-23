@@ -1828,8 +1828,8 @@
 /* Forms & Moderation */
 .moderation-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+  gap: 20px;
 }
 
 .mod-photo-card {
@@ -1842,7 +1842,8 @@
 
 .mod-img-wrapper {
   position: relative;
-  padding-top: 100%;
+  padding-top: 75%;
+  background: var(--club-gray-light);
 }
 
 .mod-img {
@@ -1858,15 +1859,25 @@
   background: var(--club-gray-light);
 }
 
-.mod-photo-fields { display: grid; gap: 8px; padding: 10px; font-size: 12px; }
+.mod-photo-fields { display: grid; gap: 11px; padding: 14px; font-size: 12px; }
 .mod-photo-uploader { margin: 0; color: var(--club-green-dark); font-weight: 700; }
+.mod-photo-meta { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.mod-photo-meta > span:nth-child(2) { display: grid; min-width: 0; gap: 2px; }
+.mod-photo-meta strong { overflow: hidden; color: var(--club-green-dark); font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
+.mod-photo-meta small { color: var(--club-gray-dark); font-size: 11px; }
+.mod-photo-meta em { margin-left: auto; padding: 5px 8px; border: 1px solid rgba(197,160,89,.5); border-radius: 999px; color: var(--club-gold-dark); font-size: 10px; font-style: normal; font-weight: 700; text-transform: uppercase; }
+.mod-photo-avatar { display: grid; flex: 0 0 32px; place-items: center; width: 32px; height: 32px; border-radius: 50%; color: white; background: var(--club-green-dark); font-size: 13px; font-weight: 700; }
 .mod-photo-fields label { display: grid; gap: 4px; color: var(--club-gray-dark); font-weight: 600; }
 .mod-photo-fields textarea,
 .mod-photo-fields select { width: 100%; min-height: 34px; padding: 7px 8px; border: 1px solid var(--club-gray); border-radius: 8px; background: var(--club-white); color: var(--club-charcoal); font: inherit; resize: vertical; }
-.mod-photo-fields textarea { min-height: 58px; }
+.mod-photo-fields textarea { min-height: 76px; }
 
 .mod-actions button {
   flex: 1;
+}
+
+@media (max-width: 620px) {
+  .moderation-grid { grid-template-columns: 1fr; gap: 14px; }
 }
 
 .member-add-form {
