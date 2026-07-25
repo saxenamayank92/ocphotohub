@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   Users, Image as ImageIcon, BarChart3,
-  Building2, Trash2, Plus, RefreshCw, Upload, FileSpreadsheet, Key, Database, AlertCircle, X, FileText, UserPlus, Edit2, Check, Search, HardDrive, Shield, User, CheckCircle2
+  Building2, Trash2, Plus, RefreshCw, Upload, FileSpreadsheet, Key, Database, AlertCircle, X, FileText, UserPlus, Edit2, Check, Search, HardDrive, Shield, User, CheckCircle2, ShieldAlert, UserCheck
 } from 'lucide-react';
 
 const normalizeMemberNumber = num => String(num || '').trim();
@@ -35,7 +35,7 @@ export default function AdminPortal({
   const [newFirstName, setNewFirstName] = useState('');
   const [newEmail, setNewEmail] = useState('');
   const [newRole, setNewRole] = useState('member'); // 'member' | 'admin'
-  const [memberRoleFilter, setMemberRoleFilter] = useState('all'); // 'all' | 'admin' | 'member'
+  const [memberSearch, setMemberSearch] = useState('');
   const [csvText, setCsvText] = useState('');
 
   // Active Member Modal State ('add' | 'csv' | 'excel' | null)
@@ -57,7 +57,7 @@ export default function AdminPortal({
   const [editingPhotoId, setEditingPhotoId] = useState(null);
   const [editCaptionText, setEditCaptionText] = useState('');
 
-  // Storage Basket State (Clean photo quota bucket selection for club)
+  // Storage Basket State
   const [extraStorageGb, setExtraStorageGb] = useState(0);
 
   const categories = ['All', 'General', 'Tennis', 'Golf', 'Dining', 'Clubhouse', 'Events'];
@@ -218,7 +218,8 @@ export default function AdminPortal({
 
   const totalPhotos = photos.length;
   const totalMembers = members.length;
-  const adminCount = members.filter(m => m.role === 'admin').length;
+  const staffAdmins = members.filter(m => m.role === 'admin');
+  const regularMembers = members.filter(m => m.role !== 'admin');
   const registeredCount = members.filter(m => m.registeredAt).length;
   const totalLikes = photos.reduce((acc, p) => acc + (p.hearts || 0), 0);
 
@@ -255,7 +256,7 @@ export default function AdminPortal({
     };
 
     onAddMember(newMember);
-    addToast(`${newRole === 'admin' ? 'Admin Staff' : 'Member'} ${newFirstName} ${newLastName} added!`, 'success');
+    addToast(`${newRole === 'admin' ? 'Staff Admin' : 'Member'} ${newFirstName} ${newLastName} added!`, 'success');
 
     setNewMemberNum('');
     setNewLastName('');
@@ -271,8 +272,8 @@ export default function AdminPortal({
       await onUpdateMember(member.memberNumber, { role: nextRole });
       addToast(
         nextRole === 'admin'
-          ? `${member.firstName} ${member.lastName} promoted to Staff Admin!`
-          : `${member.firstName} ${member.lastName} role set to Member.`,
+          ? `${member.firstName} ${member.lastName} granted Staff Admin privileges!`
+          : `${member.firstName} ${member.lastName} admin privileges revoked. Returned to member roster.`,
         'success'
       );
     } catch (err) {
@@ -363,17 +364,22 @@ export default function AdminPortal({
     return matchesCategory && matchesSearch;
   });
 
-  // Member Directory filtering
-  const filteredMembers = members.filter(m => {
-    if (memberRoleFilter === 'admin') return m.role === 'admin';
-    if (memberRoleFilter === 'member') return m.role !== 'admin';
-    return true;
+  // Regular Member Search Filtering
+  const filteredRegularMembers = regularMembers.filter(m => {
+    const query = memberSearch.trim().toLowerCase();
+    if (!query) return true;
+    return (
+      m.firstName?.toLowerCase().includes(query) ||
+      m.lastName?.toLowerCase().includes(query) ||
+      m.email?.toLowerCase().includes(query) ||
+      m.memberNumber?.toLowerCase().includes(query)
+    );
   });
 
-  // Clean Storage Bucket Metrics for Club
+  // Clean Storage Bucket Metrics
   const baseGb = 25;
   const totalGb = baseGb + extraStorageGb;
-  const approxUsedGb = ((totalPhotos * 2.5) / 1024).toFixed(2); // Avg 2.5MB per photo
+  const approxUsedGb = ((totalPhotos * 2.5) / 1024).toFixed(2);
 
   return (
     <div className="admin-portal-layout animate-fade-in">
@@ -437,8 +443,8 @@ export default function AdminPortal({
                 <div className="stat-label">Club Roster</div>
               </div>
               <div className="stat-card">
-                <div className="stat-val">{adminCount}</div>
-                <div className="stat-label">Staff Admins</div>
+                <div className="stat-val">{staffAdmins.length}</div>
+                <div className="stat-label">Authorized Staff Admins</div>
               </div>
               <div className="stat-card">
                 <div className="stat-val">{totalLikes}</div>
@@ -563,14 +569,14 @@ export default function AdminPortal({
           </div>
         )}
 
-        {/* --- 3. MEMBER & STAFF DIRECTORY WITH ADMIN PROMOTION --- */}
+        {/* --- 3. SEGREGATED STAFF ADMINS & MEMBERS DIRECTORY --- */}
         {activeSubTab === 'members' && (
           <div>
             <div className="admin-section-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
               <div>
                 <h2 className="admin-section-title">Member & Staff Directory</h2>
                 <span style={{ fontSize: '13px', color: 'var(--club-gray-dark)', fontWeight: '600' }}>
-                  {totalMembers} total enrolled • {adminCount} staff admins • {registeredCount} registered
+                  {totalMembers} total roster • {staffAdmins.length} staff admins • {regularMembers.length} club members
                 </span>
               </div>
 
@@ -587,69 +593,119 @@ export default function AdminPortal({
               </div>
             </div>
 
-            {/* Role Filter Tabs */}
-            <div className="role-filter-bar" style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
-              <button
-                type="button"
-                className={`filter-pill ${memberRoleFilter === 'all' ? 'active' : ''}`}
-                onClick={() => setMemberRoleFilter('all')}
-              >
-                All Roster ({members.length})
-              </button>
-              <button
-                type="button"
-                className={`filter-pill ${memberRoleFilter === 'admin' ? 'active' : ''}`}
-                onClick={() => setMemberRoleFilter('admin')}
-              >
-                <Shield size={12} /> Staff Admins ({adminCount})
-              </button>
-              <button
-                type="button"
-                className={`filter-pill ${memberRoleFilter === 'member' ? 'active' : ''}`}
-                onClick={() => setMemberRoleFilter('member')}
-              >
-                <User size={12} /> Club Members ({members.length - adminCount})
-              </button>
+            {/* SEGREGATED SECTION 1: AUTHORIZED STAFF ADMINS TABLE */}
+            <div className="segregated-admin-card" style={{ marginTop: '20px', background: 'rgba(139, 92, 246, 0.04)', border: '1.5px solid rgba(139, 92, 246, 0.3)', borderRadius: 'var(--radius-lg)', padding: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#8B5CF6', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Shield size={18} />
+                  </div>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: '#5B21B6' }}>
+                      Authorized Staff Admins ({staffAdmins.length})
+                    </h3>
+                    <p style={{ margin: 0, fontSize: '12px', color: 'var(--club-gray-dark)' }}>
+                      Segregated list of employees with administrative portal access and moderation privileges.
+                    </p>
+                  </div>
+                </div>
+
+                <span style={{ fontSize: '11px', fontWeight: '700', padding: '4px 10px', borderRadius: '12px', background: '#8B5CF6', color: '#fff' }}>
+                  High Security Access
+                </span>
+              </div>
+
+              {staffAdmins.length > 0 ? (
+                <div className="table-wrapper">
+                  <table className="admin-table">
+                    <thead>
+                      <tr style={{ background: 'rgba(139, 92, 246, 0.08)' }}>
+                        <th>Staff / Member #</th>
+                        <th>Admin Name</th>
+                        <th>Roster Email</th>
+                        <th>Privileges</th>
+                        <th style={{ textAlign: 'right' }}>Admin Access</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {staffAdmins.map(admin => (
+                        <tr key={admin.memberNumber} style={{ background: '#fff' }}>
+                          <td style={{ fontWeight: '800', color: '#6D28D9' }}>#{admin.memberNumber}</td>
+                          <td style={{ fontWeight: '700', color: 'var(--club-navy)' }}>{admin.firstName} {admin.lastName}</td>
+                          <td>{admin.email}</td>
+                          <td>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '3px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '700', backgroundColor: 'rgba(139, 92, 246, 0.15)', color: '#6D28D9' }}>
+                              <Shield size={12} /> Staff Admin
+                            </span>
+                          </td>
+                          <td style={{ textAlign: 'right' }}>
+                            <button
+                              type="button"
+                              className="btn-text"
+                              style={{ color: 'var(--club-danger)', fontWeight: '700', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                              onClick={() => handleToggleAdminRole(admin)}
+                            >
+                              <ShieldAlert size={14} /> Revoke Admin Access
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div style={{ padding: '16px', background: '#fff', borderRadius: 'var(--radius-md)', textAlign: 'center', color: 'var(--club-gray-dark)', fontSize: '13px' }}>
+                  No extra staff admins assigned yet. Click "Make Admin" on any member in the table below to promote them.
+                </div>
+              )}
             </div>
 
-            <div className="table-wrapper member-directory-table" style={{ marginTop: '16px' }}>
-              <table className="admin-table">
-                <thead>
-                  <tr>
-                    <th>Member Number</th>
-                    <th>Name</th>
-                    <th>Roster Email</th>
-                    <th>Access Role</th>
-                    <th>Hub Status</th>
-                    <th style={{ textAlign: 'right' }}>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[...filteredMembers].sort((a, b) => a.lastName.localeCompare(b.lastName)).map(member => {
-                    const isAdminStaff = member.role === 'admin';
-                    return (
+            {/* SEGREGATED SECTION 2: CLUB MEMBERS ROSTER TABLE */}
+            <div style={{ marginTop: '28px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', flexWrap: 'wrap', gap: '12px' }}>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: 'var(--club-navy)' }}>
+                    Club Members Roster ({regularMembers.length})
+                  </h3>
+                  <p style={{ margin: 0, fontSize: '12px', color: 'var(--club-gray-dark)' }}>
+                    General club membership roster with standard photo gallery access.
+                  </p>
+                </div>
+
+                <div className="gallery-search-group" style={{ maxWidth: '280px' }}>
+                  <Search size={16} className="search-icon" />
+                  <input
+                    type="text"
+                    className="gallery-search-input"
+                    placeholder="Search roster members..."
+                    value={memberSearch}
+                    onChange={(e) => setMemberSearch(e.target.value)}
+                  />
+                  {memberSearch && (
+                    <button type="button" className="search-clear-btn" onClick={() => setMemberSearch('')}>
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className="table-wrapper member-directory-table">
+                <table className="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Member Number</th>
+                      <th>Name</th>
+                      <th>Roster Email</th>
+                      <th>Hub Status</th>
+                      <th style={{ textAlign: 'right' }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[...filteredRegularMembers].sort((a, b) => a.lastName.localeCompare(b.lastName)).map(member => (
                       <tr key={member.memberNumber}>
                         <td style={{ fontWeight: '700' }}>#{member.memberNumber}</td>
                         <td style={{ fontWeight: '600' }}>{member.firstName} {member.lastName}</td>
                         <td>{member.email}</td>
-                        <td>
-                          <span
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '4px',
-                              padding: '3px 8px',
-                              borderRadius: '4px',
-                              fontSize: '11px',
-                              fontWeight: '700',
-                              backgroundColor: isAdminStaff ? 'rgba(139, 92, 246, 0.12)' : 'rgba(30, 58, 138, 0.08)',
-                              color: isAdminStaff ? '#6D28D9' : 'var(--club-navy)'
-                            }}
-                          >
-                            {isAdminStaff ? <Shield size={12} /> : <User size={12} />}
-                            {isAdminStaff ? 'Staff Admin' : 'Member'}
-                          </span>
-                        </td>
                         <td>
                           <span
                             style={{
@@ -668,11 +724,11 @@ export default function AdminPortal({
                         <td style={{ textAlign: 'right' }}>
                           <button
                             className="btn-text"
-                            style={{ color: isAdminStaff ? '#6D28D9' : 'var(--club-green)', padding: '4px', marginRight: '6px', fontWeight: '600' }}
+                            style={{ color: '#6D28D9', padding: '4px', marginRight: '8px', fontWeight: '700', fontSize: '12px' }}
                             onClick={() => handleToggleAdminRole(member)}
-                            title={isAdminStaff ? 'Revoke Admin Access' : 'Grant Admin Privileges'}
+                            title="Promote member to Staff Admin"
                           >
-                            <Shield size={13} /> {isAdminStaff ? 'Make Member' : 'Make Admin'}
+                            <Shield size={13} /> Promote to Admin
                           </button>
 
                           <button
@@ -702,10 +758,10 @@ export default function AdminPortal({
                           </button>
                         </td>
                       </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         )}
