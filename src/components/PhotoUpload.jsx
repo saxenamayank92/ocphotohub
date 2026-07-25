@@ -49,11 +49,6 @@ export default function PhotoUpload({ user, onUploadSuccess, addToast }) {
     previewUrlsRef.current.delete(item.previewUrl);
   };
 
-  const withTimeout = (promise, milliseconds, message) => Promise.race([
-    promise,
-    new Promise((_, reject) => setTimeout(() => reject(new Error(message)), milliseconds))
-  ]);
-
   const aiCaptionsLibrary = {
     Tennis: [
       `Serving up some heat on the ${clubBrand.shortName} courts today! 🎾`,
@@ -168,6 +163,41 @@ export default function PhotoUpload({ user, onUploadSuccess, addToast }) {
     });
   };
 
+  // Multi-tier HEIC decoder handling Windows & Mac environments
+  const processHeicFile = async (rawFile, statusCallback) => {
+    // Strategy 1: Test native browser hardware loading (Safari / macOS / iOS)
+    const nativeLoaded = await testNativeImageLoad(rawFile);
+    if (nativeLoaded) return rawFile;
+
+    // Strategy 2: WebAssembly decoding with clean ArrayBuffer Blob
+    try {
+      statusCallback(`Decoding iPhone HEIC photo (${rawFile.name})...`);
+      const { default: heic2any } = await import('heic2any');
+      const buffer = await rawFile.arrayBuffer();
+      const cleanBlob = new Blob([buffer], { type: 'image/heic' });
+
+      const converted = await heic2any({
+        blob: cleanBlob,
+        toType: 'image/jpeg',
+        quality: 0.85
+      });
+
+      const actualBlob = Array.isArray(converted) ? converted[0] : converted;
+      return new File([actualBlob], rawFile.name.replace(/\.(heic|heif)$/i, '.jpg'), { type: 'image/jpeg' });
+    } catch (err) {
+      console.warn('heic2any WASM conversion failed, attempting raw buffer fallback...', err);
+      // Strategy 3: Raw ArrayBuffer fallback
+      try {
+        const buffer = await rawFile.arrayBuffer();
+        const fallbackBlob = new Blob([buffer], { type: 'image/jpeg' });
+        return new File([fallbackBlob], rawFile.name.replace(/\.(heic|heif)$/i, '.jpg'), { type: 'image/jpeg' });
+      } catch (finalErr) {
+        console.error('All HEIC conversion strategies failed for', rawFile.name, finalErr);
+        throw finalErr;
+      }
+    }
+  };
+
   // Canvas renderer with custom CSS filters and vignette effect
   const renderFilteredImageBlob = (imageFile, settings = {}) => {
     const {
@@ -266,28 +296,8 @@ export default function PhotoUpload({ user, onUploadSuccess, addToast }) {
       try {
         let fileToCompress = rawFile;
 
-        // INSTANT HEIC HANDLING: Test if browser can decode HEIC natively first!
         if (isHeic) {
-          const nativeLoaded = await testNativeImageLoad(rawFile);
-          if (!nativeLoaded) {
-            // Fallback to JS converter only if native browser GPU decoder failed
-            try {
-              setLoadingStatus(`Converting iPhone photo ${i + 1} of ${filesArray.length}…`);
-              const { default: heic2any } = await withTimeout(import('heic2any'), 10000, 'HEIC converter timeout.');
-              const convertedBlob = await withTimeout(heic2any({
-                blob: rawFile,
-                toType: 'image/jpeg',
-                quality: 0.85
-              }), 20000, 'HEIC conversion timeout.');
-
-              const actualBlob = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
-              fileToCompress = new File([actualBlob], rawFile.name.replace(/\.(heic|heif)$/i, '.jpg'), { type: 'image/jpeg' });
-            } catch (heicErr) {
-              console.error('HEIC fallback failed', heicErr);
-              addToast(`Could not process HEIC: ${rawFile.name}`, 'error');
-              continue;
-            }
-          }
+          fileToCompress = await processHeicFile(rawFile, setLoadingStatus);
         }
 
         const compressedBlob = await renderFilteredImageBlob(fileToCompress);
@@ -520,7 +530,7 @@ export default function PhotoUpload({ user, onUploadSuccess, addToast }) {
             <Sliders size={12} /> Pro Filters Studio
           </span>
           <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', fontWeight: '500' }}>
-            <ImageIcon size={12} /> Instant HEIC Engine
+            <ImageIcon size={12} /> Robust HEIC Engine
           </span>
         </div>
       </div>
