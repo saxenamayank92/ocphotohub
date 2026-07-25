@@ -3026,8 +3026,9 @@
 }
 
 .logo-upload-hint {
-  font-size: 11px;
-  color: var(--club-gray-dark);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--club-navy) !important;
 }
 
 .club-setup-footer {

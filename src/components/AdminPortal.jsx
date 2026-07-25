@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   Users, Image as ImageIcon, BarChart3,
-  Building2, Trash2, Plus, RefreshCw, Upload, FileSpreadsheet, Key, Database, AlertCircle, X, FileText, UserPlus, Edit2, Check, Search, HardDrive, Calculator, TrendingUp, DollarSign, CheckCircle2
+  Building2, Trash2, Plus, RefreshCw, Upload, FileSpreadsheet, Key, Database, AlertCircle, X, FileText, UserPlus, Edit2, Check, Search, HardDrive, Shield, User, CheckCircle2
 } from 'lucide-react';
 
 const normalizeMemberNumber = num => String(num || '').trim();
@@ -29,11 +29,13 @@ export default function AdminPortal({
   const [clubShortName, setClubShortName] = useState(club.shortName || '');
   const [clubLogoUrl, setClubLogoUrl] = useState(club.logoUrl || '');
 
-  // Member management state
+  // Member & Staff management state
   const [newMemberNum, setNewMemberNum] = useState('');
   const [newLastName, setNewLastName] = useState('');
   const [newFirstName, setNewFirstName] = useState('');
   const [newEmail, setNewEmail] = useState('');
+  const [newRole, setNewRole] = useState('member'); // 'member' | 'admin'
+  const [memberRoleFilter, setMemberRoleFilter] = useState('all'); // 'all' | 'admin' | 'member'
   const [csvText, setCsvText] = useState('');
 
   // Active Member Modal State ('add' | 'csv' | 'excel' | null)
@@ -55,7 +57,7 @@ export default function AdminPortal({
   const [editingPhotoId, setEditingPhotoId] = useState(null);
   const [editCaptionText, setEditCaptionText] = useState('');
 
-  // Storage Basket & Profit Calculator State
+  // Storage Basket State (Clean photo quota bucket selection for club)
   const [extraStorageGb, setExtraStorageGb] = useState(0);
 
   const categories = ['All', 'General', 'Tennis', 'Golf', 'Dining', 'Clubhouse', 'Events'];
@@ -200,6 +202,7 @@ export default function AdminPortal({
         lastName: String(lNameRaw).trim(),
         firstName: String(fNameRaw).trim(),
         email: emailVal,
+        role: 'member',
         password: '',
         registeredAt: ''
       });
@@ -215,6 +218,7 @@ export default function AdminPortal({
 
   const totalPhotos = photos.length;
   const totalMembers = members.length;
+  const adminCount = members.filter(m => m.role === 'admin').length;
   const registeredCount = members.filter(m => m.registeredAt).length;
   const totalLikes = photos.reduce((acc, p) => acc + (p.hearts || 0), 0);
 
@@ -245,18 +249,36 @@ export default function AdminPortal({
       lastName: newLastName.trim(),
       firstName: newFirstName.trim(),
       email: newEmail.trim().toLowerCase(),
+      role: newRole,
       password: '',
       registeredAt: ''
     };
 
     onAddMember(newMember);
-    addToast(`Member ${newFirstName} ${newLastName} added!`, 'success');
+    addToast(`${newRole === 'admin' ? 'Admin Staff' : 'Member'} ${newFirstName} ${newLastName} added!`, 'success');
 
     setNewMemberNum('');
     setNewLastName('');
     setNewFirstName('');
     setNewEmail('');
+    setNewRole('member');
     setActiveModal(null);
+  };
+
+  const handleToggleAdminRole = async (member) => {
+    const nextRole = member.role === 'admin' ? 'member' : 'admin';
+    try {
+      await onUpdateMember(member.memberNumber, { role: nextRole });
+      addToast(
+        nextRole === 'admin'
+          ? `${member.firstName} ${member.lastName} promoted to Staff Admin!`
+          : `${member.firstName} ${member.lastName} role set to Member.`,
+        'success'
+      );
+    } catch (err) {
+      console.error(err);
+      addToast('Could not update member role.', 'error');
+    }
   };
 
   const handleCsvImportSubmit = (e) => {
@@ -288,6 +310,7 @@ export default function AdminPortal({
           lastName: lName,
           firstName: fName,
           email: memberEmail,
+          role: 'member',
           password: '',
           registeredAt: ''
         });
@@ -340,17 +363,17 @@ export default function AdminPortal({
     return matchesCategory && matchesSearch;
   });
 
-  // Storage Basket & Profit Metrics
+  // Member Directory filtering
+  const filteredMembers = members.filter(m => {
+    if (memberRoleFilter === 'admin') return m.role === 'admin';
+    if (memberRoleFilter === 'member') return m.role !== 'admin';
+    return true;
+  });
+
+  // Clean Storage Bucket Metrics for Club
   const baseGb = 25;
   const totalGb = baseGb + extraStorageGb;
-  const basePrice = 60;
-  const extraPriceMap = { 0: 0, 25: 15, 50: 25, 100: 45, 250: 95 };
-  const extraPrice = extraPriceMap[extraStorageGb] || 0;
-  const totalMonthlyPrice = basePrice + extraPrice;
-  const estimatedR2Cost = (totalGb * 0.015).toFixed(2); // Cloudflare R2 is $0.015/GB/mo with $0 egress fees
-  const netProfit = (totalMonthlyPrice - parseFloat(estimatedR2Cost)).toFixed(2);
-  const marginPct = (((totalMonthlyPrice - parseFloat(estimatedR2Cost)) / totalMonthlyPrice) * 100).toFixed(1);
-  const approxUsedGb = ((totalPhotos * 2.5) / 1024).toFixed(2); // Avg 2.5MB per compressed photo
+  const approxUsedGb = ((totalPhotos * 2.5) / 1024).toFixed(2); // Avg 2.5MB per photo
 
   return (
     <div className="admin-portal-layout animate-fade-in">
@@ -378,7 +401,7 @@ export default function AdminPortal({
           <BarChart3 size={16} /> Overview
         </button>
         <button className={`admin-menu-btn ${activeSubTab === 'members' ? 'active' : ''}`} onClick={() => setActiveSubTab('members')}>
-          <Users size={16} /> Member Directory
+          <Users size={16} /> Member & Staff Directory
         </button>
         <button className={`admin-menu-btn ${activeSubTab === 'moderation' ? 'active' : ''}`} onClick={() => setActiveSubTab('moderation')}>
           <ImageIcon size={16} /> Moderate Photos
@@ -414,8 +437,8 @@ export default function AdminPortal({
                 <div className="stat-label">Club Roster</div>
               </div>
               <div className="stat-card">
-                <div className="stat-val">{registeredCount}</div>
-                <div className="stat-label">Registered Members</div>
+                <div className="stat-val">{adminCount}</div>
+                <div className="stat-label">Staff Admins</div>
               </div>
               <div className="stat-card">
                 <div className="stat-val">{totalLikes}</div>
@@ -518,7 +541,7 @@ export default function AdminPortal({
 
                 <div className="logo-upload-controls">
                   <label htmlFor="clubLogoFile" className="logo-upload-label">
-                    <Upload size={14} /> Choose Club Crest Logo
+                    <Upload size={14} /> Upload Club Crest
                   </label>
                   <input
                     id="clubLogoFile"
@@ -527,7 +550,7 @@ export default function AdminPortal({
                     onChange={handleClubLogoChange}
                     style={{ display: 'none' }}
                   />
-                  <span className="logo-upload-hint">Upload a transparent PNG, JPG, or WebP (Max size 256 KB)</span>
+                  <span className="logo-upload-hint">Select a transparent PNG, JPG, or WebP logo file (Max 256 KB)</span>
                 </div>
               </div>
 
@@ -540,20 +563,20 @@ export default function AdminPortal({
           </div>
         )}
 
-        {/* --- 3. REORGANIZED MEMBER DIRECTORY --- */}
+        {/* --- 3. MEMBER & STAFF DIRECTORY WITH ADMIN PROMOTION --- */}
         {activeSubTab === 'members' && (
           <div>
             <div className="admin-section-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
               <div>
-                <h2 className="admin-section-title">Club Member Roster</h2>
+                <h2 className="admin-section-title">Member & Staff Directory</h2>
                 <span style={{ fontSize: '13px', color: 'var(--club-gray-dark)', fontWeight: '600' }}>
-                  {totalMembers} total members enrolled • {registeredCount} registered
+                  {totalMembers} total enrolled • {adminCount} staff admins • {registeredCount} registered
                 </span>
               </div>
 
               <div className="admin-actions-bar">
                 <button type="button" className="btn-primary" onClick={() => setActiveModal('add')}>
-                  <UserPlus size={15} /> Add Member
+                  <UserPlus size={15} /> Add Member / Staff
                 </button>
                 <button type="button" className="btn-secondary" onClick={() => setActiveModal('csv')}>
                   <FileText size={15} /> Import CSV
@@ -564,116 +587,170 @@ export default function AdminPortal({
               </div>
             </div>
 
+            {/* Role Filter Tabs */}
+            <div className="role-filter-bar" style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
+              <button
+                type="button"
+                className={`filter-pill ${memberRoleFilter === 'all' ? 'active' : ''}`}
+                onClick={() => setMemberRoleFilter('all')}
+              >
+                All Roster ({members.length})
+              </button>
+              <button
+                type="button"
+                className={`filter-pill ${memberRoleFilter === 'admin' ? 'active' : ''}`}
+                onClick={() => setMemberRoleFilter('admin')}
+              >
+                <Shield size={12} /> Staff Admins ({adminCount})
+              </button>
+              <button
+                type="button"
+                className={`filter-pill ${memberRoleFilter === 'member' ? 'active' : ''}`}
+                onClick={() => setMemberRoleFilter('member')}
+              >
+                <User size={12} /> Club Members ({members.length - adminCount})
+              </button>
+            </div>
+
             <div className="table-wrapper member-directory-table" style={{ marginTop: '16px' }}>
               <table className="admin-table">
                 <thead>
                   <tr>
                     <th>Member Number</th>
-                    <th>Last Name</th>
-                    <th>First Name</th>
+                    <th>Name</th>
                     <th>Roster Email</th>
+                    <th>Access Role</th>
                     <th>Hub Status</th>
                     <th style={{ textAlign: 'right' }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {[...members].sort((a, b) => a.lastName.localeCompare(b.lastName)).map(member => (
-                    <tr key={member.memberNumber}>
-                      <td style={{ fontWeight: '700' }}>#{member.memberNumber}</td>
-                      <td>{member.lastName}</td>
-                      <td>{member.firstName}</td>
-                      <td>{member.email}</td>
-                      <td>
-                        <span
-                          style={{
-                            display: 'inline-block',
-                            padding: '3px 8px',
-                            borderRadius: '4px',
-                            fontSize: '11px',
-                            fontWeight: '600',
-                            backgroundColor: member.registeredAt ? 'rgba(30, 107, 63, 0.1)' : 'rgba(197, 160, 89, 0.15)',
-                            color: member.registeredAt ? 'var(--club-success)' : 'var(--club-gold-dark)'
-                          }}
-                        >
-                          {member.registeredAt ? 'Registered' : 'Password Pending'}
-                        </span>
-                      </td>
-                      <td style={{ textAlign: 'right' }}>
-                        <button
-                          className="btn-text"
-                          style={{ color: 'var(--club-green)', padding: '4px', marginRight: '6px' }}
-                          onClick={async () => {
-                            const nextEmail = window.prompt(`Update roster email for ${member.firstName} ${member.lastName}:`, member.email || '');
-                            if (nextEmail === null) return;
-                            await onUpdateMember(member.memberNumber, { email: nextEmail.trim().toLowerCase() });
-                            addToast('Member email updated.', 'success');
-                          }}
-                        >
-                          Edit
-                        </button>
+                  {[...filteredMembers].sort((a, b) => a.lastName.localeCompare(b.lastName)).map(member => {
+                    const isAdminStaff = member.role === 'admin';
+                    return (
+                      <tr key={member.memberNumber}>
+                        <td style={{ fontWeight: '700' }}>#{member.memberNumber}</td>
+                        <td style={{ fontWeight: '600' }}>{member.firstName} {member.lastName}</td>
+                        <td>{member.email}</td>
+                        <td>
+                          <span
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              padding: '3px 8px',
+                              borderRadius: '4px',
+                              fontSize: '11px',
+                              fontWeight: '700',
+                              backgroundColor: isAdminStaff ? 'rgba(139, 92, 246, 0.12)' : 'rgba(30, 58, 138, 0.08)',
+                              color: isAdminStaff ? '#6D28D9' : 'var(--club-navy)'
+                            }}
+                          >
+                            {isAdminStaff ? <Shield size={12} /> : <User size={12} />}
+                            {isAdminStaff ? 'Staff Admin' : 'Member'}
+                          </span>
+                        </td>
+                        <td>
+                          <span
+                            style={{
+                              display: 'inline-block',
+                              padding: '3px 8px',
+                              borderRadius: '4px',
+                              fontSize: '11px',
+                              fontWeight: '600',
+                              backgroundColor: member.registeredAt ? 'rgba(30, 107, 63, 0.1)' : 'rgba(197, 160, 89, 0.15)',
+                              color: member.registeredAt ? 'var(--club-success)' : 'var(--club-gold-dark)'
+                            }}
+                          >
+                            {member.registeredAt ? 'Registered' : 'Password Pending'}
+                          </span>
+                        </td>
+                        <td style={{ textAlign: 'right' }}>
+                          <button
+                            className="btn-text"
+                            style={{ color: isAdminStaff ? '#6D28D9' : 'var(--club-green)', padding: '4px', marginRight: '6px', fontWeight: '600' }}
+                            onClick={() => handleToggleAdminRole(member)}
+                            title={isAdminStaff ? 'Revoke Admin Access' : 'Grant Admin Privileges'}
+                          >
+                            <Shield size={13} /> {isAdminStaff ? 'Make Member' : 'Make Admin'}
+                          </button>
 
-                        <button
-                          className="btn-text"
-                          style={{ color: 'var(--club-gold-dark)', padding: '4px', marginRight: '6px' }}
-                          onClick={async () => {
-                            const pwd = window.prompt(`Set password for ${member.firstName} ${member.lastName}:`);
-                            if (!pwd) return;
-                            await onSetMemberPassword(member.memberNumber, pwd);
-                            addToast('Password set!', 'success');
-                          }}
-                        >
-                          <Key size={14} /> Password
-                        </button>
+                          <button
+                            className="btn-text"
+                            style={{ color: 'var(--club-gold-dark)', padding: '4px', marginRight: '6px' }}
+                            onClick={async () => {
+                              const pwd = window.prompt(`Set password for ${member.firstName} ${member.lastName}:`);
+                              if (!pwd) return;
+                              await onSetMemberPassword(member.memberNumber, pwd);
+                              addToast('Password set!', 'success');
+                            }}
+                          >
+                            <Key size={13} /> Password
+                          </button>
 
-                        <button
-                          className="btn-text"
-                          style={{ color: 'var(--club-danger)', padding: '4px' }}
-                          onClick={async () => {
-                            if (window.confirm(`Delete member ${member.firstName} ${member.lastName}?`)) {
-                              await onDeleteMember(member.memberNumber);
-                              addToast('Member removed from roster.', 'info');
-                            }
-                          }}
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                          <button
+                            className="btn-text"
+                            style={{ color: 'var(--club-danger)', padding: '4px' }}
+                            onClick={async () => {
+                              if (window.confirm(`Delete ${member.firstName} ${member.lastName}?`)) {
+                                await onDeleteMember(member.memberNumber);
+                                addToast('Member removed from roster.', 'info');
+                              }
+                            }}
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
           </div>
         )}
 
-        {/* --- MODAL DRAWER FOR ADD MEMBER --- */}
+        {/* --- MODAL DRAWER FOR ADD MEMBER / STAFF ADMIN --- */}
         {activeModal === 'add' && (
           <div className="admin-modal-backdrop" onClick={() => setActiveModal(null)}>
             <div className="admin-modal-card" onClick={e => e.stopPropagation()}>
               <div className="admin-modal-header">
-                <h3><UserPlus size={18} /> Add Individual Member</h3>
+                <h3><UserPlus size={18} /> Add Roster Member or Staff Admin</h3>
                 <button type="button" className="admin-modal-close" onClick={() => setActiveModal(null)}><X size={18} /></button>
               </div>
               <form className="admin-modal-body" onSubmit={handleAddMemberSubmit}>
                 <div className="form-group">
-                  <label>Member Number</label>
-                  <input type="text" className="input-field" placeholder="e.g. 1006" value={newMemberNum} onChange={e => setNewMemberNum(e.target.value)} required />
+                  <label htmlFor="newRoleSelect">Access Role & Privileges</label>
+                  <select
+                    id="newRoleSelect"
+                    className="select-field"
+                    value={newRole}
+                    onChange={e => setNewRole(e.target.value)}
+                  >
+                    <option value="member">Club Member (Standard Gallery Access)</option>
+                    <option value="admin">Staff Admin (Full Club Management & Moderation)</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="newMemNum">Member / Staff Number</label>
+                  <input id="newMemNum" type="text" className="input-field" placeholder="e.g. 1006" value={newMemberNum} onChange={e => setNewMemberNum(e.target.value)} required />
                 </div>
                 <div className="form-group">
-                  <label>Roster Email</label>
-                  <input type="email" className="input-field" placeholder="e.g. member@example.com" value={newEmail} onChange={e => setNewEmail(e.target.value)} required />
+                  <label htmlFor="newMemEmail">Email Address</label>
+                  <input id="newMemEmail" type="email" className="input-field" placeholder="e.g. staff@example.com" value={newEmail} onChange={e => setNewEmail(e.target.value)} required />
                 </div>
                 <div className="form-group">
-                  <label>Last Name</label>
-                  <input type="text" className="input-field" placeholder="e.g. Smith" value={newLastName} onChange={e => setNewLastName(e.target.value)} required />
+                  <label htmlFor="newLastName">Last Name</label>
+                  <input id="newLastName" type="text" className="input-field" placeholder="e.g. Smith" value={newLastName} onChange={e => setNewLastName(e.target.value)} required />
                 </div>
                 <div className="form-group">
-                  <label>First Name</label>
-                  <input type="text" className="input-field" placeholder="e.g. Jane" value={newFirstName} onChange={e => setNewFirstName(e.target.value)} required />
+                  <label htmlFor="newFirstName">First Name</label>
+                  <input id="newFirstName" type="text" className="input-field" placeholder="e.g. Jane" value={newFirstName} onChange={e => setNewFirstName(e.target.value)} required />
                 </div>
                 <div className="admin-modal-footer">
                   <button type="button" className="btn-secondary" onClick={() => setActiveModal(null)}>Cancel</button>
-                  <button type="submit" className="btn-primary">Save Member</button>
+                  <button type="submit" className="btn-primary">Save to Roster</button>
                 </div>
               </form>
             </div>
@@ -869,14 +946,14 @@ export default function AdminPortal({
           </div>
         )}
 
-        {/* --- 5. CLOUD STORAGE & BASKET CALCULATOR --- */}
+        {/* --- 5. CLEAN CLUB PHOTO STORAGE QUOTA --- */}
         {activeSubTab === 'cloud' && (
           <div>
             <div className="admin-section-header">
               <div>
-                <h2 className="admin-section-title">Cloud Storage Basket & Profit Calculator</h2>
+                <h2 className="admin-section-title">Club Photo Storage Quota</h2>
                 <p style={{ fontSize: '13px', color: 'var(--club-gray-dark)', margin: '4px 0 0' }}>
-                  Manage storage quotas, calculate raw Cloudflare R2 infrastructure costs, and configure extra member storage baskets.
+                  Manage storage capacity and order additional photo bucket expansion packs for your club.
                 </p>
               </div>
             </div>
@@ -886,7 +963,7 @@ export default function AdminPortal({
               <div className="storage-meter-header">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <HardDrive size={20} style={{ color: 'var(--club-navy)' }} />
-                  <span style={{ fontWeight: '700', fontSize: '15px' }}>Hub Storage Consumption</span>
+                  <span style={{ fontWeight: '700', fontSize: '15px' }}>Hub Storage Usage</span>
                 </div>
                 <span className="storage-badge-pill">
                   {approxUsedGb} GB used of {totalGb} GB Total Quota
@@ -900,28 +977,28 @@ export default function AdminPortal({
                 ></div>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--club-gray-dark)', marginTop: '8px' }}>
-                <span>{totalPhotos} photos uploaded</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--club-navy)', fontWeight: '600', marginTop: '10px' }}>
+                <span>{totalPhotos} photos stored</span>
                 <span>{((parseFloat(approxUsedGb) / totalGb) * 100).toFixed(1)}% Capacity Used</span>
               </div>
             </div>
 
-            {/* Storage Basket Add-On Selector */}
+            {/* Storage Bucket Expansion Packs */}
             <div className="storage-calculator-box">
               <h3 className="storage-calc-title">
-                <Calculator size={18} /> Storage Quota Basket & Add-On Packs
+                <HardDrive size={18} /> Storage Bucket Expansion Packs
               </h3>
-              <p style={{ fontSize: '13px', color: 'var(--club-gray-dark)', marginBottom: '16px' }}>
-                Base Launch Plan includes <strong>25 GB</strong> storage for <strong>$60 / month</strong>. Select an add-on storage pack to increase member capacity:
+              <p style={{ fontSize: '13px', color: 'var(--club-navy)', fontWeight: '500', marginBottom: '16px' }}>
+                Your plan includes <strong>25 GB</strong> storage quota. Select an expansion pack to increase capacity for high-res photos:
               </p>
 
               <div className="storage-tiers-grid">
                 {[
-                  { gb: 0, label: 'Standard Base', totalGb: 25, price: '+$0', desc: 'Included in $60/mo plan' },
-                  { gb: 25, label: '+25 GB Pack', totalGb: 50, price: '+$15/mo', desc: 'Total $75/mo' },
-                  { gb: 50, label: '+50 GB Pack', totalGb: 75, price: '+$25/mo', desc: 'Total $85/mo' },
-                  { gb: 100, label: '+100 GB Pro', totalGb: 125, price: '+$45/mo', desc: 'Total $105/mo' },
-                  { gb: 250, label: '+250 GB Enterprise', totalGb: 275, price: '+$95/mo', desc: 'Total $155/mo' }
+                  { gb: 0, label: 'Standard Quota', totalGb: 25, desc: 'Included in Club Plan' },
+                  { gb: 25, label: '+25 GB Pack', totalGb: 50, desc: '50 GB Total Storage' },
+                  { gb: 50, label: '+50 GB Pack', totalGb: 75, desc: '75 GB Total Storage' },
+                  { gb: 100, label: '+100 GB Pro', totalGb: 125, desc: '125 GB Total Storage' },
+                  { gb: 250, label: '+250 GB Enterprise', totalGb: 275, desc: '275 GB Total Storage' }
                 ].map(tier => (
                   <button
                     key={tier.gb}
@@ -931,48 +1008,20 @@ export default function AdminPortal({
                   >
                     <span className="tier-gb">{tier.totalGb} GB</span>
                     <span className="tier-label">{tier.label}</span>
-                    <span className="tier-price">{tier.price}</span>
                     <small className="tier-desc">{tier.desc}</small>
                   </button>
                 ))}
               </div>
 
-              {/* Profit Margin & Infra Cost Calculator Display */}
-              <div className="margin-calculator-card">
-                <h4 className="calc-heading">
-                  <TrendingUp size={16} /> Financial Breakdown & Cloud Infra Cost
-                </h4>
-
-                <div className="calc-metrics-grid">
-                  <div className="calc-metric-item">
-                    <span className="metric-label">Club Subscription Price</span>
-                    <span className="metric-value" style={{ color: 'var(--club-navy)' }}>
-                      ${totalMonthlyPrice}.00 <small>/ mo</small>
-                    </span>
-                  </div>
-
-                  <div className="calc-metric-item">
-                    <span className="metric-label">Cloudflare R2 Infra Cost ({totalGb} GB)</span>
-                    <span className="metric-value" style={{ color: 'var(--club-green)' }}>
-                      ${estimatedR2Cost} <small>/ mo</small>
-                    </span>
-                    <span className="metric-subtext">($0.015/GB/mo • $0 egress fees)</span>
-                  </div>
-
-                  <div className="calc-metric-item highlight">
-                    <span className="metric-label">Net Operating Margin</span>
-                    <span className="metric-value" style={{ color: 'var(--club-gold-dark)' }}>
-                      ${netProfit} <small>({marginPct}% Margin)</small>
-                    </span>
-                  </div>
-                </div>
-
-                <div className="infra-guarantee-note">
-                  <CheckCircle2 size={16} style={{ color: 'var(--club-success)', flexShrink: 0 }} />
-                  <span>
-                    <strong>High-Margin Architecture:</strong> Cloudflare R2 object storage charges <strong>$0 egress bandwidth fees</strong>. At $60/month subscription pricing, your raw hosting infrastructure costs only <strong>~23¢/month</strong>, giving a <strong>99.6% net profit margin</strong>!
-                  </span>
-                </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px' }}>
+                <button
+                  type="button"
+                  className="btn-primary"
+                  style={{ padding: '10px 20px', fontSize: '13px' }}
+                  onClick={() => addToast(`Requested ${totalGb} GB Storage Bucket expansion for ${club.name}!`, 'success')}
+                >
+                  <CheckCircle2 size={15} /> Save Storage Quota Selection ({totalGb} GB)
+                </button>
               </div>
             </div>
           </div>
