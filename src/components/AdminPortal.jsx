@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import {
   Users, Image as ImageIcon, BarChart3,
-  Building2, Trash2, Plus, RefreshCw, Upload, FileSpreadsheet, Key, Database, AlertCircle, X, FileText, UserPlus, Edit2, Check, Search, HardDrive, Shield, User, CheckCircle2, ShieldAlert, UserCheck
+  Building2, Trash2, Plus, RefreshCw, Upload, FileSpreadsheet, Key, Database, AlertCircle, X, FileText, UserPlus, Edit2, Check, Search, HardDrive, Shield, User, CheckCircle2, ShieldAlert, UserCheck, Crown, Lock
 } from 'lucide-react';
 
 const normalizeMemberNumber = num => String(num || '').trim();
 
 export default function AdminPortal({
+  user,
   club,
   members,
   photos,
@@ -34,7 +35,7 @@ export default function AdminPortal({
   const [newLastName, setNewLastName] = useState('');
   const [newFirstName, setNewFirstName] = useState('');
   const [newEmail, setNewEmail] = useState('');
-  const [newRole, setNewRole] = useState('member'); // 'member' | 'admin'
+  const [newRole, setNewRole] = useState('member'); // 'member' | 'admin' | 'owner'
   const [memberSearch, setMemberSearch] = useState('');
   const [csvText, setCsvText] = useState('');
 
@@ -62,6 +63,8 @@ export default function AdminPortal({
 
   const categories = ['All', 'General', 'Tennis', 'Golf', 'Dining', 'Clubhouse', 'Events'];
 
+  const isOwner = user?.role === 'owner';
+
   const handleClubSetupSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -80,12 +83,10 @@ export default function AdminPortal({
   const handleClubLogoChange = (e) => {
     const file = e.target.files && e.target.files[0];
     if (!file) return;
-
-    if (file.size > 256 * 1024) {
-      addToast('Image size exceeds 256 KB limit.', 'error');
+    if (file.size > 512 * 1024) {
+      addToast('Logo image must be under 512 KB.', 'error');
       return;
     }
-
     const reader = new FileReader();
     reader.onload = (event) => {
       setClubLogoUrl(event.target.result);
@@ -140,14 +141,25 @@ export default function AdminPortal({
     setSheetHeaders(rawHeaders);
     setSheetRows(rawData);
 
-    const nextMap = { memberNumber: '', lastName: '', firstName: '', email: '' };
-    rawHeaders.forEach(h => {
-      const lower = h.toLowerCase();
-      if (!nextMap.memberNumber && (lower.includes('number') || lower.includes('id') || lower.includes('member'))) nextMap.memberNumber = h;
-      if (!nextMap.lastName && (lower.includes('last') || lower.includes('surname'))) nextMap.lastName = h;
-      if (!nextMap.firstName && (lower.includes('first') || lower.includes('given'))) nextMap.firstName = h;
-      if (!nextMap.email && (lower.includes('email') || lower.includes('mail'))) nextMap.email = h;
-    });
+    const findIndex = (headers, candidates) => {
+      return headers.findIndex(h => {
+        const clean = String(h).toLowerCase().replace(/[^a-z0-9]/g, '');
+        return candidates.some(c => clean.includes(c));
+      });
+    };
+
+    const idxMem = findIndex(rawHeaders, ['membernum', 'memberno', 'memberid', 'number', 'id', 'member']);
+    const idxLast = findIndex(rawHeaders, ['lastname', 'surname', 'familyname', 'last']);
+    const idxFirst = findIndex(rawHeaders, ['firstname', 'givenname', 'first']);
+    const idxEmail = findIndex(rawHeaders, ['email', 'emailaddress', 'mail']);
+
+    const nextMap = {
+      memberNumber: idxMem !== -1 ? rawHeaders[idxMem] : rawHeaders[0] || '',
+      lastName: idxLast !== -1 ? rawHeaders[idxLast] : rawHeaders[1] || '',
+      firstName: idxFirst !== -1 ? rawHeaders[idxFirst] : rawHeaders[2] || '',
+      email: idxEmail !== -1 ? rawHeaders[idxEmail] : rawHeaders[3] || ''
+    };
+
     setColumnMap(nextMap);
   };
 
@@ -209,17 +221,17 @@ export default function AdminPortal({
       addedCount++;
     });
 
-    setExcelImportSummary({ added: addedCount, skipped: skippedCount, reasons });
-    if (addedCount > 0) {
-      addToast(`Imported ${addedCount} members from Excel!`, 'success');
-      setActiveModal(null);
-    } else addToast('No valid new members found in spreadsheet.', 'error');
+    setExcelImportSummary({ addedCount, skippedCount, reasons });
+    addToast(`Imported ${addedCount} member(s) from Excel!`, 'success');
+    if (addedCount > 0) setActiveModal(null);
   };
 
-  const totalPhotos = photos.length;
+  // Tiered Member Categorization
   const totalMembers = members.length;
+  const owners = members.filter(m => m.role === 'owner');
   const staffAdmins = members.filter(m => m.role === 'admin');
-  const regularMembers = members.filter(m => m.role !== 'admin');
+  const regularMembers = members.filter(m => m.role !== 'admin' && m.role !== 'owner');
+
   const registeredCount = members.filter(m => m.registeredAt).length;
   const totalLikes = photos.reduce((acc, p) => acc + (p.hearts || 0), 0);
 
@@ -240,6 +252,11 @@ export default function AdminPortal({
       return;
     }
 
+    if (newRole === 'owner' && owners.length >= 3) {
+      addToast('Maximum of 3 Club Owners allowed per workspace.', 'error');
+      return;
+    }
+
     if (members.some(m => normalizeMemberNumber(m.memberNumber) === normalizeMemberNumber(newMemberNum))) {
       addToast(`Member number ${newMemberNum} already exists.`, 'error');
       return;
@@ -256,7 +273,7 @@ export default function AdminPortal({
     };
 
     onAddMember(newMember);
-    addToast(`${newRole === 'admin' ? 'Staff Admin' : 'Member'} ${newFirstName} ${newLastName} added!`, 'success');
+    addToast(`${newRole === 'owner' ? 'Club Owner' : newRole === 'admin' ? 'Staff Admin' : 'Member'} ${newFirstName} ${newLastName} added!`, 'success');
 
     setNewMemberNum('');
     setNewLastName('');
@@ -264,6 +281,24 @@ export default function AdminPortal({
     setNewEmail('');
     setNewRole('member');
     setActiveModal(null);
+  };
+
+  const handleToggleOwnerRole = async (member) => {
+    if (member.role === 'owner') {
+      if (owners.length <= 1) {
+        addToast('At least one Club Owner is required per workspace.', 'error');
+        return;
+      }
+      await onUpdateMember(member.memberNumber, { role: 'admin' });
+      addToast(`Revoked Owner privileges for ${member.firstName} ${member.lastName}. Assigned as Staff Admin.`, 'info');
+    } else {
+      if (owners.length >= 3) {
+        addToast('Maximum of 3 Club Owners allowed per club workspace.', 'error');
+        return;
+      }
+      await onUpdateMember(member.memberNumber, { role: 'owner' });
+      addToast(`Granted Club Owner & Billing access to ${member.firstName} ${member.lastName}!`, 'success');
+    }
   };
 
   const handleToggleAdminRole = async (member) => {
@@ -278,44 +313,36 @@ export default function AdminPortal({
       );
     } catch (err) {
       console.error(err);
-      addToast('Could not update member role.', 'error');
+      addToast('Failed updating admin privileges.', 'error');
     }
   };
 
   const handleCsvImportSubmit = (e) => {
     e.preventDefault();
-    if (!csvText.trim()) {
-      addToast('Please paste CSV text first.', 'error');
-      return;
-    }
+    if (!csvText.trim()) return addToast('Please enter CSV data to import.', 'error');
 
-    const lines = csvText.split('\n');
+    const lines = csvText.split('\n').map(l => l.trim()).filter(Boolean);
     let importCount = 0;
 
     lines.forEach(line => {
-      const trimmed = line.trim();
-      if (!trimmed) return;
-      const parts = trimmed.split(',').map(p => p.replace(/^["']|["']$/g, '').trim());
-
+      const parts = line.split(',').map(p => p.trim());
       if (parts.length >= 4) {
-        const memberNum = normalizeMemberNumber(parts[0]);
-        const lName = parts[1];
-        const fName = parts[2];
-        const memberEmail = parts[3].toLowerCase();
-
-        if (memberNum.toLowerCase() === 'membernumber' || memberNum.toLowerCase() === 'number') return;
-        if (!/^\S+@\S+\.\S+$/.test(memberEmail) || members.some(m => normalizeMemberNumber(m.memberNumber) === memberNum)) return;
-
-        onAddMember({
-          memberNumber: memberNum,
-          lastName: lName,
-          firstName: fName,
-          email: memberEmail,
-          role: 'member',
-          password: '',
-          registeredAt: ''
-        });
-        importCount++;
+        const [memNum, lName, fName, emailVal] = parts;
+        const memberNum = normalizeMemberNumber(memNum);
+        if (memberNum && lName && fName && /^\S+@\S+\.\S+$/.test(emailVal)) {
+          if (!members.some(m => normalizeMemberNumber(m.memberNumber) === memberNum)) {
+            onAddMember({
+              memberNumber: memberNum,
+              lastName: lName,
+              firstName: fName,
+              email: emailVal.toLowerCase(),
+              role: 'member',
+              password: '',
+              registeredAt: ''
+            });
+            importCount++;
+          }
+        }
       }
     });
 
@@ -353,6 +380,7 @@ export default function AdminPortal({
   };
 
   // Moderation filtering
+  const totalPhotos = photos.length;
   const filteredModPhotos = photos.filter(photo => {
     const matchesCategory = modCategory === 'All' || photo.category === modCategory;
     const query = modSearch.trim().toLowerCase();
@@ -396,7 +424,9 @@ export default function AdminPortal({
           </div>
           <div className="admin-sidebar-club-info">
             <span className="admin-sidebar-club-name">{club.name}</span>
-            <span className="admin-sidebar-badge">Club Admin</span>
+            <span className="admin-sidebar-badge">
+              {isOwner ? '👑 Club Owner' : 'Club Admin'}
+            </span>
           </div>
         </div>
 
@@ -445,12 +475,12 @@ export default function AdminPortal({
                 <div className="stat-label">Club Roster</div>
               </div>
               <div className="stat-card">
-                <div className="stat-val">{staffAdmins.length}</div>
-                <div className="stat-label">Authorized Staff Admins</div>
+                <div className="stat-val">{owners.length}</div>
+                <div className="stat-label">Club Owners (Max 3)</div>
               </div>
               <div className="stat-card">
-                <div className="stat-val">{totalLikes}</div>
-                <div className="stat-label">Heart Reactions</div>
+                <div className="stat-val">{staffAdmins.length}</div>
+                <div className="stat-label">Authorized Staff Admins</div>
               </div>
             </div>
 
@@ -571,14 +601,14 @@ export default function AdminPortal({
           </div>
         )}
 
-        {/* --- 3. SEGREGATED STAFF ADMINS & MEMBERS DIRECTORY --- */}
+        {/* --- 3. THREE-TIERED MEMBER DIRECTORY: OWNERS -> STAFF ADMINS -> MEMBERS --- */}
         {activeSubTab === 'members' && (
           <div>
             <div className="admin-section-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
               <div>
                 <h2 className="admin-section-title">Member & Staff Directory</h2>
                 <span style={{ fontSize: '13px', color: 'var(--club-gray-dark)', fontWeight: '600' }}>
-                  {totalMembers} total roster • {staffAdmins.length} staff admins • {regularMembers.length} club members
+                  {totalMembers} total roster • {owners.length} Club Owners (Max 3) • {staffAdmins.length} Staff Admins • {regularMembers.length} Members
                 </span>
               </div>
 
@@ -595,9 +625,81 @@ export default function AdminPortal({
               </div>
             </div>
 
-            {/* SEGREGATED SECTION 1: AUTHORIZED STAFF ADMINS TABLE */}
-            <div className="segregated-admin-card" style={{ marginTop: '20px', background: 'rgba(139, 92, 246, 0.04)', border: '1.5px solid rgba(139, 92, 246, 0.3)', borderRadius: 'var(--radius-lg)', padding: '20px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+            {/* SEGREGATED TIER 1: CLUB OWNERS (MAX 3) */}
+            <div className="segregated-owner-card" style={{ marginTop: '20px', background: 'rgba(217, 119, 6, 0.05)', border: '1.5px solid rgba(217, 119, 6, 0.4)', borderRadius: 'var(--radius-lg)', padding: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: 'linear-gradient(135deg, #F59E0B, #D97706)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(217, 119, 6, 0.3)' }}>
+                    <Crown size={20} />
+                  </div>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: '#92400E', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      Club Owners ({owners.length} / 3 Max)
+                    </h3>
+                    <p style={{ margin: 0, fontSize: '12px', color: 'var(--club-gray-dark)' }}>
+                      Primary club owners with full billing, subscription, and administrative authority (Strict Maximum: 3 Owners).
+                    </p>
+                  </div>
+                </div>
+
+                <span style={{ fontSize: '11px', fontWeight: '800', padding: '4px 10px', borderRadius: '12px', background: '#D97706', color: '#fff' }}>
+                  👑 Billing & Workspace Authority
+                </span>
+              </div>
+
+              {owners.length > 0 ? (
+                <div className="table-wrapper">
+                  <table className="admin-table">
+                    <thead>
+                      <tr style={{ background: 'rgba(217, 119, 6, 0.1)' }}>
+                        <th>Owner #</th>
+                        <th>Owner Name</th>
+                        <th>Email</th>
+                        <th>Privileges</th>
+                        <th style={{ textAlign: 'right' }}>Owner Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {owners.map(owner => (
+                        <tr key={owner.memberNumber} style={{ background: '#fff' }}>
+                          <td style={{ fontWeight: '800', color: '#B45309' }}>#{owner.memberNumber}</td>
+                          <td style={{ fontWeight: '700', color: 'var(--club-navy)' }}>
+                            {owner.firstName} {owner.lastName}
+                            {owner.memberNumber === user?.memberNumber && <span style={{ marginLeft: '6px', fontSize: '10px', background: '#FEF3C7', color: '#B45309', padding: '2px 6px', borderRadius: '4px', fontWeight: '800' }}>You</span>}
+                          </td>
+                          <td>{owner.email}</td>
+                          <td>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '3px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '800', backgroundColor: '#FEF3C7', color: '#B45309' }}>
+                              <Crown size={12} /> Club Owner & Billing
+                            </span>
+                          </td>
+                          <td style={{ textAlign: 'right' }}>
+                            <button
+                              type="button"
+                              className="btn-text"
+                              style={{ color: 'var(--club-danger)', fontWeight: '700', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                              onClick={() => handleToggleOwnerRole(owner)}
+                              disabled={owners.length <= 1}
+                              title={owners.length <= 1 ? "At least one owner required" : "Revoke owner privileges"}
+                            >
+                              <ShieldAlert size={14} /> Revoke Owner Status
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div style={{ padding: '16px', background: '#fff', borderRadius: 'var(--radius-md)', textAlign: 'center', color: 'var(--club-gray-dark)', fontSize: '13px' }}>
+                  No Club Owner assigned.
+                </div>
+              )}
+            </div>
+
+            {/* SEGREGATED TIER 2: AUTHORIZED STAFF ADMINS TABLE */}
+            <div className="segregated-admin-card" style={{ marginTop: '24px', background: 'rgba(139, 92, 246, 0.04)', border: '1.5px solid rgba(139, 92, 246, 0.3)', borderRadius: 'var(--radius-lg)', padding: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#8B5CF6', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <Shield size={18} />
@@ -607,13 +709,13 @@ export default function AdminPortal({
                       Authorized Staff Admins ({staffAdmins.length})
                     </h3>
                     <p style={{ margin: 0, fontSize: '12px', color: 'var(--club-gray-dark)' }}>
-                      Segregated list of employees with administrative portal access and moderation privileges.
+                      Segregated list of employees with administrative portal access and photo moderation privileges.
                     </p>
                   </div>
                 </div>
 
                 <span style={{ fontSize: '11px', fontWeight: '700', padding: '4px 10px', borderRadius: '12px', background: '#8B5CF6', color: '#fff' }}>
-                  High Security Access
+                  Staff Moderation Access
                 </span>
               </div>
 
@@ -626,7 +728,7 @@ export default function AdminPortal({
                         <th>Admin Name</th>
                         <th>Roster Email</th>
                         <th>Privileges</th>
-                        <th style={{ textAlign: 'right' }}>Admin Access</th>
+                        <th style={{ textAlign: 'right' }}>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -644,6 +746,16 @@ export default function AdminPortal({
                             <button
                               type="button"
                               className="btn-text"
+                              style={{ color: '#D97706', padding: '4px 8px', marginRight: '6px', fontWeight: '700', fontSize: '12px' }}
+                              onClick={() => handleToggleOwnerRole(admin)}
+                              disabled={owners.length >= 3}
+                              title={owners.length >= 3 ? "Maximum of 3 Club Owners reached" : "Make Club Owner"}
+                            >
+                              <Crown size={13} /> {owners.length >= 3 ? 'Max Owners' : 'Make Owner'}
+                            </button>
+                            <button
+                              type="button"
+                              className="btn-text"
                               style={{ color: 'var(--club-danger)', fontWeight: '700', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                               onClick={() => handleToggleAdminRole(admin)}
                             >
@@ -657,12 +769,12 @@ export default function AdminPortal({
                 </div>
               ) : (
                 <div style={{ padding: '16px', background: '#fff', borderRadius: 'var(--radius-md)', textAlign: 'center', color: 'var(--club-gray-dark)', fontSize: '13px' }}>
-                  No extra staff admins assigned yet. Click "Make Admin" on any member in the table below to promote them.
+                  No extra staff admins assigned yet. Click "Promote to Admin" on any member in the table below to promote them.
                 </div>
               )}
             </div>
 
-            {/* SEGREGATED SECTION 2: CLUB MEMBERS ROSTER TABLE */}
+            {/* SEGREGATED TIER 3: CLUB MEMBERS ROSTER TABLE */}
             <div style={{ marginTop: '28px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', flexWrap: 'wrap', gap: '12px' }}>
                 <div>
@@ -674,8 +786,8 @@ export default function AdminPortal({
                   </p>
                 </div>
 
-                <div className="gallery-search-group" style={{ maxWidth: '280px' }}>
-                  <Search size={16} className="search-icon" />
+                <div className="gallery-search-box" style={{ maxWidth: '280px' }}>
+                  <Search size={14} className="gallery-search-icon" />
                   <input
                     type="text"
                     className="gallery-search-input"
@@ -726,7 +838,17 @@ export default function AdminPortal({
                         <td style={{ textAlign: 'right' }}>
                           <button
                             className="btn-text"
-                            style={{ color: '#6D28D9', padding: '4px', marginRight: '8px', fontWeight: '700', fontSize: '12px' }}
+                            style={{ color: '#D97706', padding: '4px', marginRight: '6px', fontWeight: '700', fontSize: '12px' }}
+                            onClick={() => handleToggleOwnerRole(member)}
+                            disabled={owners.length >= 3}
+                            title={owners.length >= 3 ? "Maximum of 3 Club Owners reached" : "Make Owner"}
+                          >
+                            <Crown size={13} /> {owners.length >= 3 ? 'Max Owners' : 'Make Owner'}
+                          </button>
+
+                          <button
+                            className="btn-text"
+                            style={{ color: '#6D28D9', padding: '4px', marginRight: '6px', fontWeight: '700', fontSize: '12px' }}
                             onClick={() => handleToggleAdminRole(member)}
                             title="Promote member to Staff Admin"
                           >
@@ -768,7 +890,218 @@ export default function AdminPortal({
           </div>
         )}
 
-        {/* --- MODAL DRAWER FOR ADD MEMBER / STAFF ADMIN --- */}
+        {/* --- 4. MODERATE PHOTOS TAB --- */}
+        {activeSubTab === 'moderation' && (
+          <div>
+            <div className="admin-section-header">
+              <div>
+                <h2 className="admin-section-title">Photo Moderation Gallery</h2>
+                <p style={{ fontSize: '13px', color: 'var(--club-gray-dark)', margin: '4px 0 0' }}>
+                  Review gallery submissions, update image captions, and manage photo content.
+                </p>
+              </div>
+            </div>
+
+            {/* Sub-toolbar */}
+            <div className="mod-toolbar" style={{ display: 'flex', gap: '16px', marginBottom: '20px', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div className="category-pills" style={{ overflowX: 'auto', paddingBottom: '4px' }}>
+                {categories.map(cat => (
+                  <button
+                    key={cat}
+                    type="button"
+                    className={`category-pill ${modCategory === cat ? 'active' : ''}`}
+                    onClick={() => setModCategory(cat)}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+
+              <div className="gallery-search-box" style={{ maxWidth: '280px', flex: 1 }}>
+                <Search size={14} className="gallery-search-icon" />
+                <input
+                  type="text"
+                  className="gallery-search-input"
+                  placeholder="Search caption or uploader..."
+                  value={modSearch}
+                  onChange={(e) => setModSearch(e.target.value)}
+                />
+                {modSearch && (
+                  <button type="button" className="search-clear-btn" onClick={() => setModSearch('')}>
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Moderation Photo Grid */}
+            {filteredModPhotos.length > 0 ? (
+              <div className="photo-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '16px' }}>
+                {filteredModPhotos.map(photo => (
+                  <div key={photo.id} className="photo-card" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                    <div className="photo-card-image-wrapper" style={{ height: '180px', position: 'relative' }}>
+                      <img src={photo.url} alt={photo.caption} className="photo-card-image" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <span className="photo-category-tag" style={{ position: 'absolute', top: '8px', left: '8px' }}>
+                        {photo.category}
+                      </span>
+                    </div>
+
+                    <div className="photo-card-content" style={{ padding: '12px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                      <div>
+                        {editingPhotoId === photo.id ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '8px' }}>
+                            <input
+                              type="text"
+                              className="input-field"
+                              style={{ fontSize: '12px', padding: '6px' }}
+                              value={editCaptionText}
+                              onChange={(e) => setEditCaptionText(e.target.value)}
+                            />
+                            <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
+                              <button type="button" className="btn-secondary" style={{ padding: '2px 8px', fontSize: '11px' }} onClick={() => setEditingPhotoId(null)}>Cancel</button>
+                              <button type="button" className="btn-gold" style={{ padding: '2px 8px', fontSize: '11px' }} onClick={() => handleSaveEditedCaption(photo.id)}>Save</button>
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="photo-caption" style={{ fontSize: '13px', margin: '0 0 6px', fontWeight: '600' }}>
+                            "{photo.caption}"
+                          </p>
+                        )}
+                        <span style={{ fontSize: '11px', color: 'var(--club-gray-dark)', display: 'block' }}>
+                          By: <strong>{photo.uploaderName}</strong>
+                        </span>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '12px', paddingTop: '8px', borderTop: '1px solid var(--club-gray)' }}>
+                        <button
+                          type="button"
+                          className="btn-text"
+                          style={{ color: 'var(--club-navy)', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: '600' }}
+                          onClick={() => handleStartEditCaption(photo)}
+                        >
+                          <Edit2 size={13} /> Edit
+                        </button>
+
+                        <button
+                          type="button"
+                          className="btn-text"
+                          style={{ color: 'var(--club-danger)', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: '600' }}
+                          onClick={() => {
+                            if (window.confirm('Are you sure you want to delete this photo from the gallery?')) {
+                              onDeletePhoto(photo.id);
+                              addToast('Photo deleted.', 'info');
+                            }
+                          }}
+                        >
+                          <Trash2 size={13} /> Delete
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="gallery-empty">
+                <ImageIcon size={48} />
+                <p className="gallery-empty-text">No photos found in moderation view</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* --- 5. CLUB PHOTO STORAGE QUOTA & PRICING (RESTRICTED TO OWNER) --- */}
+        {activeSubTab === 'cloud' && (
+          <div>
+            <div className="admin-section-header">
+              <div>
+                <h2 className="admin-section-title">Club Photo Storage Quota</h2>
+                <p style={{ fontSize: '13px', color: 'var(--club-gray-dark)', margin: '4px 0 0' }}>
+                  Monitor club photo storage capacity and manage storage bucket expansion options.
+                </p>
+              </div>
+            </div>
+
+            {/* Storage Quota Usage Meter */}
+            <div className="storage-meter-card">
+              <div className="storage-meter-header">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <HardDrive size={20} style={{ color: 'var(--club-navy)' }} />
+                  <span style={{ fontWeight: '700', fontSize: '15px' }}>Hub Storage Usage</span>
+                </div>
+                <span className="storage-badge-pill">
+                  {approxUsedGb} GB used of {totalGb} GB Total Quota
+                </span>
+              </div>
+
+              <div className="storage-progress-bar-bg">
+                <div
+                  className="storage-progress-fill"
+                  style={{ width: `${Math.min(100, Math.max(2, (parseFloat(approxUsedGb) / totalGb) * 100))}%` }}
+                ></div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--club-navy)', fontWeight: '600', marginTop: '10px' }}>
+                <span>{totalPhotos} photos stored</span>
+                <span>{((parseFloat(approxUsedGb) / totalGb) * 100).toFixed(1)}% Capacity Used</span>
+              </div>
+            </div>
+
+            {/* Storage Bucket Expansion Packs - OWNER ONLY */}
+            {isOwner ? (
+              <div className="storage-calculator-box">
+                <h3 className="storage-calc-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Crown size={18} style={{ color: '#D97706' }} /> Storage Bucket Expansion Packs & Subscription
+                </h3>
+                <p style={{ fontSize: '13px', color: 'var(--club-navy)', fontWeight: '500', marginBottom: '16px' }}>
+                  Your base plan includes <strong>25 GB</strong> storage quota. As a <strong>Club Owner</strong>, you can select an expansion pack to upgrade capacity:
+                </p>
+
+                <div className="storage-tiers-grid">
+                  {[
+                    { gb: 0, label: 'Standard Quota', totalGb: 25, desc: 'Included in Club Plan' },
+                    { gb: 25, label: '+25 GB Pack', totalGb: 50, desc: '50 GB Total Storage' },
+                    { gb: 50, label: '+50 GB Pack', totalGb: 75, desc: '75 GB Total Storage' },
+                    { gb: 100, label: '+100 GB Pro', totalGb: 125, desc: '125 GB Total Storage' },
+                    { gb: 250, label: '+250 GB Enterprise', totalGb: 275, desc: '275 GB Total Storage' }
+                  ].map(tier => (
+                    <button
+                      key={tier.gb}
+                      type="button"
+                      className={`storage-tier-card ${extraStorageGb === tier.gb ? 'selected' : ''}`}
+                      onClick={() => setExtraStorageGb(tier.gb)}
+                    >
+                      <span className="tier-gb">{tier.totalGb} GB</span>
+                      <span className="tier-label">{tier.label}</span>
+                      <small className="tier-desc">{tier.desc}</small>
+                    </button>
+                  ))}
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px' }}>
+                  <button
+                    type="button"
+                    className="btn-primary"
+                    style={{ padding: '10px 20px', fontSize: '13px' }}
+                    onClick={() => addToast(`Requested ${totalGb} GB Storage Bucket expansion for ${club.name}!`, 'success')}
+                  >
+                    <CheckCircle2 size={15} /> Save Storage Quota Selection ({totalGb} GB)
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div style={{ background: 'var(--club-gray-light)', padding: '20px', borderRadius: 'var(--radius-md)', border: '1px solid var(--club-gray)', marginTop: '20px' }}>
+                <h4 style={{ margin: '0 0 8px', color: 'var(--club-navy)', fontSize: '14px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Lock size={16} style={{ color: '#D97706' }} /> Owner-Only Subscription & Billing Controls
+                </h4>
+                <p style={{ margin: 0, fontSize: '13px', color: 'var(--club-gray-dark)' }}>
+                  Storage bucket expansion packs, plan pricing, and billing subscription options are accessible exclusively to designated <strong>Club Owners (Max 3)</strong>.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* --- MODAL DRAWER FOR ADD MEMBER / STAFF ADMIN / OWNER --- */}
         {activeModal === 'add' && (
           <div className="admin-modal-backdrop" onClick={() => setActiveModal(null)}>
             <div className="admin-modal-card" onClick={e => e.stopPropagation()}>
@@ -786,7 +1119,10 @@ export default function AdminPortal({
                     onChange={e => setNewRole(e.target.value)}
                   >
                     <option value="member">Club Member (Standard Gallery Access)</option>
-                    <option value="admin">Staff Admin (Full Club Management & Moderation)</option>
+                    <option value="admin">Staff Admin (Photo Moderation & Roster Access)</option>
+                    <option value="owner" disabled={owners.length >= 3}>
+                      Club Owner {owners.length >= 3 ? '(Max 3 Reached)' : '(Full Billing & Workspace Authority)'}
+                    </option>
                   </select>
                 </div>
 
@@ -858,229 +1194,45 @@ export default function AdminPortal({
                 {workbook && (
                   <>
                     <strong style={{ fontSize: '13px' }}>{workbookName}</strong>
-                    <div className="excel-column-map">
-                      <strong>Map Columns</strong>
-                      {[['memberNumber', 'Member number'], ['lastName', 'Last name'], ['firstName', 'First name'], ['email', 'Roster email']].map(([key, label]) => (
-                        <label key={key}><span>{label}</span><select value={columnMap[key]} onChange={event => setColumnMap(previous => ({ ...previous, [key]: event.target.value }))}><option value="">Choose column…</option>{sheetHeaders.map(header => <option key={`${key}-${header}`} value={header}>{header}</option>)}</select></label>
-                      ))}
+                    <p style={{ fontSize: '12px', color: 'var(--club-gray-dark)' }}>Map columns:</p>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                      <div>
+                        <label style={{ fontSize: '11px', fontWeight: '700' }}>Member Number</label>
+                        <select className="select-field" value={columnMap.memberNumber} onChange={e => setColumnMap({ ...columnMap, memberNumber: e.target.value })}>
+                          {sheetHeaders.map(h => <option key={h} value={h}>{h}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '11px', fontWeight: '700' }}>Last Name</label>
+                        <select className="select-field" value={columnMap.lastName} onChange={e => setColumnMap({ ...columnMap, lastName: e.target.value })}>
+                          {sheetHeaders.map(h => <option key={h} value={h}>{h}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '11px', fontWeight: '700' }}>First Name</label>
+                        <select className="select-field" value={columnMap.firstName} onChange={e => setColumnMap({ ...columnMap, firstName: e.target.value })}>
+                          {sheetHeaders.map(h => <option key={h} value={h}>{h}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '11px', fontWeight: '700' }}>Email</label>
+                        <select className="select-field" value={columnMap.email} onChange={e => setColumnMap({ ...columnMap, email: e.target.value })}>
+                          {sheetHeaders.map(h => <option key={h} value={h}>{h}</option>)}
+                        </select>
+                      </div>
                     </div>
                   </>
                 )}
+                {excelImportSummary && (
+                  <div style={{ padding: '10px', background: 'rgba(30, 107, 63, 0.1)', borderRadius: '6px', fontSize: '12px', color: 'var(--club-green-dark)' }}>
+                    Imported {excelImportSummary.addedCount} rows, skipped {excelImportSummary.skippedCount}.
+                  </div>
+                )}
                 <div className="admin-modal-footer">
                   <button type="button" className="btn-secondary" onClick={() => setActiveModal(null)}>Cancel</button>
-                  <button type="submit" className="btn-primary" disabled={!workbook}><Upload size={14} /> Map & Import Roster</button>
+                  <button type="submit" className="btn-primary" disabled={!workbook}>Import Excel Rows</button>
                 </div>
               </form>
-            </div>
-          </div>
-        )}
-
-        {/* --- 4. PHOTO MODERATION GALLERY VIEW --- */}
-        {activeSubTab === 'moderation' && (
-          <div>
-            <div className="admin-section-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
-              <div>
-                <h2 className="admin-section-title">Photo Moderation Gallery</h2>
-                <p style={{ fontSize: '13px', color: 'var(--club-gray-dark)', margin: '4px 0 0' }}>
-                  {filteredModPhotos.length} photos found. Edit captions or remove images from the club gallery.
-                </p>
-              </div>
-
-              {setActiveTab && (
-                <button type="button" className="btn-primary" onClick={() => setActiveTab('upload')}>
-                  <Upload size={15} /> Upload New Photos
-                </button>
-              )}
-            </div>
-
-            <div className="gallery-toolbar" style={{ marginTop: '16px' }}>
-              <div className="gallery-search-group">
-                <Search size={16} className="search-icon" />
-                <input
-                  type="text"
-                  className="gallery-search-input"
-                  placeholder="Filter moderation photos..."
-                  value={modSearch}
-                  onChange={(e) => setModSearch(e.target.value)}
-                />
-                {modSearch && (
-                  <button type="button" className="search-clear-btn" onClick={() => setModSearch('')}>
-                    <X size={14} />
-                  </button>
-                )}
-              </div>
-
-              <div className="category-filter-pills">
-                {categories.map(cat => (
-                  <button
-                    key={cat}
-                    className={`filter-pill ${modCategory === cat ? 'active' : ''}`}
-                    onClick={() => setModCategory(cat)}
-                  >
-                    {cat}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {filteredModPhotos.length > 0 ? (
-              <div className="gallery-grid photo-gallery-grid" style={{ marginTop: '16px' }}>
-                {filteredModPhotos.map(photo => (
-                  <div key={photo.id} className="photo-card gallery-grid-card mod-photo-card">
-                    <span className="photo-card-img-wrapper">
-                      <img src={photo.url} alt={photo.caption} className="photo-card-img" />
-                      <span className="photo-card-category">{photo.category}</span>
-                    </span>
-
-                    <div className="photo-card-details" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <span className="photo-card-uploader" style={{ fontWeight: '700', color: 'var(--club-navy)' }}>
-                        By: {photo.uploaderName || 'Club Member'}
-                      </span>
-
-                      {editingPhotoId === photo.id ? (
-                        <div className="mod-edit-caption-row" style={{ display: 'flex', gap: '6px' }}>
-                          <input
-                            type="text"
-                            className="input-field"
-                            style={{ padding: '4px 8px', fontSize: '12px', flex: 1 }}
-                            value={editCaptionText}
-                            onChange={(e) => setEditCaptionText(e.target.value)}
-                          />
-                          <button
-                            type="button"
-                            className="btn-gold"
-                            style={{ padding: '4px 8px', fontSize: '11px' }}
-                            onClick={() => handleSaveEditedCaption(photo.id)}
-                          >
-                            <Check size={12} />
-                          </button>
-                          <button
-                            type="button"
-                            className="btn-secondary"
-                            style={{ padding: '4px 8px', fontSize: '11px' }}
-                            onClick={() => setEditingPhotoId(null)}
-                          >
-                            <X size={12} />
-                          </button>
-                        </div>
-                      ) : (
-                        <p className="photo-card-caption" style={{ margin: 0 }}>{photo.caption}</p>
-                      )}
-
-                      <div className="mod-card-actions" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px', paddingTop: '8px', borderTop: '1px solid var(--club-gray-light)' }}>
-                        <button
-                          type="button"
-                          className="btn-text"
-                          style={{ color: 'var(--club-gold-dark)', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: '600' }}
-                          onClick={() => handleStartEditCaption(photo)}
-                        >
-                          <Edit2 size={12} /> Edit Caption
-                        </button>
-
-                        <button
-                          type="button"
-                          className="btn-text"
-                          style={{ color: 'var(--club-danger)', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: '600' }}
-                          onClick={() => {
-                            if (window.confirm('Are you sure you want to delete this photo from the gallery?')) {
-                              onDeletePhoto(photo.id);
-                              addToast('Photo deleted.', 'info');
-                            }
-                          }}
-                        >
-                          <Trash2 size={13} /> Delete
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="gallery-empty">
-                <ImageIcon size={48} />
-                <p className="gallery-empty-text">No photos found in moderation view</p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* --- 5. CLEAN CLUB PHOTO STORAGE QUOTA --- */}
-        {activeSubTab === 'cloud' && (
-          <div>
-            <div className="admin-section-header">
-              <div>
-                <h2 className="admin-section-title">Club Photo Storage Quota</h2>
-                <p style={{ fontSize: '13px', color: 'var(--club-gray-dark)', margin: '4px 0 0' }}>
-                  Manage storage capacity and order additional photo bucket expansion packs for your club.
-                </p>
-              </div>
-            </div>
-
-            {/* Storage Quota Usage Meter */}
-            <div className="storage-meter-card">
-              <div className="storage-meter-header">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <HardDrive size={20} style={{ color: 'var(--club-navy)' }} />
-                  <span style={{ fontWeight: '700', fontSize: '15px' }}>Hub Storage Usage</span>
-                </div>
-                <span className="storage-badge-pill">
-                  {approxUsedGb} GB used of {totalGb} GB Total Quota
-                </span>
-              </div>
-
-              <div className="storage-progress-bar-bg">
-                <div
-                  className="storage-progress-fill"
-                  style={{ width: `${Math.min(100, Math.max(2, (parseFloat(approxUsedGb) / totalGb) * 100))}%` }}
-                ></div>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--club-navy)', fontWeight: '600', marginTop: '10px' }}>
-                <span>{totalPhotos} photos stored</span>
-                <span>{((parseFloat(approxUsedGb) / totalGb) * 100).toFixed(1)}% Capacity Used</span>
-              </div>
-            </div>
-
-            {/* Storage Bucket Expansion Packs */}
-            <div className="storage-calculator-box">
-              <h3 className="storage-calc-title">
-                <HardDrive size={18} /> Storage Bucket Expansion Packs
-              </h3>
-              <p style={{ fontSize: '13px', color: 'var(--club-navy)', fontWeight: '500', marginBottom: '16px' }}>
-                Your plan includes <strong>25 GB</strong> storage quota. Select an expansion pack to increase capacity for high-res photos:
-              </p>
-
-              <div className="storage-tiers-grid">
-                {[
-                  { gb: 0, label: 'Standard Quota', totalGb: 25, desc: 'Included in Club Plan' },
-                  { gb: 25, label: '+25 GB Pack', totalGb: 50, desc: '50 GB Total Storage' },
-                  { gb: 50, label: '+50 GB Pack', totalGb: 75, desc: '75 GB Total Storage' },
-                  { gb: 100, label: '+100 GB Pro', totalGb: 125, desc: '125 GB Total Storage' },
-                  { gb: 250, label: '+250 GB Enterprise', totalGb: 275, desc: '275 GB Total Storage' }
-                ].map(tier => (
-                  <button
-                    key={tier.gb}
-                    type="button"
-                    className={`storage-tier-card ${extraStorageGb === tier.gb ? 'selected' : ''}`}
-                    onClick={() => setExtraStorageGb(tier.gb)}
-                  >
-                    <span className="tier-gb">{tier.totalGb} GB</span>
-                    <span className="tier-label">{tier.label}</span>
-                    <small className="tier-desc">{tier.desc}</small>
-                  </button>
-                ))}
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px' }}>
-                <button
-                  type="button"
-                  className="btn-primary"
-                  style={{ padding: '10px 20px', fontSize: '13px' }}
-                  onClick={() => addToast(`Requested ${totalGb} GB Storage Bucket expansion for ${club.name}!`, 'success')}
-                >
-                  <CheckCircle2 size={15} /> Save Storage Quota Selection ({totalGb} GB)
-                </button>
-              </div>
             </div>
           </div>
         )}

@@ -1,9 +1,9 @@
 export const seedMembers = [
-  { memberNumber: '1001', lastName: 'Smith', firstName: 'John', password: '', registeredAt: '' },
-  { memberNumber: '1002', lastName: 'Jenkins', firstName: 'Sarah', password: '', registeredAt: '' },
-  { memberNumber: '1003', lastName: 'Davis', firstName: 'Robert', password: '', registeredAt: '' },
-  { memberNumber: '1004', lastName: 'Thompson', firstName: 'Emily', password: '', registeredAt: '' },
-  { memberNumber: '1005', lastName: 'Wilson', firstName: 'David', password: '', registeredAt: '' }
+  { memberNumber: '1001', lastName: 'Smith', firstName: 'John', role: 'owner', password: '', registeredAt: '' },
+  { memberNumber: '1002', lastName: 'Jenkins', firstName: 'Sarah', role: 'admin', password: '', registeredAt: '' },
+  { memberNumber: '1003', lastName: 'Davis', firstName: 'Robert', role: 'member', password: '', registeredAt: '' },
+  { memberNumber: '1004', lastName: 'Thompson', firstName: 'Emily', role: 'member', password: '', registeredAt: '' },
+  { memberNumber: '1005', lastName: 'Wilson', firstName: 'David', role: 'member', password: '', registeredAt: '' }
 ];
 
 export const demoClub = {

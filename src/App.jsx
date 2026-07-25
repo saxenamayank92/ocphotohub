@@ -132,13 +132,13 @@ export default function App() {
   };
 
   const handleLoginSuccess = (user, admin) => {
-    const isUserAdmin = Boolean(admin || user?.role === 'admin');
+    const isUserAdmin = Boolean(admin || user?.role === 'admin' || user?.role === 'owner');
     setCurrentUser(user);
     setIsAdmin(isUserAdmin);
     setActiveTab(isUserAdmin ? 'admin' : 'gallery');
     sessionStorage.setItem('oakville_user', JSON.stringify(user));
     sessionStorage.setItem('oakville_is_admin', String(isUserAdmin));
-    addToast(`Signed in as ${isUserAdmin ? 'Staff Admin' : `${user.firstName} ${user.lastName}`}`, 'success');
+    addToast(`Signed in as ${user?.role === 'owner' ? 'Club Owner' : isUserAdmin ? 'Staff Admin' : `${user.firstName} ${user.lastName}`}`, 'success');
   };
 
   const handleCloudLogin = async credentials => {
@@ -330,12 +330,12 @@ export default function App() {
     <div className="app-container">
       <Header user={currentUser} club={currentClub || clubBrand} isAdmin={isAdmin} activeTab={activeTab} setActiveTab={setActiveTab} onLogout={handleLogout} />
       {demoMode && <div className="demo-mode-banner"><span><ShieldCheck size={15} /> Exploring the read-only Your Club demo</span><a href="/app?onboard=club">Create your workspace</a></div>}
-      {!demoMode && trialDaysLeft !== null && <div className={`trial-status-banner ${trialDaysLeft === 0 ? 'expired' : ''}`}><span>{trialDaysLeft > 0 ? `${trialDaysLeft} days left in your free trial` : 'Your trial has ended. This workspace is now read-only.'}</span>{isAdmin && <a href="mailto:support@xtide.io?subject=Activate%20Club%20PhotoHub">Activate plan</a>}</div>}
+      {!demoMode && trialDaysLeft !== null && currentUser?.role === 'owner' && <div className={`trial-status-banner ${trialDaysLeft === 0 ? 'expired' : ''}`}><span>{trialDaysLeft > 0 ? `${trialDaysLeft} days left in your free trial` : 'Your trial has ended. This workspace is now read-only.'}</span><a href="mailto:support@xtide.io?subject=Activate%20Club%20PhotoHub">Activate plan</a></div>}
       <main className="content-wrapper">
         <Suspense fallback={<div className="panel-loading" role="status"><div className="spinner" /><span>Loading…</span></div>}>
           {activeTab === 'gallery' && <PhotoGallery photos={photos} currentUser={currentUser} isAdmin={isAdmin} onHeartPhoto={handleHeartPhoto} onDeletePhoto={handleDeletePhoto} />}
           {activeTab === 'upload' && <PhotoUpload user={currentUser} onUploadSuccess={handleUploadPhoto} addToast={addToast} />}
-          {activeTab === 'admin' && isAdmin && <AdminPortal club={currentClub || clubBrand} members={members} photos={photos} onUpdateClub={handleUpdateClub} onAddMember={handleAddMember} onUpdateMember={handleUpdateMember} onDeleteMember={handleDeleteMember} onSetMemberPassword={handleSetMemberPassword} onDeletePhoto={handleDeletePhoto} onUpdatePhoto={handleUpdatePhoto} firebaseConfig={cloudActive ? { provider: 'managed' } : null} onResetDatabase={handleResetDatabase} addToast={addToast} />}
+          {activeTab === 'admin' && isAdmin && <AdminPortal user={currentUser} club={currentClub || clubBrand} members={members} photos={photos} onUpdateClub={handleUpdateClub} onAddMember={handleAddMember} onUpdateMember={handleUpdateMember} onDeleteMember={handleDeleteMember} onSetMemberPassword={handleSetMemberPassword} onDeletePhoto={handleDeletePhoto} onUpdatePhoto={handleUpdatePhoto} firebaseConfig={cloudActive ? { provider: 'managed' } : null} onResetDatabase={handleResetDatabase} addToast={addToast} />}
           {activeTab === 'account' && <AccountSettings user={currentUser} club={currentClub || clubBrand} isAdmin={isAdmin} demoMode={demoMode} onDeleteAccount={handleDeleteAccount} onDeleteOrganization={handleDeleteOrganization} addToast={addToast} />}
         </Suspense>
       </main>
