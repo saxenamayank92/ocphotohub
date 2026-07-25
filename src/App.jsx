@@ -132,12 +132,13 @@ export default function App() {
   };
 
   const handleLoginSuccess = (user, admin) => {
+    const isUserAdmin = Boolean(admin || user?.role === 'admin');
     setCurrentUser(user);
-    setIsAdmin(admin);
-    setActiveTab(admin ? 'admin' : 'gallery');
+    setIsAdmin(isUserAdmin);
+    setActiveTab(isUserAdmin ? 'admin' : 'gallery');
     sessionStorage.setItem('oakville_user', JSON.stringify(user));
-    sessionStorage.setItem('oakville_is_admin', String(admin));
-    addToast(`Signed in as ${admin ? 'Club Admin' : `${user.firstName} ${user.lastName}`}`, 'success');
+    sessionStorage.setItem('oakville_is_admin', String(isUserAdmin));
+    addToast(`Signed in as ${isUserAdmin ? 'Staff Admin' : `${user.firstName} ${user.lastName}`}`, 'success');
   };
 
   const handleCloudLogin = async credentials => {

@@ -105,7 +105,7 @@ export default function Login({
     if (!member.password) { setRegisteredMember(member); setIsRegistering(true); return; }
     if (!showPassword) { setShowPassword(true); return; }
     if (member.password !== password) return setError('Incorrect password.');
-    onLoginSuccess(member, false);
+    onLoginSuccess(member, member.role === 'admin');
   };
 
   const handleSendCode = async () => {
