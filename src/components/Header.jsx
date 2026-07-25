@@ -37,6 +37,14 @@ export default function Header({ user, club, isAdmin, activeTab, setActiveTab, o
                   <Image size={16} /> View Gallery
                 </span>
               </button>
+              <button
+                onClick={() => setActiveTab('upload')}
+                className={`tab-btn ${activeTab === 'upload' ? 'active' : ''}`}
+              >
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Upload size={16} /> Upload Photos
+                </span>
+              </button>
             </>
           ) : (
             <>

@@ -3064,4 +3064,62 @@
   margin-top: 8px;
 }
 
+/* SIDEBAR LOGO SIZE FIX */
+.admin-sidebar-logo {
+  width: 42px !important;
+  height: 42px !important;
+  max-width: 42px !important;
+  max-height: 42px !important;
+  object-fit: contain !important;
+  border-radius: 8px !important;
+  border: 1px solid var(--club-gray) !important;
+  background: var(--club-white) !important;
+  padding: 2px !important;
+  flex: 0 0 42px !important;
+}
+
+.admin-sidebar-logo-fallback {
+  width: 42px !important;
+  height: 42px !important;
+  border-radius: 8px !important;
+  background: var(--club-navy) !important;
+  color: #fff !important;
+  font-weight: 800 !important;
+  font-size: 16px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: 0 0 42px !important;
+}
+
+/* BATCH EVENT TAGGING TOOL */
+.batch-tag-box {
+  background: var(--club-gray-light);
+  border: 1px solid var(--club-gray);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  margin-bottom: 14px;
+}
+
+.batch-tag-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+/* MODERATION GALLERY CARDS */
+.mod-photo-card {
+  position: relative;
+  background: var(--club-white);
+  border: 1px solid var(--club-gray);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.mod-card-actions {
+  padding-top: 6px;
+}
+
+
 

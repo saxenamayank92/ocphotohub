@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   Users, Image as ImageIcon, BarChart3,
-  Building2, Trash2, Plus, RefreshCw, Upload, FileSpreadsheet, Key, Database, AlertCircle, X, FileText, UserPlus
+  Building2, Trash2, Plus, RefreshCw, Upload, FileSpreadsheet, Key, Database, AlertCircle, X, FileText, UserPlus, Edit2, Check, Search
 } from 'lucide-react';
 
 const normalizeMemberNumber = num => String(num || '').trim();
@@ -19,7 +19,8 @@ export default function AdminPortal({
   onUpdatePhoto,
   firebaseConfig,
   onResetDatabase,
-  addToast
+  addToast,
+  setActiveTab
 }) {
   const [activeSubTab, setActiveSubTab] = useState('clubs'); // 'clubs' | 'dashboard' | 'members' | 'moderation' | 'cloud'
 
@@ -48,10 +49,13 @@ export default function AdminPortal({
   const [excelStatus, setExcelStatus] = useState('');
   const [excelImportSummary, setExcelImportSummary] = useState(null);
 
-  // Moderation filter state
-  const [categoryFilter, setCategoryFilter] = useState('All');
-  const [selectedPhoto, setSelectedPhoto] = useState(null);
-  const [editCaption, setEditCaption] = useState('');
+  // Moderation filter & editing state
+  const [modCategory, setModCategory] = useState('All');
+  const [modSearch, setModSearch] = useState('');
+  const [editingPhotoId, setEditingPhotoId] = useState(null);
+  const [editCaptionText, setEditCaptionText] = useState('');
+
+  const categories = ['All', 'General', 'Tennis', 'Golf', 'Dining', 'Clubhouse', 'Events'];
 
   const handleClubSetupSubmit = async (e) => {
     e.preventDefault();
@@ -97,15 +101,15 @@ export default function AdminPortal({
     try {
       setExcelStatus('Reading Excel file...');
       const { default: readXlsxFile } = await import('read-excel-file/browser');
-
       const rows = await readXlsxFile(file);
+
       if (!rows || rows.length === 0) {
         setExcelStatus('This workbook appears to be empty.');
         setWorkbook(null);
         return;
       }
 
-      sheets = [{ sheet: 'Sheet 1', rows }];
+      const sheets = [{ sheet: 'Sheet 1', rows }];
       setWorkbook(sheets);
       setWorkbookName(file.name);
       setSheetName(sheets[0].sheet);
@@ -131,7 +135,6 @@ export default function AdminPortal({
     setSheetHeaders(rawHeaders);
     setSheetRows(rawData);
 
-    // Auto-map header names if matching
     const nextMap = { memberNumber: '', lastName: '', firstName: '', email: '' };
     rawHeaders.forEach(h => {
       const lower = h.toLowerCase();
@@ -298,12 +301,41 @@ export default function AdminPortal({
     }
   };
 
+  const handleStartEditCaption = (photo) => {
+    setEditingPhotoId(photo.id);
+    setEditCaptionText(photo.caption || '');
+  };
+
+  const handleSaveEditedCaption = async (photoId) => {
+    if (!editCaptionText.trim()) return;
+    try {
+      await onUpdatePhoto(photoId, { caption: editCaptionText.trim() });
+      addToast('Photo caption updated!', 'success');
+      setEditingPhotoId(null);
+    } catch (e) {
+      console.error(e);
+      addToast('Could not update photo caption.', 'error');
+    }
+  };
+
   const handleResetDatabaseClick = async () => {
     if (window.confirm('Are you sure you want to reset the database? All custom photos and uploaded roster members will be cleared.')) {
       await onResetDatabase();
       addToast('Hub database reset to seed data.', 'info');
     }
   };
+
+  // Moderation filtering
+  const filteredModPhotos = photos.filter(photo => {
+    const matchesCategory = modCategory === 'All' || photo.category === modCategory;
+    const query = modSearch.trim().toLowerCase();
+    const matchesSearch = !query ||
+      photo.caption?.toLowerCase().includes(query) ||
+      photo.uploaderName?.toLowerCase().includes(query) ||
+      photo.category?.toLowerCase().includes(query);
+
+    return matchesCategory && matchesSearch;
+  });
 
   return (
     <div className="admin-portal-layout animate-fade-in">
@@ -502,7 +534,6 @@ export default function AdminPortal({
                 </span>
               </div>
 
-              {/* Top Action Buttons to open import modals */}
               <div className="admin-actions-bar">
                 <button type="button" className="btn-primary" onClick={() => setActiveModal('add')}>
                   <UserPlus size={15} /> Add Member
@@ -516,7 +547,6 @@ export default function AdminPortal({
               </div>
             </div>
 
-            {/* Main Focus: Member Directory Table */}
             <div className="table-wrapper member-directory-table" style={{ marginTop: '16px' }}>
               <table className="admin-table">
                 <thead>
@@ -693,25 +723,135 @@ export default function AdminPortal({
           </div>
         )}
 
-        {/* --- 4. PHOTO MODERATION --- */}
+        {/* --- 4. PHOTO MODERATION GALLERY VIEW --- */}
         {activeSubTab === 'moderation' && (
           <div>
-            <div className="admin-section-header">
-              <h2 className="admin-section-title">Photo Moderation</h2>
+            <div className="admin-section-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+              <div>
+                <h2 className="admin-section-title">Photo Moderation Gallery</h2>
+                <p style={{ fontSize: '13px', color: 'var(--club-gray-dark)', margin: '4px 0 0' }}>
+                  {filteredModPhotos.length} photos found. Edit captions or remove images from the club gallery.
+                </p>
+              </div>
+
+              {setActiveTab && (
+                <button type="button" className="btn-primary" onClick={() => setActiveTab('upload')}>
+                  <Upload size={15} /> Upload New Photos
+                </button>
+              )}
             </div>
-            <div className="gallery-grid photo-gallery-grid">
-              {photos.map(photo => (
-                <div key={photo.id} className="photo-card">
-                  <img src={photo.url} alt={photo.caption} className="photo-card-img" />
-                  <div className="photo-card-details">
-                    <p className="photo-card-caption"><strong>{photo.uploaderName}</strong>: {photo.caption}</p>
-                    <button className="btn-danger" style={{ marginTop: '8px', padding: '6px 12px', fontSize: '12px' }} onClick={() => onDeletePhoto(photo.id)}>
-                      <Trash2 size={13} /> Delete Photo
-                    </button>
+
+            {/* Moderation Search & Category Filter Toolbar */}
+            <div className="gallery-toolbar" style={{ marginTop: '16px' }}>
+              <div className="gallery-search-group">
+                <Search size={16} className="search-icon" />
+                <input
+                  type="text"
+                  className="gallery-search-input"
+                  placeholder="Filter moderation photos..."
+                  value={modSearch}
+                  onChange={(e) => setModSearch(e.target.value)}
+                />
+                {modSearch && (
+                  <button type="button" className="search-clear-btn" onClick={() => setModSearch('')}>
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+
+              <div className="category-filter-pills">
+                {categories.map(cat => (
+                  <button
+                    key={cat}
+                    className={`filter-pill ${modCategory === cat ? 'active' : ''}`}
+                    onClick={() => setModCategory(cat)}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Gallery View Grid for Moderation */}
+            {filteredModPhotos.length > 0 ? (
+              <div className="gallery-grid photo-gallery-grid" style={{ marginTop: '16px' }}>
+                {filteredModPhotos.map(photo => (
+                  <div key={photo.id} className="photo-card gallery-grid-card mod-photo-card">
+                    <span className="photo-card-img-wrapper">
+                      <img src={photo.url} alt={photo.caption} className="photo-card-img" />
+                      <span className="photo-card-category">{photo.category}</span>
+                    </span>
+
+                    <div className="photo-card-details" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <span className="photo-card-uploader" style={{ fontWeight: '700', color: 'var(--club-navy)' }}>
+                        By: {photo.uploaderName || 'Club Member'}
+                      </span>
+
+                      {/* Inline Caption Editing */}
+                      {editingPhotoId === photo.id ? (
+                        <div className="mod-edit-caption-row" style={{ display: 'flex', gap: '6px' }}>
+                          <input
+                            type="text"
+                            className="input-field"
+                            style={{ padding: '4px 8px', fontSize: '12px', flex: 1 }}
+                            value={editCaptionText}
+                            onChange={(e) => setEditCaptionText(e.target.value)}
+                          />
+                          <button
+                            type="button"
+                            className="btn-gold"
+                            style={{ padding: '4px 8px', fontSize: '11px' }}
+                            onClick={() => handleSaveEditedCaption(photo.id)}
+                          >
+                            <Check size={12} />
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-secondary"
+                            style={{ padding: '4px 8px', fontSize: '11px' }}
+                            onClick={() => setEditingPhotoId(null)}
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
+                      ) : (
+                        <p className="photo-card-caption" style={{ margin: 0 }}>{photo.caption}</p>
+                      )}
+
+                      <div className="mod-card-actions" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px', paddingTop: '8px', borderTop: '1px solid var(--club-gray-light)' }}>
+                        <button
+                          type="button"
+                          className="btn-text"
+                          style={{ color: 'var(--club-gold-dark)', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: '600' }}
+                          onClick={() => handleStartEditCaption(photo)}
+                        >
+                          <Edit2 size={12} /> Edit Caption
+                        </button>
+
+                        <button
+                          type="button"
+                          className="btn-text"
+                          style={{ color: 'var(--club-danger)', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: '600' }}
+                          onClick={() => {
+                            if (window.confirm('Are you sure you want to delete this photo from the gallery?')) {
+                              onDeletePhoto(photo.id);
+                              addToast('Photo deleted.', 'info');
+                            }
+                          }}
+                        >
+                          <Trash2 size={13} /> Delete
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="gallery-empty">
+                <ImageIcon size={48} />
+                <p className="gallery-empty-text">No photos found in moderation view</p>
+              </div>
+            )}
           </div>
         )}
 

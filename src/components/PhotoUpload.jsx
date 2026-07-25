@@ -1,13 +1,14 @@
 import React, { useEffect, useState, useRef } from 'react';
 import {
   Upload, Image as ImageIcon, Camera,
-  AlertCircle, Sparkles, RefreshCw, Plus, X, Sliders, Check
+  AlertCircle, Sparkles, RefreshCw, Plus, X, Sliders, Check, Tag
 } from 'lucide-react';
 import { clubBrand } from '../brand';
 
 export default function PhotoUpload({ user, onUploadSuccess, addToast }) {
   const [uploadQueue, setUploadQueue] = useState([]); // [{ id, fileName, previewUrl, originalFile, caption, category, aiSuggestions, isGeneratingCaption, filterPreset, brightness, contrast, saturation, vignette }]
   const [globalCategory, setGlobalCategory] = useState('General');
+  const [batchTagText, setBatchTagText] = useState('');
 
   const [isLoading, setIsLoading] = useState(false);
   const [loadingStatus, setLoadingStatus] = useState('');
@@ -24,7 +25,6 @@ export default function PhotoUpload({ user, onUploadSuccess, addToast }) {
 
   const fileInputRef = useRef(null);
   const previewUrlsRef = useRef(new Set());
-  const canvasRef = useRef(null);
 
   const categories = ['General', 'Tennis', 'Golf', 'Dining', 'Clubhouse', 'Events'];
 
@@ -126,6 +126,17 @@ export default function PhotoUpload({ user, onUploadSuccess, addToast }) {
     }));
   };
 
+  const handleApplyBatchTag = () => {
+    if (!batchTagText.trim()) return;
+    const tag = batchTagText.trim();
+    setUploadQueue(prev => prev.map((item, idx) => ({
+      ...item,
+      caption: prev.length > 1 ? `${tag} (${idx + 1})` : tag
+    })));
+    addToast(`Applied event tag "${tag}" to all ${uploadQueue.length} photo(s)!`, 'success');
+    setBatchTagText('');
+  };
+
   const handleRemoveFromQueue = (itemId) => {
     setUploadQueue(prev => {
       revokePreview(prev.find(item => item.id === itemId));
@@ -138,6 +149,23 @@ export default function PhotoUpload({ user, onUploadSuccess, addToast }) {
     uploadQueue.forEach(revokePreview);
     setUploadQueue([]);
     addToast('Cleared entire upload queue.', 'info');
+  };
+
+  // INSTANT NATIVE HEIC TEST: Tries browser hardware decoding first before WASM fallback
+  const testNativeImageLoad = (file) => {
+    return new Promise((resolve) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        resolve(img);
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        resolve(null);
+      };
+      img.src = url;
+    });
   };
 
   // Canvas renderer with custom CSS filters and vignette effect
@@ -179,7 +207,6 @@ export default function PhotoUpload({ user, onUploadSuccess, addToast }) {
           ctx.filter = `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%)`;
           ctx.drawImage(img, 0, 0, width, height);
 
-          // Add vignette overlay if specified
           if (vignette > 0) {
             const outerRadius = Math.sqrt(Math.pow(width / 2, 2) + Math.pow(height / 2, 2));
             const gradient = ctx.createRadialGradient(
@@ -239,22 +266,27 @@ export default function PhotoUpload({ user, onUploadSuccess, addToast }) {
       try {
         let fileToCompress = rawFile;
 
+        // INSTANT HEIC HANDLING: Test if browser can decode HEIC natively first!
         if (isHeic) {
-          try {
-            setLoadingStatus(`Converting iPhone photo ${i + 1} of ${filesArray.length}…`);
-            const { default: heic2any } = await withTimeout(import('heic2any'), 15000, 'HEIC converter timeout.');
-            const convertedBlob = await withTimeout(heic2any({
-              blob: rawFile,
-              toType: 'image/jpeg',
-              quality: 0.85
-            }), 30000, 'HEIC conversion timeout.');
+          const nativeLoaded = await testNativeImageLoad(rawFile);
+          if (!nativeLoaded) {
+            // Fallback to JS converter only if native browser GPU decoder failed
+            try {
+              setLoadingStatus(`Converting iPhone photo ${i + 1} of ${filesArray.length}…`);
+              const { default: heic2any } = await withTimeout(import('heic2any'), 10000, 'HEIC converter timeout.');
+              const convertedBlob = await withTimeout(heic2any({
+                blob: rawFile,
+                toType: 'image/jpeg',
+                quality: 0.85
+              }), 20000, 'HEIC conversion timeout.');
 
-            const actualBlob = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
-            fileToCompress = new File([actualBlob], rawFile.name.replace(/\.(heic|heif)$/i, '.jpg'), { type: 'image/jpeg' });
-          } catch (heicErr) {
-            console.error('HEIC failed', heicErr);
-            addToast(`Could not process HEIC: ${rawFile.name}`, 'error');
-            continue;
+              const actualBlob = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
+              fileToCompress = new File([actualBlob], rawFile.name.replace(/\.(heic|heif)$/i, '.jpg'), { type: 'image/jpeg' });
+            } catch (heicErr) {
+              console.error('HEIC fallback failed', heicErr);
+              addToast(`Could not process HEIC: ${rawFile.name}`, 'error');
+              continue;
+            }
           }
         }
 
@@ -293,7 +325,6 @@ export default function PhotoUpload({ user, onUploadSuccess, addToast }) {
     }
   };
 
-  // Studio Edit Handlers
   const handleOpenStudio = (item) => {
     setEditingItemId(item.id);
     setStudioFilter(item.filterPreset || 'normal');
@@ -390,7 +421,7 @@ export default function PhotoUpload({ user, onUploadSuccess, addToast }) {
 
     try {
       const dateStamp = new Date().toISOString().split('T')[0];
-      const cleanLastName = user.lastName.replace(/[^a-zA-Z0-9]/g, '');
+      const cleanLastName = (user.lastName || 'Admin').replace(/[^a-zA-Z0-9]/g, '');
 
       for (let i = 0; i < uploadQueue.length; i++) {
         const item = uploadQueue[i];
@@ -400,6 +431,9 @@ export default function PhotoUpload({ user, onUploadSuccess, addToast }) {
         const cleanClubName = clubBrand.shortName.replace(/[^a-zA-Z0-9]/g, '');
         const contextFileName = `${cleanClubName}_${item.category}_${cleanLastName}_${dateStamp}_${randomHex}.jpg`;
 
+        const uploaderName = user.firstName ? `${user.firstName} ${user.lastName}` : (user.name || 'Club Management');
+        const uploaderId = user.memberNumber || 'admin';
+
         const photoObject = {
           id: `photo-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           url: item.previewUrl,
@@ -407,8 +441,8 @@ export default function PhotoUpload({ user, onUploadSuccess, addToast }) {
           fileName: contextFileName,
           caption: item.caption.trim() || `${item.category} moment at the club`,
           category: item.category,
-          uploaderName: `${user.firstName} ${user.lastName}`,
-          uploaderId: user.memberNumber,
+          uploaderName,
+          uploaderId,
           createdAt: new Date().toISOString(),
           hearts: 0,
           heartUsers: []
@@ -438,7 +472,7 @@ export default function PhotoUpload({ user, onUploadSuccess, addToast }) {
     <div className="upload-card animate-fade-in">
       <h2 className="upload-title">Share Your Club Moments</h2>
       <p className="upload-subtitle">
-        Upload photos, apply pro color presets in our Photo Studio, tag categories, and share with fellow club members.
+        Upload photos, apply pro color presets in our Photo Studio, batch tag event titles, and share with members.
       </p>
 
       {error && (
@@ -486,7 +520,7 @@ export default function PhotoUpload({ user, onUploadSuccess, addToast }) {
             <Sliders size={12} /> Pro Filters Studio
           </span>
           <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', fontWeight: '500' }}>
-            <ImageIcon size={12} /> HEIC Auto-Convert
+            <ImageIcon size={12} /> Instant HEIC Engine
           </span>
         </div>
       </div>
@@ -526,13 +560,34 @@ export default function PhotoUpload({ user, onUploadSuccess, addToast }) {
             </button>
           </div>
 
+          {/* BATCH EVENT TAGGING TOOL */}
+          <div className="batch-tag-box">
+            <div className="batch-tag-row">
+              <input
+                type="text"
+                className="input-field"
+                style={{ padding: '8px 12px', fontSize: '12px', flex: 1 }}
+                placeholder="Event Title / Base Tag for all photos (e.g. Summer Gala 2026)..."
+                value={batchTagText}
+                onChange={(e) => setBatchTagText(e.target.value)}
+              />
+              <button
+                type="button"
+                className="btn-secondary"
+                style={{ padding: '8px 14px', fontSize: '12px', whiteSpace: 'nowrap' }}
+                onClick={handleApplyBatchTag}
+              >
+                <Tag size={13} /> Tag All ({uploadQueue.length})
+              </button>
+            </div>
+          </div>
+
           <div className="upload-queue-list">
             {uploadQueue.map((item, idx) => (
               <div key={item.id} className="upload-queue-item">
                 <div className="upload-queue-preview">
                   <img src={item.previewUrl} alt={`Preview ${idx}`} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'var(--radius-md)' }} />
                   
-                  {/* Photo Studio Button Badge */}
                   <button
                     type="button"
                     className="studio-trigger-badge"
@@ -632,7 +687,6 @@ export default function PhotoUpload({ user, onUploadSuccess, addToast }) {
             </div>
 
             <div className="studio-modal-body">
-              {/* Studio Canvas Preview */}
               <div className="studio-preview-frame">
                 <img
                   src={editingItem.previewUrl}
@@ -647,7 +701,6 @@ export default function PhotoUpload({ user, onUploadSuccess, addToast }) {
                 />
               </div>
 
-              {/* Presets Row */}
               <div className="studio-presets-row">
                 <span className="studio-label">Filter Presets:</span>
                 <div className="studio-presets-list">
@@ -664,7 +717,6 @@ export default function PhotoUpload({ user, onUploadSuccess, addToast }) {
                 </div>
               </div>
 
-              {/* Adjustments Sliders */}
               <div className="studio-sliders-grid">
                 <div className="slider-group">
                   <label>Brightness ({studioBrightness}%)</label>
