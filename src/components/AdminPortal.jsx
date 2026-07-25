@@ -343,11 +343,13 @@ export default function AdminPortal({
       {/* Sidebar Navigation */}
       <div className="admin-sidebar">
         <div className="admin-sidebar-header">
-          {club.logoUrl ? (
-            <img src={club.logoUrl} alt={club.name} className="admin-sidebar-logo" />
-          ) : (
-            <div className="admin-sidebar-logo-fallback">{(club.name || 'C').charAt(0)}</div>
-          )}
+          <div className="sidebar-logo-box">
+            {club.logoUrl ? (
+              <img src={club.logoUrl} alt={club.name} className="admin-sidebar-logo" />
+            ) : (
+              <div className="admin-sidebar-logo-fallback">{(club.name || 'C').charAt(0)}</div>
+            )}
+          </div>
           <div className="admin-sidebar-club-info">
             <span className="admin-sidebar-club-name">{club.name}</span>
             <span className="admin-sidebar-badge">Club Admin</span>
