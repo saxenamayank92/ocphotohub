@@ -400,21 +400,23 @@ export default function AdminPortal({
           </div>
         </div>
 
-        <button className={`admin-menu-btn ${activeSubTab === 'clubs' ? 'active' : ''}`} onClick={() => setActiveSubTab('clubs')}>
-          <Building2 size={16} /> Club Setup
-        </button>
-        <button className={`admin-menu-btn ${activeSubTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveSubTab('dashboard')}>
-          <BarChart3 size={16} /> Overview
-        </button>
-        <button className={`admin-menu-btn ${activeSubTab === 'members' ? 'active' : ''}`} onClick={() => setActiveSubTab('members')}>
-          <Users size={16} /> Member & Staff Directory
-        </button>
-        <button className={`admin-menu-btn ${activeSubTab === 'moderation' ? 'active' : ''}`} onClick={() => setActiveSubTab('moderation')}>
-          <ImageIcon size={16} /> Moderate Photos
-        </button>
-        <button className={`admin-menu-btn ${activeSubTab === 'cloud' ? 'active' : ''}`} onClick={() => setActiveSubTab('cloud')}>
-          <Database size={16} /> Cloud Storage
-        </button>
+        <div className="admin-sidebar-nav-list">
+          <button className={`admin-menu-btn ${activeSubTab === 'clubs' ? 'active' : ''}`} onClick={() => setActiveSubTab('clubs')}>
+            <Building2 size={16} /> Club Setup
+          </button>
+          <button className={`admin-menu-btn ${activeSubTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveSubTab('dashboard')}>
+            <BarChart3 size={16} /> Overview
+          </button>
+          <button className={`admin-menu-btn ${activeSubTab === 'members' ? 'active' : ''}`} onClick={() => setActiveSubTab('members')}>
+            <Users size={16} /> Member & Staff Directory
+          </button>
+          <button className={`admin-menu-btn ${activeSubTab === 'moderation' ? 'active' : ''}`} onClick={() => setActiveSubTab('moderation')}>
+            <ImageIcon size={16} /> Moderate Photos
+          </button>
+          <button className={`admin-menu-btn ${activeSubTab === 'cloud' ? 'active' : ''}`} onClick={() => setActiveSubTab('cloud')}>
+            <Database size={16} /> Cloud Storage
+          </button>
+        </div>
 
         <div style={{ marginTop: 'auto', paddingTop: '20px' }}>
           <button className="btn-danger" style={{ width: '100%', justifyContent: 'center', backgroundColor: '#8B5CF6' }} onClick={handleResetDatabaseClick}>

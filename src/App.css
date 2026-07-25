@@ -1715,10 +1715,48 @@
 @media (max-width: 860px) {
   .admin-portal-layout {
     flex-direction: column;
+    gap: 16px;
   }
-  .admin-sidebar, .admin-card {
+
+  .admin-sidebar {
     width: 100% !important;
     flex: 1 1 100% !important;
+    min-width: 100% !important;
+    position: relative !important;
+    top: 0 !important;
+    padding: 14px;
+  }
+
+  .admin-sidebar-nav-list {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 8px;
+    padding-bottom: 6px;
+    margin: 0 -6px;
+    padding: 0 6px 6px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .admin-sidebar-nav-list::-webkit-scrollbar {
+    display: none;
+  }
+
+  .admin-menu-btn {
+    flex: 0 0 auto;
+    padding: 10px 14px;
+    font-size: 13px;
+    white-space: nowrap;
+    min-height: 44px;
+  }
+
+  .admin-card {
+    width: 100% !important;
+    flex: 1 1 100% !important;
+    padding: 18px !important;
+    border-radius: var(--radius-md);
+    min-height: auto !important;
   }
 }
 
