@@ -27,6 +27,12 @@ export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhot
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
 
+  // Double Tap Heart Pop Animation State (photoId -> boolean)
+  const [doubleTapHeartMap, setDoubleTapHeartMap] = useState({});
+
+  // Touch Swipe Gesture Tracking for returning to Grid Mode
+  const feedTouchStartRef = useRef({ x: 0, y: 0, time: 0 });
+
   const panStartRef = useRef({ x: 0, y: 0 });
   const initialPinchDistRef = useRef(null);
   const initialScaleRef = useRef(1);
@@ -72,11 +78,6 @@ export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhot
     setIsPanning(false);
   };
 
-  const toggleZoom = () => {
-    if (zoomScale > 1) resetZoom();
-    else setZoomScale(2.5);
-  };
-
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (activeLightboxIndex === null) return;
@@ -92,6 +93,21 @@ export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhot
     onHeartPhoto(photoId);
   };
 
+  // INSTAGRAM FEATURE 1: Double Tap Photo to Like (Heart Animation)
+  const handleDoubleTapLike = (e, photoId) => {
+    if (e) e.stopPropagation();
+    if (currentUser?.memberNumber === 'admin') return;
+
+    // Trigger Heart Like
+    onHeartPhoto(photoId);
+
+    // Show heart pop animation overlay
+    setDoubleTapHeartMap(prev => ({ ...prev, [photoId]: true }));
+    setTimeout(() => {
+      setDoubleTapHeartMap(prev => ({ ...prev, [photoId]: false }));
+    }, 900);
+  };
+
   const handleAddEmojiReaction = (photoId, emoji) => {
     if (currentUser?.memberNumber === 'admin') return;
     setReactionsMap(prev => {
@@ -105,7 +121,7 @@ export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhot
     onHeartPhoto(photoId);
   };
 
-  // INSTAGRAM FEATURE: Tapping a grid thumbnail transitions directly to the scrollable feed at that photo!
+  // INSTAGRAM FEATURE 2: Tapping a grid thumbnail transitions directly to scrollable feed at that photo
   const handleGridThumbnailClick = (photo) => {
     const index = sortedPhotos.findIndex(p => p.id === photo.id);
     if (index !== -1) {
@@ -116,6 +132,30 @@ export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhot
           target.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
       }, 60);
+    }
+  };
+
+  // INSTAGRAM FEATURE 3: Left & Right Horizontal Swipe in Feed Mode brings user back to Gallery Grid Mode
+  const handleFeedTouchStart = (e) => {
+    if (e.touches.length === 1) {
+      feedTouchStartRef.current = {
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY,
+        time: Date.now()
+      };
+    }
+  };
+
+  const handleFeedTouchEnd = (e) => {
+    if (e.changedTouches.length === 1 && feedTouchStartRef.current.time) {
+      const deltaX = e.changedTouches[0].clientX - feedTouchStartRef.current.x;
+      const deltaY = e.changedTouches[0].clientY - feedTouchStartRef.current.y;
+      const timeElapsed = Date.now() - feedTouchStartRef.current.time;
+
+      // Horizontal swipe check: > 60px displacement horizontally & 1.4x dominant over vertical scroll
+      if (timeElapsed < 600 && Math.abs(deltaX) > 60 && Math.abs(deltaX) > 1.4 * Math.abs(deltaY)) {
+        setLayoutMode('grid');
+      }
     }
   };
 
@@ -314,9 +354,13 @@ export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhot
             })}
           </div>
         ) : (
-          /* INSTAGRAM SCROLLABLE FEED VIEW */
-          <div className="photo-feed instagram-feed-list">
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
+          /* INSTAGRAM SCROLLABLE FEED VIEW WITH HORIZONTAL SWIPE TO GRID & DOUBLE-TAP LIKE */
+          <div
+            className="photo-feed instagram-feed-list"
+            onTouchStart={handleFeedTouchStart}
+            onTouchEnd={handleFeedTouchEnd}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
               <button
                 type="button"
                 className="btn-secondary"
@@ -325,12 +369,16 @@ export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhot
               >
                 <ArrowLeft size={14} /> Back to Thumbnail Grid
               </button>
+              <span style={{ fontSize: '11px', color: 'var(--club-gray-dark)', fontWeight: '600' }}>
+                💡 Tip: Double-tap photo to like • Swipe left/right to return to grid
+              </span>
             </div>
 
             {sortedPhotos.map((photo, index) => {
               const isOwner = currentUser && photo.uploaderId === currentUser.memberNumber;
               const canDelete = isAdmin || isOwner;
               const userLiked = hasLiked(photo);
+              const isHeartPopping = doubleTapHeartMap[photo.id];
 
               return (
                 <article key={photo.id} data-feed-id={photo.id} className="photo-post instagram-photo-post">
@@ -345,13 +393,26 @@ export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhot
                     <span className="photo-post-category">{photo.category}</span>
                   </header>
 
-                  <div className="photo-post-image-container" onClick={() => handleOpenLightbox(photo)} title="Tap for Pinch-to-Zoom Lightbox">
+                  <div
+                    className="photo-post-image-container"
+                    onDoubleClick={(e) => handleDoubleTapLike(e, photo.id)}
+                    onClick={() => handleOpenLightbox(photo)}
+                    style={{ position: 'relative', overflow: 'hidden', cursor: 'pointer' }}
+                  >
                     <img
                       src={photo.url}
                       alt={photo.caption}
                       className="photo-post-image"
                       loading={index < 4 ? 'eager' : 'lazy'}
                     />
+
+                    {/* Animated Floating Heart on Double Tap */}
+                    {isHeartPopping && (
+                      <div className="double-tap-heart-pop">
+                        ❤️
+                      </div>
+                    )}
+
                     <button className="zoom-hint-pill" type="button" onClick={(e) => { e.stopPropagation(); handleOpenLightbox(photo); }}>
                       <Maximize2 size={12} /> Pinch & Zoom
                     </button>
@@ -419,7 +480,7 @@ export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhot
         />
       )}
 
-      {/* NATIVE PINCH & ZOOM LIGHTBOX MODAL */}
+      {/* NATIVE PINCH & ZOOM LIGHTBOX MODAL WITH DOUBLE TAP LIKE */}
       {activeLightboxPhoto && createPortal(
         <div className="lightbox-backdrop" onClick={handleCloseLightbox}>
           <div className="instagram-lightbox" onClick={e => e.stopPropagation()}>
@@ -429,6 +490,7 @@ export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhot
                 const isOwner = currentUser && photo.uploaderId === currentUser.memberNumber;
                 const canDelete = isAdmin || isOwner;
                 const userLiked = hasLiked(photo);
+                const isHeartPopping = doubleTapHeartMap[photo.id];
 
                 return (
                   <article key={photo.id} data-photo-index={index} className="photo-post instagram-photo-post">
@@ -450,6 +512,7 @@ export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhot
                       onTouchStart={index === activeLightboxIndex ? handleTouchStart : undefined}
                       onTouchMove={index === activeLightboxIndex ? handleTouchMove : undefined}
                       onTouchEnd={index === activeLightboxIndex ? handleTouchEnd : undefined}
+                      onDoubleClick={(e) => handleDoubleTapLike(e, photo.id)}
                       style={{ touchAction: index === activeLightboxIndex && zoomScale > 1 ? 'none' : 'pan-y', position: 'relative', overflow: 'hidden' }}
                     >
                       <img 
@@ -458,8 +521,15 @@ export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhot
                         className="photo-post-image" 
                         loading={index === activeLightboxIndex ? 'eager' : 'lazy'} 
                         style={index === activeLightboxIndex ? { transform: `scale(${zoomScale}) translate(${panOffset.x / zoomScale}px, ${panOffset.y / zoomScale}px)`, transition: isPanning ? 'none' : 'transform 0.2s ease', cursor: zoomScale > 1 ? (isPanning ? 'grabbing' : 'grab') : 'zoom-in', width: '100%', display: 'block' } : undefined} 
-                        onDoubleClick={index === activeLightboxIndex ? toggleZoom : undefined} 
                       />
+
+                      {/* Animated Floating Heart on Double Tap */}
+                      {isHeartPopping && (
+                        <div className="double-tap-heart-pop">
+                          ❤️
+                        </div>
+                      )}
+
                       {index === activeLightboxIndex && zoomScale > 1 && (
                         <span style={{ position: 'absolute', top: '10px', right: '10px', background: 'rgba(0,0,0,0.7)', color: '#fff', fontSize: '11px', fontWeight: '700', padding: '4px 8px', borderRadius: '12px', pointerEvents: 'none' }}>
                           {(zoomScale).toFixed(1)}x Zoom
