@@ -185,16 +185,8 @@ export default function PhotoUpload({ user, onUploadSuccess, addToast }) {
       const actualBlob = Array.isArray(converted) ? converted[0] : converted;
       return new File([actualBlob], rawFile.name.replace(/\.(heic|heif)$/i, '.jpg'), { type: 'image/jpeg' });
     } catch (err) {
-      console.warn('heic2any WASM conversion failed, attempting raw buffer fallback...', err);
-      // Strategy 3: Raw ArrayBuffer fallback
-      try {
-        const buffer = await rawFile.arrayBuffer();
-        const fallbackBlob = new Blob([buffer], { type: 'image/jpeg' });
-        return new File([fallbackBlob], rawFile.name.replace(/\.(heic|heif)$/i, '.jpg'), { type: 'image/jpeg' });
-      } catch (finalErr) {
-        console.error('All HEIC conversion strategies failed for', rawFile.name, finalErr);
-        throw finalErr;
-      }
+      console.error('HEIC conversion failed for', rawFile.name, err);
+      throw new Error('This HEIC photo could not be converted on this device. Try exporting it as JPG or PNG and upload it again.');
     }
   };
 
@@ -429,13 +421,17 @@ export default function PhotoUpload({ user, onUploadSuccess, addToast }) {
 
     setIsLoading(true);
 
+    const queueAtStart = [...uploadQueue];
+    const failedItems = [];
+    let successCount = 0;
+
     try {
       const dateStamp = new Date().toISOString().split('T')[0];
       const cleanLastName = (user.lastName || 'Admin').replace(/[^a-zA-Z0-9]/g, '');
 
-      for (let i = 0; i < uploadQueue.length; i++) {
-        const item = uploadQueue[i];
-        setLoadingStatus(`Uploading photo ${i + 1} of ${uploadQueue.length}...`);
+      for (let i = 0; i < queueAtStart.length; i++) {
+        const item = queueAtStart[i];
+        setLoadingStatus(`Uploading photo ${i + 1} of ${queueAtStart.length}...`);
 
         const randomHex = Math.random().toString(36).substr(2, 6);
         const cleanClubName = clubBrand.shortName.replace(/[^a-zA-Z0-9]/g, '');
@@ -458,18 +454,32 @@ export default function PhotoUpload({ user, onUploadSuccess, addToast }) {
           heartUsers: []
         };
 
-        await onUploadSuccess(photoObject);
+        try {
+          await onUploadSuccess(photoObject);
+          successCount++;
+          revokePreview(item);
+        } catch (uploadError) {
+          failedItems.push(item);
+          console.error('Photo upload failed', uploadError);
+        }
       }
 
-      const { default: confetti } = await import('canvas-confetti');
-      confetti({ particleCount: 160, spread: 85, origin: { y: 0.85 } });
-
-      addToast(`Successfully published ${uploadQueue.length} photo(s)!`, 'success');
-      uploadQueue.forEach(revokePreview);
-      setUploadQueue([]);
+      if (successCount > 0) {
+        const { default: confetti } = await import('canvas-confetti');
+        confetti({ particleCount: 160, spread: 85, origin: { y: 0.85 } });
+        addToast(`Successfully published ${successCount} photo(s)!`, 'success');
+      }
+      if (failedItems.length > 0) {
+        setUploadQueue(failedItems);
+        setError(`${failedItems.length} photo(s) could not be uploaded. They remain in your queue so you can retry.`);
+      } else {
+        setUploadQueue([]);
+        setError('');
+      }
     } catch (err) {
       console.error(err);
-      addToast('Error uploading photos.', 'error');
+      setError(err.message || 'Error uploading photos.');
+      addToast('Error uploading photos. Please try again.', 'error');
     } finally {
       setIsLoading(false);
       setLoadingStatus('');

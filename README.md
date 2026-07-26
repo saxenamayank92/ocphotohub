@@ -9,7 +9,7 @@ The production resources retain their original `pictide` identifiers to avoid de
 1. Create an R2 bucket named `pictide-photos`.
 2. Create a D1 database named `pictide`.
 3. Put the D1 database ID in `worker/wrangler.toml`.
-4. For a new database, run `npx wrangler d1 execute pictide --remote --file=worker/schema.sql`. For the existing single-club database, apply migrations `003`, `004`, and `005` in numeric order exactly once. Migration `005` adds organization types, owner roles, 30-day trials, read-only expiry and the 25 GB storage limit.
+4. For a new database, run `npx wrangler d1 execute pictide --remote --file=worker/schema.sql`. For the existing database, apply migrations `003`, `004`, `005`, and `006` in numeric order exactly once. Migration `006` adds native device-token registration for push notifications.
 5. Deploy the API with `npm run worker:deploy`.
 6. Set the frontend environment variable `VITE_API_BASE_URL` to the Worker URL and redeploy the frontend.
 
@@ -41,7 +41,7 @@ npm install
 npm run dev
 ```
 
-Without `VITE_API_BASE_URL`, the app uses local IndexedDB and localStorage.
+Without `VITE_API_BASE_URL`, development uses local IndexedDB/localStorage for prototyping. Production uses the `/api` proxy and fails closed if the managed API is unavailable; it never silently switches a live workspace to demo storage.
 
 ## Demo, marketing, and help centre
 

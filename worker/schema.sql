@@ -128,6 +128,17 @@ CREATE TABLE IF NOT EXISTS admin_password_resets (
   FOREIGN KEY (admin_id) REFERENCES club_admins(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS device_push_tokens (
+  club_id TEXT NOT NULL,
+  member_number TEXT NOT NULL,
+  token TEXT NOT NULL,
+  platform TEXT NOT NULL DEFAULT 'unknown',
+  created_at TEXT NOT NULL,
+  last_seen_at TEXT NOT NULL,
+  PRIMARY KEY (club_id, token),
+  FOREIGN KEY (club_id) REFERENCES clubs(id) ON DELETE CASCADE
+);
+
 CREATE INDEX IF NOT EXISTS members_club_email_idx ON members (club_id, email);
 CREATE INDEX IF NOT EXISTS photos_club_created_idx ON photos (club_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS sessions_expires_at_idx ON sessions (expires_at);
@@ -135,3 +146,4 @@ CREATE INDEX IF NOT EXISTS password_resets_member_idx ON password_resets (club_i
 CREATE INDEX IF NOT EXISTS club_admins_email_idx ON club_admins (club_id, email);
 CREATE INDEX IF NOT EXISTS club_signup_expires_idx ON club_signup_challenges (expires_at);
 CREATE INDEX IF NOT EXISTS admin_password_resets_admin_idx ON admin_password_resets (club_id, admin_id);
+CREATE INDEX IF NOT EXISTS device_push_tokens_member_idx ON device_push_tokens (club_id, member_number);
