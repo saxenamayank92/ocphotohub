@@ -1,19 +1,33 @@
 const configuredBase = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '');
 
-export const cloudApiEnabled = Boolean(configuredBase || import.meta.env.VITE_CLOUD_API === 'true');
+// Production deployments proxy /api to the managed worker, so an explicit
+// VITE_CLOUD_API flag is optional. Local development remains offline-friendly.
+export const cloudApiEnabled = Boolean(configuredBase || import.meta.env.VITE_CLOUD_API === 'true' || import.meta.env.PROD);
 
 const apiBase = configuredBase || '/api';
 let csrfToken = '';
+const REQUEST_TIMEOUT_MS = 20000;
 
 const request = async (path, options = {}) => {
-  const response = await fetch(`${apiBase}${path}`, {
-    ...options,
-    credentials: 'include',
-    headers: {
-      ...(options.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
-      ...(options.headers || {})
-    }
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), options.timeout || REQUEST_TIMEOUT_MS);
+  let response;
+  try {
+    response = await fetch(`${apiBase}${path}`, {
+      ...options,
+      credentials: 'include',
+      signal: controller.signal,
+      headers: {
+        ...(options.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
+        ...(options.headers || {})
+      }
+    });
+  } catch (error) {
+    if (error.name === 'AbortError') throw new Error('The request timed out. Check your connection and try again.');
+    throw new Error('We could not reach Club PhotoHub. Check your connection and try again.');
+  } finally {
+    clearTimeout(timeout);
+  }
 
   if (!response.ok) {
     const message = await response.text();
@@ -75,6 +89,19 @@ export const addCloudMember = (member) => request('/members', {
   method: 'POST',
   headers: { 'X-CSRF-Token': csrfToken },
   body: JSON.stringify(member)
+});
+
+export const addCloudMembers = (members) => request('/members/bulk', {
+  method: 'POST',
+  timeout: 60000,
+  headers: { 'X-CSRF-Token': csrfToken },
+  body: JSON.stringify({ members })
+});
+
+export const registerCloudPushToken = ({ token, platform }) => request('/devices/push-token', {
+  method: 'POST',
+  headers: { 'X-CSRF-Token': csrfToken },
+  body: JSON.stringify({ token, platform })
 });
 
 export const updateCurrentClub = club => request('/clubs/current', {

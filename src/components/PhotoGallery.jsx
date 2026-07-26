@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Heart, Trash2, X, Image as ImageIcon,
-  Download, Search, LayoutGrid, ListFilter, Play, Flame, ThumbsUp, Star
+  Download, Search, LayoutGrid, ListFilter, Play
 } from 'lucide-react';
 import { photoDownloadName } from '../brand';
 import StoryShowcase from './StoryShowcase';
@@ -20,7 +20,7 @@ export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhot
   const modalFeedRef = useRef(null);
 
   // Reactions map (photoId -> { '❤️': count, '🔥': count, '👏': count })
-  const [reactionsMap, setReactionsMap] = useState({});
+  const [, setReactionsMap] = useState({});
 
   // Zoom & Pan State
   const [zoomScale, setZoomScale] = useState(1);

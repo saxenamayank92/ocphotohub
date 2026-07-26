@@ -8,13 +8,13 @@ import PhotoGallery from './components/PhotoGallery';
 import ClubOnboarding from './components/ClubOnboarding';
 import AccountSettings from './components/AccountSettings';
 import {
-  addCloudMember, cloudApiEnabled, cloudLogin, cloudLogout, cloudSession,
+  addCloudMember, addCloudMembers, cloudApiEnabled, cloudLogin, cloudLogout, cloudSession,
   deleteCloudMember, deleteCloudPhoto, updateCloudPhoto, loadCloudData, resetCloudData,
   saveCloudPassword, toggleCloudHeart, uploadCloudPhoto, cloudRegister,
   requestCloudPasswordReset, completeCloudPasswordReset, checkCloudMember,
   listCloudClubs, requestRegistrationCode, updateCloudMember, startClubOnboarding,
   completeClubOnboarding, updateCurrentClub, requestAdminPasswordReset,
-  completeAdminPasswordReset, deleteCloudAccount, deleteCloudOrganization
+  completeAdminPasswordReset, deleteCloudAccount, deleteCloudOrganization, registerCloudPushToken
 } from './api';
 import { clubBrand } from './brand';
 import { initializeNativeApp, registerPushNotifications } from './services/pushNotifications';
@@ -24,7 +24,7 @@ const PhotoUpload = lazy(() => import('./components/PhotoUpload'));
 const AdminPortal = lazy(() => import('./components/AdminPortal'));
 
 export default function App() {
-  const directClubId = window.location.hostname === 'ocphotohub.xtide.io' ? 'oakville' : null;
+  const directClubId = window.location.hostname === 'ocphotohub.xtide.io' ? 'oakville-club' : null;
   const demoMode = new URLSearchParams(window.location.search).get('demo') === '1';
   const [currentUser, setCurrentUser] = useState(demoMode ? demoUser : null);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -35,6 +35,7 @@ export default function App() {
   const [cloudActive, setCloudActive] = useState(false);
   const [clubs, setClubs] = useState([clubBrand]);
   const [currentClub, setCurrentClub] = useState(demoMode ? demoClub : null);
+  const [startupError, setStartupError] = useState('');
   const [showClubOnboarding, setShowClubOnboarding] = useState(() => new URLSearchParams(window.location.search).get('onboard') === 'club');
   const trialDaysLeft = currentClub?.planStatus === 'trialing' && currentClub.trialEndsAt
     ? Math.max(0, Math.ceil((Date.parse(currentClub.trialEndsAt) - Date.now()) / (24 * 60 * 60 * 1000)))
@@ -47,22 +48,22 @@ export default function App() {
   };
 
   useEffect(() => {
-    initializeNativeApp(addToast);
+    initializeNativeApp();
   }, []);
 
   useEffect(() => {
     if (currentUser) {
       registerPushNotifications(
         (token) => {
-          console.log('Registered device push token:', currentUser.memberNumber, token);
+          if (cloudActive) {
+            registerCloudPushToken({ token, platform: 'native' }).catch(error => console.warn('Could not register push device:', error.message));
+          }
         },
-        (notification) => {
-          console.log('Received notification payload:', notification);
-        },
+        () => {},
         addToast
       );
     }
-  }, [currentUser]);
+  }, [currentUser, cloudActive]);
 
   useEffect(() => {
     if (demoMode) return;
@@ -101,7 +102,7 @@ export default function App() {
       }
     };
 
-    const loadCloud = async () => {
+  const loadCloud = async () => {
       try {
         const clubData = await listCloudClubs();
         if (!cancelled) setClubs(clubData.clubs || []);
@@ -127,16 +128,18 @@ export default function App() {
         setPhotos(data.photos || []);
         setCloudActive(true);
       } catch (error) {
-        console.error('Cloud API unavailable; using local mode:', error);
+        console.error('Cloud API unavailable:', error);
         if (!cancelled) {
-          setCloudActive(false);
-          await loadLocal();
-          addToast('Cloud API unavailable. Using local demo mode.', 'info');
+          setCloudActive(true);
+          setMembers([]);
+          setPhotos([]);
+          setStartupError('Club PhotoHub is temporarily unavailable. Please check your connection and try again.');
         }
       }
     };
 
     if (cloudApiEnabled) loadCloud();
+    else if (import.meta.env.PROD) setStartupError('This workspace is not configured yet. Please contact support.');
     else loadLocal();
     return () => { cancelled = true; };
   }, [demoMode]);
@@ -202,6 +205,23 @@ export default function App() {
       if (!cloudActive) localStorage.setItem('oakville_members', JSON.stringify(updatedMembers));
       return updatedMembers;
     });
+  };
+
+  const handleAddMembers = async (newMembers) => {
+    if (cloudActive) {
+      const result = await addCloudMembers(newMembers);
+      const data = await loadCloudData();
+      setMembers(data.members || []);
+      return result;
+    }
+    setMembers(previous => {
+      const existing = new Set(previous.map(member => String(member.memberNumber).trim().toUpperCase()));
+      const additions = newMembers.filter(member => !existing.has(String(member.memberNumber).trim().toUpperCase()));
+      const updatedMembers = [...previous, ...additions];
+      localStorage.setItem('oakville_members', JSON.stringify(updatedMembers));
+      return updatedMembers;
+    });
+    return { addedCount: newMembers.length, skippedCount: 0, reasons: {} };
   };
 
   const handleCompleteClubOnboarding = async details => {
@@ -340,9 +360,11 @@ export default function App() {
     window.location.assign('/');
   };
 
+  if (startupError) return <div className="login-screen"><div className="login-card startup-error-card" role="alert"><ShieldCheck size={42} /><h1>Club PhotoHub is taking a moment</h1><p>{startupError}</p><button type="button" className="btn-primary login-btn" onClick={() => window.location.reload()}>Try again</button></div></div>;
+
   if (!currentUser) {
     if (showClubOnboarding) return <ClubOnboarding onStart={startClubOnboarding} onComplete={handleCompleteClubOnboarding} onCancel={() => { setShowClubOnboarding(false); window.history.replaceState({}, '', '/app'); }} />;
-    return <Login clubs={clubs} directClubId={directClubId} members={members} onLoginSuccess={handleLoginSuccess} onCloudLogin={handleCloudLogin} onCloudCheckMember={checkCloudMember} onCloudRequestRegistrationCode={requestRegistrationCode} onCloudRegister={handleCloudRegister} onRequestPasswordReset={requestCloudPasswordReset} onCompletePasswordReset={completeCloudPasswordReset} onRequestAdminPasswordReset={requestAdminPasswordReset} onCompleteAdminPasswordReset={completeAdminPasswordReset} onRegisterPassword={handleRegisterPassword} onCreateClub={() => { setShowClubOnboarding(true); window.history.replaceState({}, '', '/app?onboard=club'); }} firebaseEnabled={cloudApiEnabled} />;
+    return <Login clubs={clubs} directClubId={directClubId} members={members} onLoginSuccess={handleLoginSuccess} onCloudLogin={handleCloudLogin} onCloudCheckMember={checkCloudMember} onCloudRequestRegistrationCode={requestRegistrationCode} onCloudRegister={handleCloudRegister} onRequestPasswordReset={requestCloudPasswordReset} onCompletePasswordReset={completeCloudPasswordReset} onRequestAdminPasswordReset={requestAdminPasswordReset} onCompleteAdminPasswordReset={completeAdminPasswordReset} onRegisterPassword={handleRegisterPassword} onCreateClub={() => { setShowClubOnboarding(true); window.history.replaceState({}, '', '/app?onboard=club'); }} firebaseEnabled={cloudApiEnabled || import.meta.env.DEV} />;
   }
 
   return (
@@ -354,7 +376,7 @@ export default function App() {
         <Suspense fallback={<div className="panel-loading" role="status"><div className="spinner" /><span>Loading…</span></div>}>
           {activeTab === 'gallery' && <PhotoGallery photos={photos} currentUser={currentUser} isAdmin={isAdmin} onHeartPhoto={handleHeartPhoto} onDeletePhoto={handleDeletePhoto} />}
           {activeTab === 'upload' && <PhotoUpload user={currentUser} onUploadSuccess={handleUploadPhoto} addToast={addToast} />}
-          {activeTab === 'admin' && isAdmin && <AdminPortal user={currentUser} club={currentClub || clubBrand} members={members} photos={photos} onUpdateClub={handleUpdateClub} onAddMember={handleAddMember} onUpdateMember={handleUpdateMember} onDeleteMember={handleDeleteMember} onSetMemberPassword={handleSetMemberPassword} onDeletePhoto={handleDeletePhoto} onUpdatePhoto={handleUpdatePhoto} firebaseConfig={cloudActive ? { provider: 'managed' } : null} onResetDatabase={handleResetDatabase} addToast={addToast} />}
+          {activeTab === 'admin' && isAdmin && <AdminPortal user={currentUser} club={currentClub || clubBrand} members={members} photos={photos} onUpdateClub={handleUpdateClub} onAddMember={handleAddMember} onAddMembers={handleAddMembers} onUpdateMember={handleUpdateMember} onDeleteMember={handleDeleteMember} onSetMemberPassword={handleSetMemberPassword} onDeletePhoto={handleDeletePhoto} onUpdatePhoto={handleUpdatePhoto} firebaseConfig={cloudActive ? { provider: 'managed' } : null} onResetDatabase={handleResetDatabase} addToast={addToast} />}
           {activeTab === 'account' && <AccountSettings user={currentUser} club={currentClub || clubBrand} isAdmin={isAdmin} demoMode={demoMode} onDeleteAccount={handleDeleteAccount} onDeleteOrganization={handleDeleteOrganization} addToast={addToast} />}
         </Suspense>
       </main>

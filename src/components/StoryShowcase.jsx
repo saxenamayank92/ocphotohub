@@ -1,13 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Play, Pause, ChevronLeft, ChevronRight, Heart, Sparkles, Volume2, VolumeX } from 'lucide-react';
+import { X, Play, Pause, ChevronLeft, ChevronRight, Heart, Sparkles } from 'lucide-react';
 
 export default function StoryShowcase({ photos, initialIndex = 0, onClose, onHeartPhoto, currentUser }) {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [isPlaying, setIsPlaying] = useState(true);
   const [progress, setProgress] = useState(0);
-  const [isMuted, setIsMuted] = useState(false);
-  const audioRef = useRef(null);
 
   const currentPhoto = photos[currentIndex] || photos[0];
   const DURATION_MS = 5000; // 5 seconds per slide
@@ -47,8 +45,8 @@ export default function StoryShowcase({ photos, initialIndex = 0, onClose, onHea
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') onClose();
-      if (e.key === 'ArrowRight') goToNext();
-      if (e.key === 'ArrowLeft') goToPrev();
+      if (e.key === 'ArrowRight') { setCurrentIndex((prev) => (prev + 1) % photos.length); setProgress(0); }
+      if (e.key === 'ArrowLeft') { setCurrentIndex((prev) => (prev - 1 + photos.length) % photos.length); setProgress(0); }
       if (e.key === ' ') {
         e.preventDefault();
         setIsPlaying((p) => !p);
@@ -56,7 +54,7 @@ export default function StoryShowcase({ photos, initialIndex = 0, onClose, onHea
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [photos.length]);
+  }, [photos.length, onClose]);
 
   if (!currentPhoto) return null;
 

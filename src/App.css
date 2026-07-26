@@ -455,6 +455,13 @@
 .member-directory-heading > span { color: var(--club-gray-dark); font-size: 12px; }
 .member-directory-table { max-height: 560px; overflow: auto; }
 .member-directory-table thead th { position: sticky; top: 0; z-index: 1; }
+.directory-pagination { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; color: var(--club-gray-dark); font-size: 12px; }
+.directory-pagination > div { display: flex; align-items: center; gap: 8px; }
+.directory-pagination .btn-secondary { min-height: 32px; padding: 5px 10px; font-size: 12px; }
+.gallery-search-box { position: relative; width: 100%; }
+.gallery-search-icon { position: absolute; left: 13px; top: 50%; z-index: 1; color: var(--club-gray-dark); pointer-events: none; transform: translateY(-50%); }
+.member-directory-search { margin-left: auto; }
+.admin-table td:last-child .btn-text { display: inline-flex; align-items: center; justify-content: flex-start; gap: 5px; margin: 2px 0; white-space: nowrap; }
 .trial-status-banner { display: flex; align-items: center; justify-content: center; gap: 14px; padding: 8px 14px; color: #5f471c; background: #f4e8cc; font-size: 11px; font-weight: 700; }
 .trial-status-banner.expired { color: #fff; background: #8e2f2f; }
 .trial-status-banner a { padding: 4px 9px; border-radius: 999px; color: inherit; background: rgba(255,255,255,.7); text-decoration: none; }
@@ -1785,6 +1792,38 @@
   border-bottom: 1px solid var(--club-gray-light);
 }
 
+.admin-sidebar-club-info {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.admin-sidebar-club-name,
+.admin-sidebar-badge {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-sidebar-club-name {
+  color: var(--club-navy);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.admin-sidebar-badge {
+  color: var(--club-gray-dark);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.admin-sidebar-nav-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .sidebar-logo-box {
   width: 44px;
   height: 44px;
@@ -1812,6 +1851,9 @@
   align-items: center;
   gap: 10px;
   text-align: left;
+  justify-content: flex-start;
+  width: 100%;
+  box-sizing: border-box;
   transition: all 0.2s ease;
 }
 
@@ -3403,7 +3445,4 @@
   font-size: 12px;
   line-height: 1.4;
 }
-
-
-
 

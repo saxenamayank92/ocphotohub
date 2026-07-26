@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Users, Image as ImageIcon, BarChart3,
-  Building2, Trash2, Plus, RefreshCw, Upload, FileSpreadsheet, Key, Database, AlertCircle, X, FileText, UserPlus, Edit2, Check, Search, HardDrive, Shield, User, CheckCircle2, ShieldAlert, UserCheck, Crown, Lock
+  Building2, Trash2, RefreshCw, Upload, FileSpreadsheet, Key, Database, X, FileText, UserPlus, Edit2, Search, HardDrive, Shield, CheckCircle2, ShieldAlert, Crown, Lock
 } from 'lucide-react';
 
 const normalizeMemberNumber = num => String(num || '').trim();
@@ -13,15 +13,14 @@ export default function AdminPortal({
   photos,
   onUpdateClub,
   onAddMember,
+  onAddMembers,
   onUpdateMember,
   onDeleteMember,
   onSetMemberPassword,
   onDeletePhoto,
   onUpdatePhoto,
-  firebaseConfig,
   onResetDatabase,
-  addToast,
-  setActiveTab
+  addToast
 }) {
   const [activeSubTab, setActiveSubTab] = useState('clubs'); // 'clubs' | 'dashboard' | 'members' | 'moderation' | 'cloud'
 
@@ -37,6 +36,7 @@ export default function AdminPortal({
   const [newEmail, setNewEmail] = useState('');
   const [newRole, setNewRole] = useState('member'); // 'member' | 'admin' | 'owner'
   const [memberSearch, setMemberSearch] = useState('');
+  const [memberPage, setMemberPage] = useState(1);
   const [csvText, setCsvText] = useState('');
 
   // Active Member Modal State ('add' | 'csv' | 'excel' | null)
@@ -45,7 +45,6 @@ export default function AdminPortal({
   // Excel state
   const [workbook, setWorkbook] = useState(null);
   const [workbookName, setWorkbookName] = useState('');
-  const [sheetName, setSheetName] = useState('');
   const [sheetHeaders, setSheetHeaders] = useState([]);
   const [sheetRows, setSheetRows] = useState([]);
   const [columnMap, setColumnMap] = useState({ memberNumber: '', lastName: '', firstName: '', email: '' });
@@ -118,7 +117,6 @@ export default function AdminPortal({
       const sheets = [{ sheet: 'Sheet 1', rows }];
       setWorkbook(sheets);
       setWorkbookName(file.name);
-      setSheetName(sheets[0].sheet);
       loadSheetData(sheets[0].rows);
       setExcelStatus('');
     } catch (error) {
@@ -163,7 +161,7 @@ export default function AdminPortal({
     setColumnMap(nextMap);
   };
 
-  const handleExcelImport = (e) => {
+  const handleExcelImport = async (e) => {
     e.preventDefault();
     if (!workbook || sheetRows.length === 0) return setExcelStatus('Please select an Excel workbook first.');
 
@@ -178,9 +176,11 @@ export default function AdminPortal({
       return setExcelStatus('Please select a valid column for Member number, Last name, First name, and Email.');
     }
 
-    let addedCount = 0;
     let skippedCount = 0;
     const reasons = {};
+    const candidateMembers = [];
+    const existingNumbers = new Set(members.map(member => normalizeMemberNumber(member.memberNumber)));
+    const importNumbers = new Set();
 
     sheetRows.forEach((row) => {
       const numRaw = row[colIdx.memberNumber];
@@ -203,13 +203,13 @@ export default function AdminPortal({
         return;
       }
 
-      if (members.some(m => normalizeMemberNumber(m.memberNumber) === memberNum)) {
+      if (existingNumbers.has(memberNum) || importNumbers.has(memberNum)) {
         skippedCount++;
-        reasons['member number already exists'] = (reasons['member number already exists'] || 0) + 1;
+        reasons[existingNumbers.has(memberNum) ? 'member number already exists' : 'duplicate in spreadsheet'] = (reasons[existingNumbers.has(memberNum) ? 'member number already exists' : 'duplicate in spreadsheet'] || 0) + 1;
         return;
       }
-
-      onAddMember({
+      importNumbers.add(memberNum);
+      candidateMembers.push({
         memberNumber: memberNum,
         lastName: String(lNameRaw).trim(),
         firstName: String(fNameRaw).trim(),
@@ -218,22 +218,41 @@ export default function AdminPortal({
         password: '',
         registeredAt: ''
       });
-      addedCount++;
     });
 
-    setExcelImportSummary({ addedCount, skippedCount, reasons });
-    addToast(`Imported ${addedCount} member(s) from Excel!`, 'success');
-    if (addedCount > 0) setActiveModal(null);
+    if (candidateMembers.length === 0) {
+      setExcelImportSummary({ addedCount: 0, skippedCount, reasons });
+      return setExcelStatus('No new valid members were found in this workbook.');
+    }
+
+    setExcelStatus(`Importing ${candidateMembers.length.toLocaleString()} members…`);
+    try {
+      const result = await (onAddMembers ? onAddMembers(candidateMembers) : Promise.all(candidateMembers.map(onAddMember)).then(() => ({ addedCount: candidateMembers.length, skippedCount: 0, reasons: {} })));
+      const summary = {
+        addedCount: Number(result?.addedCount ?? candidateMembers.length),
+        skippedCount: skippedCount + Number(result?.skippedCount || 0),
+        reasons: { ...reasons, ...(result?.reasons || {}) }
+      };
+      setExcelImportSummary(summary);
+      setExcelStatus(`Import complete: ${summary.addedCount.toLocaleString()} added, ${summary.skippedCount.toLocaleString()} skipped.`);
+      addToast(`Imported ${summary.addedCount.toLocaleString()} member(s) from Excel.`, 'success');
+    } catch (error) {
+      console.error('Roster import failed', error);
+      setExcelStatus(error.message || 'The roster could not be imported. No changes were confirmed.');
+      addToast('Roster import failed. Please try again.', 'error');
+    }
   };
 
   // Tiered Member Categorization
   const totalMembers = members.length;
-  const owners = members.filter(m => m.role === 'owner');
+  const accountOwner = user?.role === 'owner' ? { ...user, role: 'owner' } : null;
+  const rosterOwners = members.filter(m => m.role === 'owner');
+  const owners = accountOwner
+    ? [accountOwner, ...rosterOwners.filter(owner => owner.memberNumber !== accountOwner.memberNumber)]
+    : rosterOwners;
   const staffAdmins = members.filter(m => m.role === 'admin');
   const regularMembers = members.filter(m => m.role !== 'admin' && m.role !== 'owner');
 
-  const registeredCount = members.filter(m => m.registeredAt).length;
-  const totalLikes = photos.reduce((acc, p) => acc + (p.hearts || 0), 0);
 
   const topPhotos = [...photos]
     .filter(p => (p.hearts || 0) > 0)
@@ -317,12 +336,14 @@ export default function AdminPortal({
     }
   };
 
-  const handleCsvImportSubmit = (e) => {
+  const handleCsvImportSubmit = async (e) => {
     e.preventDefault();
     if (!csvText.trim()) return addToast('Please enter CSV data to import.', 'error');
 
     const lines = csvText.split('\n').map(l => l.trim()).filter(Boolean);
-    let importCount = 0;
+    const importMembers = [];
+    const existingNumbers = new Set(members.map(member => normalizeMemberNumber(member.memberNumber)));
+    const importNumbers = new Set();
 
     lines.forEach(line => {
       const parts = line.split(',').map(p => p.trim());
@@ -330,8 +351,9 @@ export default function AdminPortal({
         const [memNum, lName, fName, emailVal] = parts;
         const memberNum = normalizeMemberNumber(memNum);
         if (memberNum && lName && fName && /^\S+@\S+\.\S+$/.test(emailVal)) {
-          if (!members.some(m => normalizeMemberNumber(m.memberNumber) === memberNum)) {
-            onAddMember({
+          if (!existingNumbers.has(memberNum) && !importNumbers.has(memberNum)) {
+            importNumbers.add(memberNum);
+            importMembers.push({
               memberNumber: memberNum,
               lastName: lName,
               firstName: fName,
@@ -340,14 +362,19 @@ export default function AdminPortal({
               password: '',
               registeredAt: ''
             });
-            importCount++;
           }
         }
       }
     });
 
-    if (importCount > 0) {
-      addToast(`Successfully imported ${importCount} members!`, 'success');
+    if (importMembers.length > 0) {
+      try {
+        const result = await (onAddMembers ? onAddMembers(importMembers) : Promise.all(importMembers.map(onAddMember)).then(() => ({ addedCount: importMembers.length })));
+        addToast(`Successfully imported ${Number(result?.addedCount ?? importMembers.length).toLocaleString()} members!`, 'success');
+      } catch (error) {
+        console.error('CSV roster import failed', error);
+        return addToast('CSV import failed. Please check the file and try again.', 'error');
+      }
       setCsvText('');
       setActiveModal(null);
     } else {
@@ -403,6 +430,14 @@ export default function AdminPortal({
       m.memberNumber?.toLowerCase().includes(query)
     );
   });
+  const sortedRegularMembers = [...filteredRegularMembers].sort((a, b) => a.lastName.localeCompare(b.lastName));
+  const memberPageSize = 50;
+  const memberPageCount = Math.max(1, Math.ceil(sortedRegularMembers.length / memberPageSize));
+  const visibleRegularMembers = sortedRegularMembers.slice((memberPage - 1) * memberPageSize, memberPage * memberPageSize);
+
+  useEffect(() => {
+    setMemberPage(1);
+  }, [memberSearch, regularMembers.length]);
 
   // Clean Storage Bucket Metrics
   const baseGb = 25;
@@ -679,10 +714,10 @@ export default function AdminPortal({
                               className="btn-text"
                               style={{ color: 'var(--club-danger)', fontWeight: '700', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                               onClick={() => handleToggleOwnerRole(owner)}
-                              disabled={owners.length <= 1}
-                              title={owners.length <= 1 ? "At least one owner required" : "Revoke owner privileges"}
+                              disabled={owner.memberNumber === user?.memberNumber || owners.length <= 1}
+                              title={owner.memberNumber === user?.memberNumber ? "Your owner access is required" : owners.length <= 1 ? "At least one owner required" : "Revoke owner privileges"}
                             >
-                              <ShieldAlert size={14} /> Revoke Owner Status
+                              <ShieldAlert size={14} /> {owner.memberNumber === user?.memberNumber ? 'Current Owner' : 'Revoke Owner Status'}
                             </button>
                           </td>
                         </tr>
@@ -776,7 +811,7 @@ export default function AdminPortal({
 
             {/* SEGREGATED TIER 3: CLUB MEMBERS ROSTER TABLE */}
             <div style={{ marginTop: '28px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', flexWrap: 'wrap', gap: '12px' }}>
+              <div className="member-directory-heading" style={{ marginBottom: '14px' }}>
                 <div>
                   <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: 'var(--club-navy)' }}>
                     Club Members Roster ({regularMembers.length})
@@ -786,14 +821,14 @@ export default function AdminPortal({
                   </p>
                 </div>
 
-                <div className="gallery-search-box" style={{ maxWidth: '280px' }}>
+                <div className="gallery-search-box member-directory-search" style={{ maxWidth: '280px' }}>
                   <Search size={14} className="gallery-search-icon" />
                   <input
                     type="text"
                     className="gallery-search-input"
                     placeholder="Search roster members..."
                     value={memberSearch}
-                    onChange={(e) => setMemberSearch(e.target.value)}
+                    onChange={(e) => { setMemberSearch(e.target.value); setMemberPage(1); }}
                   />
                   {memberSearch && (
                     <button type="button" className="search-clear-btn" onClick={() => setMemberSearch('')}>
@@ -815,7 +850,7 @@ export default function AdminPortal({
                     </tr>
                   </thead>
                   <tbody>
-                    {[...filteredRegularMembers].sort((a, b) => a.lastName.localeCompare(b.lastName)).map(member => (
+                    {visibleRegularMembers.map(member => (
                       <tr key={member.memberNumber}>
                         <td style={{ fontWeight: '700' }}>#{member.memberNumber}</td>
                         <td style={{ fontWeight: '600' }}>{member.firstName} {member.lastName}</td>
@@ -885,6 +920,14 @@ export default function AdminPortal({
                     ))}
                   </tbody>
                 </table>
+              </div>
+              <div className="directory-pagination" aria-label="Member directory pages">
+                <span>Showing {sortedRegularMembers.length === 0 ? 0 : (memberPage - 1) * memberPageSize + 1}–{Math.min(memberPage * memberPageSize, sortedRegularMembers.length)} of {sortedRegularMembers.length}</span>
+                <div>
+                  <button type="button" className="btn-secondary" disabled={memberPage <= 1} onClick={() => setMemberPage(page => Math.max(1, page - 1))}>Previous</button>
+                  <span>Page {memberPage} of {memberPageCount}</span>
+                  <button type="button" className="btn-secondary" disabled={memberPage >= memberPageCount} onClick={() => setMemberPage(page => Math.min(memberPageCount, page + 1))}>Next</button>
+                </div>
               </div>
             </div>
           </div>
@@ -1221,11 +1264,22 @@ export default function AdminPortal({
                         </select>
                       </div>
                     </div>
+                    <div className="excel-preview" style={{ marginTop: '12px' }}>
+                      <strong>Preview ({Math.min(sheetRows.length, 10)} of {sheetRows.length.toLocaleString()} rows)</strong>
+                      <div className="table-wrapper">
+                        <table className="admin-table">
+                          <thead><tr>{sheetHeaders.map(header => <th key={header}>{header}</th>)}</tr></thead>
+                          <tbody>{sheetRows.slice(0, 10).map((row, rowIndex) => <tr key={rowIndex}>{sheetHeaders.map((header, cellIndex) => <td key={`${rowIndex}-${header}`}>{String(row[cellIndex] ?? '')}</td>)}</tr>)}</tbody>
+                        </table>
+                      </div>
+                    </div>
                   </>
                 )}
                 {excelImportSummary && (
-                  <div style={{ padding: '10px', background: 'rgba(30, 107, 63, 0.1)', borderRadius: '6px', fontSize: '12px', color: 'var(--club-green-dark)' }}>
-                    Imported {excelImportSummary.addedCount} rows, skipped {excelImportSummary.skippedCount}.
+                  <div className="excel-import-summary">
+                    <strong>Import complete</strong>
+                    <span>Imported {excelImportSummary.addedCount.toLocaleString()} rows, skipped {excelImportSummary.skippedCount.toLocaleString()}.</span>
+                    {Object.entries(excelImportSummary.reasons || {}).map(([reason, count]) => <span key={reason}>{reason}: {count}</span>)}
                   </div>
                 )}
                 <div className="admin-modal-footer">

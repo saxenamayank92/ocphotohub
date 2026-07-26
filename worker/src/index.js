@@ -108,6 +108,7 @@ async function auth(request, env) {
     c.name AS clubName, c.short_name AS clubShortName, c.slug AS clubSlug, c.logo_url AS clubLogoUrl,
     c.organization_type AS organizationType, c.plan_status AS planStatus,
     c.trial_started_at AS trialStartedAt, c.trial_ends_at AS trialEndsAt,
+    a.role AS adminRole,
     c.storage_limit_bytes AS storageLimitBytes
     FROM sessions s
     JOIN clubs c ON c.id = s.club_id AND c.status = 'active'
@@ -214,7 +215,7 @@ async function login(request, env, origin) {
   if (body.mode === 'admin') {
     let admin = await env.DB.prepare("SELECT * FROM club_admins WHERE club_id = ? AND email = ? AND status = 'active'").bind(club.id, normalize(body.email)).first();
     const adminCount = admin ? 1 : Number((await env.DB.prepare("SELECT COUNT(*) AS count FROM club_admins WHERE club_id = ? AND status = 'active'").bind(club.id).first())?.count || 0);
-    if (!admin && adminCount === 0 && club.id === 'oakville' && env.ADMIN_EMAIL && env.ADMIN_PASSWORD && normalize(body.email) === normalize(env.ADMIN_EMAIL) && await safeEqual(body.password || '', env.ADMIN_PASSWORD)) {
+    if (!admin && adminCount === 0 && club.id === 'oakville-club' && env.ADMIN_EMAIL && env.ADMIN_PASSWORD && normalize(body.email) === normalize(env.ADMIN_EMAIL) && await safeEqual(body.password || '', env.ADMIN_PASSWORD)) {
       const adminId = randomToken(12);
       const salt = randomToken(16);
       const now = new Date().toISOString();
@@ -224,7 +225,7 @@ async function login(request, env, origin) {
     }
     if (!admin || !(await safeEqual(await derivePassword(body.password || '', admin.password_salt), admin.password_hash))) return json({ error: 'Invalid credentials.' }, 401, origin);
     memberNumber = `admin:${admin.id}`;
-    user = { memberNumber, firstName: admin.first_name, lastName: admin.last_name, email: admin.email };
+    user = { memberNumber, firstName: admin.first_name, lastName: admin.last_name, email: admin.email, role: admin.role || 'owner' };
     role = 'admin';
   } else {
     const member = await env.DB.prepare('SELECT * FROM members WHERE club_id = ? AND member_number = ? COLLATE NOCASE').bind(club.id, String(body.memberNumber || '').trim()).first();
@@ -294,7 +295,7 @@ async function completeClubOnboarding(request, env, origin) {
   ]);
   const club = await getClub(env, challenge.club_slug);
   const session = await createSession(env, club.id, `admin:${adminId}`, 'admin');
-  const user = { memberNumber: `admin:${adminId}`, firstName: challenge.admin_first_name, lastName: challenge.admin_last_name, email: challenge.admin_email };
+  const user = { memberNumber: `admin:${adminId}`, firstName: challenge.admin_first_name, lastName: challenge.admin_last_name, email: challenge.admin_email, role: 'owner' };
   return json({ user, club: accountClub(club), role: 'admin', csrfToken: session.csrf }, 201, origin, { 'Set-Cookie': [cookie('pt_session', session.token, SESSION_MAX_AGE, true), cookie('pt_csrf', session.csrf, SESSION_MAX_AGE, false)] });
 }
 
@@ -487,11 +488,26 @@ export default {
         if (!session) return json({ authenticated: false }, 200, origin);
         const csrf = randomToken(24);
         await env.DB.prepare('UPDATE sessions SET csrf_hash = ? WHERE token_hash = ?').bind(await hash(csrf), session.token_hash).run();
-        return json({ authenticated: true, user: { memberNumber: session.member_number, firstName: session.firstName || 'Club', lastName: session.lastName || 'Management', email: session.adminEmail || undefined }, club: sessionClub(session), role: session.role, csrfToken: csrf }, 200, origin, { 'Set-Cookie': cookie('pt_csrf', csrf, SESSION_MAX_AGE, false) });
+        return json({ authenticated: true, user: { memberNumber: session.member_number, firstName: session.firstName || 'Club', lastName: session.lastName || 'Management', email: session.adminEmail || undefined, role: session.adminRole || (session.role === 'admin' ? 'admin' : session.role) }, club: sessionClub(session), role: session.role, csrfToken: csrf }, 200, origin, { 'Set-Cookie': cookie('pt_csrf', csrf, SESSION_MAX_AGE, false) });
       }
       if (path === '/bootstrap' && request.method === 'GET') {
         const data = await bootstrap(request, env);
         return data ? json(data, 200, origin) : json({ error: 'Unauthorized.' }, 401, origin);
+      }
+
+      if (path === '/devices/push-token' && request.method === 'POST') {
+        const session = await requireAuth(request, env);
+        if (!session) return json({ error: 'Unauthorized.' }, 401, origin);
+        const body = await request.json().catch(() => ({}));
+        const token = cleanText(body.token, 512);
+        const platform = cleanText(body.platform || 'unknown', 20).toLowerCase();
+        if (token.length < 16) return json({ error: 'A valid device token is required.' }, 400, origin);
+        const now = new Date().toISOString();
+        await env.DB.prepare(`INSERT INTO device_push_tokens (club_id, member_number, token, platform, created_at, last_seen_at)
+          VALUES (?, ?, ?, ?, ?, ?)
+          ON CONFLICT (club_id, token) DO UPDATE SET member_number = excluded.member_number, platform = excluded.platform, last_seen_at = excluded.last_seen_at`)
+          .bind(session.club_id, session.member_number, token, platform, now, now).run();
+        return json({ ok: true }, 200, origin);
       }
 
       if (path === '/account' && request.method === 'DELETE') {
@@ -504,6 +520,7 @@ export default {
           await env.DB.batch([
             env.DB.prepare('DELETE FROM sessions WHERE club_id = ? AND member_number = ?').bind(session.club_id, session.member_number),
             env.DB.prepare('DELETE FROM admin_password_resets WHERE club_id = ? AND admin_id = ?').bind(session.club_id, adminId),
+            env.DB.prepare('DELETE FROM device_push_tokens WHERE club_id = ? AND member_number = ?').bind(session.club_id, session.member_number),
             env.DB.prepare('DELETE FROM club_admins WHERE club_id = ? AND id = ?').bind(session.club_id, adminId)
           ]);
         } else {
@@ -515,6 +532,7 @@ export default {
             env.DB.prepare('DELETE FROM sessions WHERE club_id = ? AND member_number = ?').bind(session.club_id, session.member_number),
             env.DB.prepare('DELETE FROM password_resets WHERE club_id = ? AND member_number = ?').bind(session.club_id, session.member_number),
             env.DB.prepare('DELETE FROM registration_challenges WHERE club_id = ? AND member_number = ?').bind(session.club_id, session.member_number),
+            env.DB.prepare('DELETE FROM device_push_tokens WHERE club_id = ? AND member_number = ?').bind(session.club_id, session.member_number),
             env.DB.prepare('DELETE FROM members WHERE club_id = ? AND member_number = ?').bind(session.club_id, session.member_number)
           ]);
         }
@@ -539,6 +557,7 @@ export default {
           env.DB.prepare('DELETE FROM password_resets WHERE club_id = ?').bind(session.club_id),
           env.DB.prepare('DELETE FROM registration_challenges WHERE club_id = ?').bind(session.club_id),
           env.DB.prepare('DELETE FROM admin_password_resets WHERE club_id = ?').bind(session.club_id),
+          env.DB.prepare('DELETE FROM device_push_tokens WHERE club_id = ?').bind(session.club_id),
           env.DB.prepare('DELETE FROM members WHERE club_id = ?').bind(session.club_id),
           env.DB.prepare('DELETE FROM club_admins WHERE club_id = ?').bind(session.club_id),
           env.DB.prepare('DELETE FROM club_signup_challenges WHERE club_slug = ?').bind(session.club_id),
@@ -569,6 +588,50 @@ export default {
         if (await env.DB.prepare('SELECT 1 FROM members WHERE club_id = ? AND member_number = ? COLLATE NOCASE').bind(session.club_id, memberNumber).first()) return json({ error: 'That member number already exists.' }, 409, origin);
         await env.DB.prepare('INSERT INTO members (club_id, member_number, last_name, first_name, email) VALUES (?, ?, ?, ?, ?)').bind(session.club_id, memberNumber, String(member.lastName).trim(), String(member.firstName).trim(), normalize(member.email)).run();
         return json(publicMember({ ...member, memberNumber, email: normalize(member.email), registeredAt: '', role: 'member' }), 201, origin);
+      }
+      if (path === '/members/bulk' && request.method === 'POST') {
+        const session = await requireAuth(request, env, 'admin');
+        if (!session) return json({ error: 'Forbidden.' }, 403, origin);
+        if (!await requireWritableClub(env, session)) return readOnly(origin);
+        const body = await request.json().catch(() => ({}));
+        const incoming = Array.isArray(body.members) ? body.members : [];
+        if (incoming.length === 0) return json({ error: 'Provide at least one member row.' }, 400, origin);
+        if (incoming.length > 5000) return json({ error: 'A single import can contain at most 5,000 rows.' }, 413, origin);
+
+        const existing = await env.DB.prepare('SELECT member_number FROM members WHERE club_id = ?').bind(session.club_id).all();
+        const seen = new Set(existing.results.map(row => normalizeMemberNumber(row.member_number)));
+        const reasons = {};
+        const skipped = [];
+        const valid = [];
+        const skip = (index, reason, row) => {
+          reasons[reason] = (reasons[reason] || 0) + 1;
+          skipped.push({ row: index + 2, reason, memberNumber: String(row?.memberNumber || '').trim() });
+        };
+
+        incoming.forEach((row, index) => {
+          const memberNumber = normalizeMemberNumber(row?.memberNumber);
+          const lastName = cleanText(row?.lastName, 80);
+          const firstName = cleanText(row?.firstName, 80);
+          const email = normalize(row?.email);
+          if (!memberNumber || !lastName || !firstName || !email) return skip(index, 'missing required field', row);
+          if (!validEmail(email)) return skip(index, 'invalid email format', row);
+          if (seen.has(memberNumber)) return skip(index, 'member number already exists', row);
+          seen.add(memberNumber);
+          valid.push({ memberNumber, lastName, firstName, email });
+        });
+
+        for (let offset = 0; offset < valid.length; offset += 50) {
+          const chunk = valid.slice(offset, offset + 50);
+          await env.DB.batch(chunk.map(member => env.DB.prepare(
+            'INSERT INTO members (club_id, member_number, last_name, first_name, email) VALUES (?, ?, ?, ?, ?)'
+          ).bind(session.club_id, member.memberNumber, member.lastName, member.firstName, member.email)));
+        }
+        return json({
+          addedCount: valid.length,
+          skippedCount: skipped.length,
+          reasons,
+          skipped
+        }, 200, origin);
       }
       const passwordMatch = path.match(/^\/members\/([^/]+)\/password$/);
       if (passwordMatch && request.method === 'PATCH') {
@@ -604,6 +667,7 @@ export default {
           env.DB.prepare('DELETE FROM sessions WHERE club_id = ? AND member_number = ? COLLATE NOCASE').bind(session.club_id, memberNumber),
           env.DB.prepare('DELETE FROM password_resets WHERE club_id = ? AND member_number = ? COLLATE NOCASE').bind(session.club_id, memberNumber),
           env.DB.prepare('DELETE FROM registration_challenges WHERE club_id = ? AND member_number = ? COLLATE NOCASE').bind(session.club_id, memberNumber),
+          env.DB.prepare('DELETE FROM device_push_tokens WHERE club_id = ? AND member_number = ? COLLATE NOCASE').bind(session.club_id, memberNumber),
           env.DB.prepare('DELETE FROM members WHERE club_id = ? AND member_number = ? COLLATE NOCASE').bind(session.club_id, memberNumber)
         ]);
         return noContent(204, origin);

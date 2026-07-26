@@ -1,9 +1,10 @@
 import { Capacitor } from '@capacitor/core';
+import { App as CapacitorApp } from '@capacitor/app';
 import { PushNotifications } from '@capacitor/push-notifications';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { SplashScreen } from '@capacitor/splash-screen';
 
-export async function initializeNativeApp(addToast) {
+export async function initializeNativeApp() {
   if (!Capacitor.isNativePlatform()) {
     return { isNative: false };
   }
@@ -15,6 +16,14 @@ export async function initializeNativeApp(addToast) {
     // Style native status bar with club theme
     await StatusBar.setStyle({ style: Style.Dark });
     await StatusBar.setBackgroundColor({ color: '#172238' });
+    await CapacitorApp.addListener('appUrlOpen', ({ url }) => {
+      try {
+        const parsed = new URL(url);
+        window.location.assign(`${parsed.pathname}${parsed.search}${parsed.hash}`);
+      } catch (error) {
+        console.warn('Ignored invalid app link:', error);
+      }
+    });
   } catch (err) {
     console.warn('Native status bar / splash screen config note:', err);
   }
@@ -41,8 +50,8 @@ export async function registerPushNotifications(onTokenReceived, onNotificationR
       return { success: false, reason: 'denied' };
     }
 
-    // Register with Apple APNs / Google FCM
-    await PushNotifications.register();
+    // Replace listeners on account changes so one device cannot register duplicate callbacks.
+    await PushNotifications.removeAllListeners();
 
     // Listener 1: Token registration successful
     PushNotifications.addListener('registration', (token) => {
@@ -68,12 +77,14 @@ export async function registerPushNotifications(onTokenReceived, onNotificationR
 
     // Listener 4: User tapped a push notification
     PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
-      console.log('Push notification action performed:', action);
       const data = action.notification.data;
-      if (data && data.url && window) {
-        window.location.hash = data.url;
+      if (data?.url && typeof window !== 'undefined') {
+        window.location.assign(data.url);
       }
     });
+
+    // Register with Apple APNs / Google FCM after listeners are installed.
+    await PushNotifications.register();
 
     return { success: true };
   } catch (err) {
