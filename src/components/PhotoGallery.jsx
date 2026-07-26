@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Heart, Trash2, X, Image as ImageIcon,
-  Download, Search, LayoutGrid, ListFilter, Play, Flame, ThumbsUp, Star
+  Download, Search, LayoutGrid, ListFilter, Play, Flame, ThumbsUp, Star, ArrowLeft, Maximize2
 } from 'lucide-react';
 import { photoDownloadName } from '../brand';
 import StoryShowcase from './StoryShowcase';
@@ -12,7 +12,7 @@ export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhot
   const [showOnlyMine, setShowOnlyMine] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('newest'); // 'newest' | 'popular' | 'oldest'
-  const [layoutMode, setLayoutMode] = useState('grid'); // 'grid' | 'feed'
+  const [layoutMode, setLayoutMode] = useState('grid'); // 'grid' | 'feed' (Instagram style)
   const [showStoryShowcase, setShowStoryShowcase] = useState(false);
 
   // Lightbox & Feed tracking
@@ -22,12 +22,14 @@ export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhot
   // Reactions map (photoId -> { '❤️': count, '🔥': count, '👏': count })
   const [reactionsMap, setReactionsMap] = useState({});
 
-  // Zoom & Pan State
+  // Native Pinch & Zoom State
   const [zoomScale, setZoomScale] = useState(1);
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
 
   const panStartRef = useRef({ x: 0, y: 0 });
+  const initialPinchDistRef = useRef(null);
+  const initialScaleRef = useRef(1);
 
   const categories = ['All', 'General', 'Tennis', 'Golf', 'Dining', 'Clubhouse', 'Events'];
 
@@ -72,7 +74,7 @@ export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhot
 
   const toggleZoom = () => {
     if (zoomScale > 1) resetZoom();
-    else setZoomScale(2);
+    else setZoomScale(2.5);
   };
 
   useEffect(() => {
@@ -103,7 +105,21 @@ export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhot
     onHeartPhoto(photoId);
   };
 
-  const handleCardClick = (photo) => {
+  // INSTAGRAM FEATURE: Tapping a grid thumbnail transitions directly to the scrollable feed at that photo!
+  const handleGridThumbnailClick = (photo) => {
+    const index = sortedPhotos.findIndex(p => p.id === photo.id);
+    if (index !== -1) {
+      setLayoutMode('feed');
+      setTimeout(() => {
+        const target = document.querySelector(`[data-feed-id="${photo.id}"]`);
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 60);
+    }
+  };
+
+  const handleOpenLightbox = (photo) => {
     const index = sortedPhotos.findIndex(p => p.id === photo.id);
     if (index !== -1) {
       setActiveLightboxIndex(index);
@@ -128,7 +144,7 @@ export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhot
 
   const hasLiked = (photo) => photo.heartUsers?.includes(currentUser?.memberNumber);
 
-  // Mouse & Touch Pan events
+  // Mouse & Touch Pan/Pinch events for Native Zoom
   const handleMouseDown = (e) => {
     if (zoomScale === 1) return;
     e.preventDefault();
@@ -143,10 +159,42 @@ export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhot
 
   const handleMouseUp = () => setIsPanning(false);
 
+  // NATIVE 2-FINGER PINCH-TO-ZOOM GESTURE LISTENERS
+  const handleTouchStart = (e) => {
+    if (e.touches.length === 2) {
+      e.preventDefault(); // Lock page viewport, zoom picture only!
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      initialPinchDistRef.current = dist;
+      initialScaleRef.current = zoomScale;
+    }
+  };
+
+  const handleTouchMove = (e) => {
+    if (e.touches.length === 2 && initialPinchDistRef.current) {
+      e.preventDefault(); // Keep container fixed!
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      const ratio = dist / initialPinchDistRef.current;
+      const newScale = Math.min(Math.max(initialScaleRef.current * ratio, 1.0), 4.0);
+      setZoomScale(newScale);
+    }
+  };
+
+  const handleTouchEnd = (e) => {
+    if (e.touches.length < 2) {
+      initialPinchDistRef.current = null;
+    }
+  };
+
   return (
     <div className="animate-fade-in">
       
-      {/* Enhanced Top Controls & Search Bar */}
+      {/* Top Toolbar Controls & Search Bar */}
       <div className="gallery-toolbar">
         <div className="gallery-search-group">
           <Search size={16} className="search-icon" />
@@ -176,44 +224,35 @@ export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhot
             <option value="oldest">Oldest First</option>
           </select>
 
-          {/* Layout Toggle: Grid vs Feed */}
+          {/* Instagram View Switcher: Grid vs Feed */}
           <div className="gallery-layout-toggle">
-            <button 
-              type="button" 
+            <button
+              type="button"
               className={`layout-btn ${layoutMode === 'grid' ? 'active' : ''}`}
               onClick={() => setLayoutMode('grid')}
-              title="Grid View"
+              title="Instagram Thumbnail Grid View"
             >
               <LayoutGrid size={16} /> Grid
             </button>
-            <button 
-              type="button" 
+            <button
+              type="button"
               className={`layout-btn ${layoutMode === 'feed' ? 'active' : ''}`}
               onClick={() => setLayoutMode('feed')}
-              title="Scroll Feed View"
+              title="Scrollable Feed View"
             >
               <ListFilter size={16} /> Feed
             </button>
           </div>
-
-          {/* Story Showcase Trigger */}
-          <button 
-            type="button" 
-            className="story-trigger-btn"
-            onClick={() => setShowStoryShowcase(true)}
-          >
-            <Play size={14} fill="currentColor" /> Club Story Mode
-          </button>
         </div>
       </div>
 
-      {/* Category Pills & Ownership Filter */}
-      <div className="gallery-controls">
-        <div className="category-filter-pills">
-          {categories.map(cat => (
+      {/* Category Pills & Filters */}
+      <div className="category-bar-wrapper">
+        <div className="category-pills">
+          {categories.map((cat) => (
             <button
               key={cat}
-              className={`filter-pill ${selectedCategory === cat ? 'active' : ''}`}
+              className={`category-pill ${selectedCategory === cat ? 'active' : ''}`}
               onClick={() => setSelectedCategory(cat)}
             >
               {cat}
@@ -221,64 +260,84 @@ export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhot
           ))}
         </div>
 
-        {!isAdmin && currentUser && (
-          <div className="gallery-view-toggle">
+        <div className="filter-options">
+          {sortedPhotos.length > 0 && (
             <button
-              className={`gallery-view-btn ${!showOnlyMine ? 'active' : ''}`}
-              onClick={() => setShowOnlyMine(false)}
+              type="button"
+              className="btn-story-showcase"
+              onClick={() => setShowStoryShowcase(true)}
+              title="Watch full-screen animated story slideshow"
             >
-              All Photos
+              <Play size={13} fill="currentColor" /> Play Stories
             </button>
-            <button
-              className={`gallery-view-btn ${showOnlyMine ? 'active' : ''}`}
-              onClick={() => setShowOnlyMine(true)}
-            >
-              My Uploads
-            </button>
-          </div>
-        )}
+          )}
+
+          <label className="checkbox-label mine-only-toggle">
+            <input
+              type="checkbox"
+              checked={showOnlyMine}
+              onChange={(e) => setShowOnlyMine(e.target.checked)}
+            />
+            <span>My Uploads</span>
+          </label>
+        </div>
       </div>
 
-      {/* Gallery Content: Grid Mode vs Feed Mode */}
+      {/* INSTAGRAM GRID VIEW TO SCROLLABLE FEED PRESENTATION */}
       {sortedPhotos.length > 0 ? (
         layoutMode === 'grid' ? (
-          /* Grid View Mode */
-          <div className="gallery-grid photo-gallery-grid">
-            {sortedPhotos.map(photo => (
-              <button 
-                key={photo.id} 
-                type="button" 
-                className="photo-card gallery-grid-card" 
-                onClick={() => handleCardClick(photo)} 
-                aria-label={`Open photo from ${photo.uploaderName || 'club member'}`}
-              >
-                <span className="photo-card-img-wrapper">
-                  <img src={photo.url} alt={photo.caption} className="photo-card-img" loading="lazy" />
-                  <span className="photo-card-category">{photo.category}</span>
-                  <span className="photo-card-hearts"><Heart size={13} fill="currentColor" /> {photo.hearts || 0}</span>
-                </span>
-                <span className="photo-card-details">
-                  <span className="photo-card-caption"><strong>{photo.uploaderName || 'Club Member'}</strong> {photo.caption}</span>
-                  <span className="photo-card-footer">
-                    <span className="photo-card-uploader">{photo.uploaderName || 'Club Member'}</span>
-                    <span className="photo-card-date">{new Date(photo.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
-                  </span>
-                </span>
-              </button>
-            ))}
+          <div className="photo-grid instagram-grid">
+            {sortedPhotos.map((photo) => {
+              const userLiked = hasLiked(photo);
+              return (
+                <div
+                  key={photo.id}
+                  className="photo-card instagram-grid-card"
+                  onClick={() => handleGridThumbnailClick(photo)}
+                >
+                  <div className="photo-card-image-wrapper">
+                    <img
+                      src={photo.url}
+                      alt={photo.caption}
+                      className="photo-card-image"
+                      loading="lazy"
+                    />
+                    <div className="photo-card-overlay">
+                      <div className="overlay-meta">
+                        <span>❤️ {photo.hearts || 0}</span>
+                      </div>
+                      <span className="grid-hover-hint">Tap to View Feed</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         ) : (
-          /* Scroll Feed View Mode */
-          <div className="gallery-feed-container">
-            {sortedPhotos.map(photo => {
+          /* INSTAGRAM SCROLLABLE FEED VIEW */
+          <div className="photo-feed instagram-feed-list">
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
+              <button
+                type="button"
+                className="btn-secondary"
+                style={{ borderRadius: '20px', padding: '6px 16px', fontSize: '12px', background: '#fff', border: '1px solid var(--club-gold)', color: 'var(--club-navy)', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '700' }}
+                onClick={() => setLayoutMode('grid')}
+              >
+                <ArrowLeft size={14} /> Back to Thumbnail Grid
+              </button>
+            </div>
+
+            {sortedPhotos.map((photo, index) => {
               const isOwner = currentUser && photo.uploaderId === currentUser.memberNumber;
               const canDelete = isAdmin || isOwner;
               const userLiked = hasLiked(photo);
 
               return (
-                <article key={photo.id} className="feed-card-item">
-                  <header className="feed-card-header">
-                    <div className="photo-post-avatar">{(photo.uploaderName || 'C').charAt(0).toUpperCase()}</div>
+                <article key={photo.id} data-feed-id={photo.id} className="photo-post instagram-photo-post">
+                  <header className="photo-post-header">
+                    <div className="photo-post-avatar" aria-hidden="true">
+                      {(photo.uploaderName || 'C').trim().charAt(0).toUpperCase()}
+                    </div>
                     <div className="photo-post-author">
                       <strong>{photo.uploaderName || 'Club Member'}</strong>
                       <span>{new Date(photo.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
@@ -286,25 +345,36 @@ export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhot
                     <span className="photo-post-category">{photo.category}</span>
                   </header>
 
-                  <div className="feed-card-image-wrap" onClick={() => handleCardClick(photo)}>
-                    <img src={photo.url} alt={photo.caption} className="feed-card-img" loading="lazy" />
+                  <div className="photo-post-image-container" onClick={() => handleOpenLightbox(photo)} title="Tap for Pinch-to-Zoom Lightbox">
+                    <img
+                      src={photo.url}
+                      alt={photo.caption}
+                      className="photo-post-image"
+                      loading={index < 4 ? 'eager' : 'lazy'}
+                    />
+                    <button className="zoom-hint-pill" type="button" onClick={(e) => { e.stopPropagation(); handleOpenLightbox(photo); }}>
+                      <Maximize2 size={12} /> Pinch & Zoom
+                    </button>
                   </div>
 
-                  <div className="feed-card-body">
+                  <div className="photo-post-body">
                     <div className="photo-post-actions-wrapper">
                       <div className="photo-post-actions">
-                        <button 
-                          type="button" 
-                          className={`feed-action ${userLiked ? 'liked' : ''}`} 
-                          onClick={(e) => handleHeartClick(e, photo.id)} 
+                        <button
+                          type="button"
+                          className={`feed-action ${userLiked ? 'liked' : ''}`}
+                          onClick={(e) => handleHeartClick(e, photo.id)}
                           disabled={isAdmin}
+                          aria-label="Like photo"
                         >
                           <Heart size={22} fill={userLiked ? 'currentColor' : 'none'} />
                           <span>{photo.hearts || 0}</span>
                         </button>
+
                         <a href={photo.downloadUrl || photo.url} download={photo.fileName || photoDownloadName(photo.category)} className="feed-action" title="Download photo">
                           <Download size={22} />
                         </a>
+
                         {canDelete && (
                           <button type="button" className="feed-action feed-delete" onClick={(e) => handleDeleteClick(e, photo.id)} title="Delete photo">
                             <Trash2 size={21} />
@@ -349,7 +419,7 @@ export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhot
         />
       )}
 
-      {/* Lightbox Modal View */}
+      {/* NATIVE PINCH & ZOOM LIGHTBOX MODAL */}
       {activeLightboxPhoto && createPortal(
         <div className="lightbox-backdrop" onClick={handleCloseLightbox}>
           <div className="instagram-lightbox" onClick={e => e.stopPropagation()}>
@@ -377,20 +447,27 @@ export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhot
                       onMouseMove={index === activeLightboxIndex ? handleMouseMove : undefined} 
                       onMouseUp={index === activeLightboxIndex ? handleMouseUp : undefined} 
                       onMouseLeave={index === activeLightboxIndex ? handleMouseUp : undefined} 
-                      style={{ touchAction: index === activeLightboxIndex && zoomScale > 1 ? 'none' : 'pan-y' }}
+                      onTouchStart={index === activeLightboxIndex ? handleTouchStart : undefined}
+                      onTouchMove={index === activeLightboxIndex ? handleTouchMove : undefined}
+                      onTouchEnd={index === activeLightboxIndex ? handleTouchEnd : undefined}
+                      style={{ touchAction: index === activeLightboxIndex && zoomScale > 1 ? 'none' : 'pan-y', position: 'relative', overflow: 'hidden' }}
                     >
                       <img 
                         src={photo.url} 
                         alt={photo.caption} 
                         className="photo-post-image" 
                         loading={index === activeLightboxIndex ? 'eager' : 'lazy'} 
-                        style={index === activeLightboxIndex ? { transform: `scale(${zoomScale}) translate(${panOffset.x / zoomScale}px, ${panOffset.y / zoomScale}px)`, transition: isPanning ? 'none' : 'transform 0.25s ease', cursor: zoomScale > 1 ? (isPanning ? 'grabbing' : 'grab') : 'zoom-in' } : undefined} 
+                        style={index === activeLightboxIndex ? { transform: `scale(${zoomScale}) translate(${panOffset.x / zoomScale}px, ${panOffset.y / zoomScale}px)`, transition: isPanning ? 'none' : 'transform 0.2s ease', cursor: zoomScale > 1 ? (isPanning ? 'grabbing' : 'grab') : 'zoom-in', width: '100%', display: 'block' } : undefined} 
                         onDoubleClick={index === activeLightboxIndex ? toggleZoom : undefined} 
                       />
+                      {index === activeLightboxIndex && zoomScale > 1 && (
+                        <span style={{ position: 'absolute', top: '10px', right: '10px', background: 'rgba(0,0,0,0.7)', color: '#fff', fontSize: '11px', fontWeight: '700', padding: '4px 8px', borderRadius: '12px', pointerEvents: 'none' }}>
+                          {(zoomScale).toFixed(1)}x Zoom
+                        </span>
+                      )}
                     </div>
 
                     <div className="photo-post-body">
-                      {/* Action buttons & Emoji Bar */}
                       <div className="photo-post-actions-wrapper">
                         <div className="photo-post-actions">
                           <button type="button" className={`feed-action ${userLiked ? 'liked' : ''}`} onClick={e => handleHeartClick(e, photo.id)} disabled={isAdmin} aria-label="Like photo">
@@ -407,7 +484,6 @@ export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhot
                           )}
                         </div>
 
-                        {/* Quick Emoji Reactions */}
                         <div className="emoji-reaction-bar">
                           {['🔥', '👏', '🎾', '🥂', '⭐'].map(emoji => (
                             <button key={emoji} type="button" className="emoji-chip" onClick={() => handleAddEmojiReaction(photo.id, emoji)}>
