@@ -17,6 +17,7 @@ import {
   completeAdminPasswordReset, deleteCloudAccount, deleteCloudOrganization
 } from './api';
 import { clubBrand } from './brand';
+import { initializeNativeApp, registerPushNotifications } from './services/pushNotifications';
 import './App.css';
 
 const PhotoUpload = lazy(() => import('./components/PhotoUpload'));
@@ -44,6 +45,24 @@ export default function App() {
     setToasts(prev => [...prev, { id, message, type }]);
     setTimeout(() => setToasts(prev => prev.filter(toast => toast.id !== id)), 4000);
   };
+
+  useEffect(() => {
+    initializeNativeApp(addToast);
+  }, []);
+
+  useEffect(() => {
+    if (currentUser) {
+      registerPushNotifications(
+        (token) => {
+          console.log('Registered device push token:', currentUser.memberNumber, token);
+        },
+        (notification) => {
+          console.log('Received notification payload:', notification);
+        },
+        addToast
+      );
+    }
+  }, [currentUser]);
 
   useEffect(() => {
     if (demoMode) return;

@@ -4,5 +4,19 @@
   "webDir": "dist",
   "server": {
     "androidScheme": "https"
+  },
+  "plugins": {
+    "PushNotifications": {
+      "presentationOptions": ["badge", "sound", "alert"]
+    },
+    "SplashScreen": {
+      "launchShowDuration": 2000,
+      "backgroundColor": "#172238",
+      "showSpinner": false
+    },
+    "StatusBar": {
+      "style": "DARK",
+      "backgroundColor": "#172238"
+    }
   }
 }
