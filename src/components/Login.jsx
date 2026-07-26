@@ -221,7 +221,19 @@ export default function Login({
       <button className="btn-gold login-btn">Open admin portal</button>
       {firebaseEnabled && <button type="button" className="btn-text" onClick={() => { setAdminResetMode(true); setResetMode(true); setError(''); }}>Forgot administrator password?</button>}
     </form>}
-    <div className="admin-toggle-link"><button onClick={() => { setIsAdminMode(value => !value); resetMemberFlow(); }}>{isAdminMode ? '← Back to member access' : 'Access admin portal →'}</button></div>
-    {firebaseEnabled && !directClubId && <div className="club-signup-link"><span>Represent a club or organization?</span><button type="button" onClick={onCreateClub}>Create your workspace</button></div>}
+    {firebaseEnabled && !directClubId && (
+      <div className="club-signup-link">
+        {typeof window !== 'undefined' && window.innerWidth <= 768 ? (
+          <span style={{ fontSize: '11px', color: 'var(--club-gray-dark)', textAlign: 'center', display: 'block', width: '100%' }}>
+            Workspace setup & club administration available from desktop.
+          </span>
+        ) : (
+          <>
+            <span>Represent a club or organization?</span>
+            <button type="button" onClick={onCreateClub}>Create your workspace</button>
+          </>
+        )}
+      </div>
+    )}
   </div></div>;
 }

@@ -946,13 +946,13 @@ export default function AdminPortal({
             </div>
 
             {/* Sub-toolbar */}
-            <div className="mod-toolbar" style={{ display: 'flex', gap: '16px', marginBottom: '20px', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div className="category-pills" style={{ overflowX: 'auto', paddingBottom: '4px' }}>
+            <div className="mod-toolbar" style={{ display: 'flex', gap: '16px', marginBottom: '24px', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div className="category-filter-pills">
                 {categories.map(cat => (
                   <button
                     key={cat}
                     type="button"
-                    className={`category-pill ${modCategory === cat ? 'active' : ''}`}
+                    className={`filter-pill ${modCategory === cat ? 'active' : ''}`}
                     onClick={() => setModCategory(cat)}
                   >
                     {cat}
@@ -977,58 +977,58 @@ export default function AdminPortal({
               </div>
             </div>
 
-            {/* Moderation Photo Grid */}
+            {/* Moderation Photo Grid - Matching Gallery Grid Cards */}
             {filteredModPhotos.length > 0 ? (
-              <div className="photo-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '16px' }}>
+              <div className="gallery-grid photo-gallery-grid">
                 {filteredModPhotos.map(photo => (
-                  <div key={photo.id} className="photo-card" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                    <div className="photo-card-image-wrapper" style={{ height: '180px', position: 'relative' }}>
-                      <img src={photo.url} alt={photo.caption} className="photo-card-image" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      <span className="photo-category-tag" style={{ position: 'absolute', top: '8px', left: '8px' }}>
-                        {photo.category}
-                      </span>
-                    </div>
+                  <div key={photo.id} className="photo-card gallery-grid-card">
+                    <span className="photo-card-img-wrapper">
+                      <img src={photo.url} alt={photo.caption} className="photo-card-img" loading="lazy" />
+                      <span className="photo-card-category">{photo.category}</span>
+                      <span className="photo-card-hearts"><Heart size={13} fill="currentColor" /> {photo.hearts || 0}</span>
+                    </span>
 
-                    <div className="photo-card-content" style={{ padding: '12px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                    <div className="photo-card-details" style={{ padding: '14px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                       <div>
                         {editingPhotoId === photo.id ? (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '8px' }}>
                             <input
                               type="text"
                               className="input-field"
-                              style={{ fontSize: '12px', padding: '6px' }}
+                              style={{ fontSize: '13px', padding: '6px 10px' }}
                               value={editCaptionText}
                               onChange={(e) => setEditCaptionText(e.target.value)}
+                              autoFocus
                             />
                             <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
-                              <button type="button" className="btn-secondary" style={{ padding: '2px 8px', fontSize: '11px' }} onClick={() => setEditingPhotoId(null)}>Cancel</button>
-                              <button type="button" className="btn-gold" style={{ padding: '2px 8px', fontSize: '11px' }} onClick={() => handleSaveEditedCaption(photo.id)}>Save</button>
+                              <button type="button" className="btn-secondary" style={{ padding: '4px 10px', fontSize: '11px' }} onClick={() => setEditingPhotoId(null)}>Cancel</button>
+                              <button type="button" className="btn-gold" style={{ padding: '4px 10px', fontSize: '11px' }} onClick={() => handleSaveEditedCaption(photo.id)}>Save Caption</button>
                             </div>
                           </div>
                         ) : (
-                          <p className="photo-caption" style={{ fontSize: '13px', margin: '0 0 6px', fontWeight: '600' }}>
-                            "{photo.caption}"
+                          <p className="photo-card-caption" style={{ margin: '0 0 6px', fontSize: '14px', lineHeight: '1.4' }}>
+                            <strong>{photo.uploaderName || 'Club Member'}</strong> "{photo.caption}"
                           </p>
                         )}
-                        <span style={{ fontSize: '11px', color: 'var(--club-gray-dark)', display: 'block' }}>
-                          By: <strong>{photo.uploaderName}</strong>
+                        <span className="photo-card-date" style={{ fontSize: '12px', color: 'var(--club-gray-dark)', display: 'block' }}>
+                          Uploaded {new Date(photo.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                         </span>
                       </div>
 
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '12px', paddingTop: '8px', borderTop: '1px solid var(--club-gray)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '14px', paddingTop: '10px', borderTop: '1px solid var(--club-gray-light)' }}>
                         <button
                           type="button"
                           className="btn-text"
-                          style={{ color: 'var(--club-navy)', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: '600' }}
+                          style={{ color: 'var(--club-navy)', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '5px', fontWeight: '700' }}
                           onClick={() => handleStartEditCaption(photo)}
                         >
-                          <Edit2 size={13} /> Edit
+                          <Edit2 size={14} /> Edit Caption
                         </button>
 
                         <button
                           type="button"
                           className="btn-text"
-                          style={{ color: 'var(--club-danger)', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: '600' }}
+                          style={{ color: 'var(--club-danger)', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '5px', fontWeight: '700' }}
                           onClick={() => {
                             if (window.confirm('Are you sure you want to delete this photo from the gallery?')) {
                               onDeletePhoto(photo.id);
@@ -1036,7 +1036,7 @@ export default function AdminPortal({
                             }
                           }}
                         >
-                          <Trash2 size={13} /> Delete
+                          <Trash2 size={14} /> Delete
                         </button>
                       </div>
                     </div>

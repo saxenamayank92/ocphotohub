@@ -155,9 +155,11 @@ export default function App() {
 
   const handleLoginSuccess = (user, admin) => {
     const isUserAdmin = Boolean(admin || user?.role === 'admin' || user?.role === 'owner');
+    const isMobileViewport = typeof window !== 'undefined' && window.innerWidth <= 768;
     setCurrentUser(user);
     setIsAdmin(isUserAdmin);
-    setActiveTab(isUserAdmin ? 'admin' : 'gallery');
+    // Mobile view is for member gallery view only; full Admin Portal is available on desktop
+    setActiveTab(isMobileViewport ? 'gallery' : (isUserAdmin ? 'admin' : 'gallery'));
     sessionStorage.setItem('oakville_user', JSON.stringify(user));
     sessionStorage.setItem('oakville_is_admin', String(isUserAdmin));
     addToast(`Signed in as ${user?.role === 'owner' ? 'Club Owner' : isUserAdmin ? 'Staff Admin' : `${user.firstName} ${user.lastName}`}`, 'success');

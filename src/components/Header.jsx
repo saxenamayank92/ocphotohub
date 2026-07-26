@@ -23,7 +23,7 @@ export default function Header({ user, club, isAdmin, activeTab, setActiveTab, o
             <>
               <button
                 onClick={() => setActiveTab('admin')}
-                className={`tab-btn ${activeTab === 'admin' ? 'active' : ''}`}
+                className={`tab-btn desktop-only-admin-tab ${activeTab === 'admin' ? 'active' : ''}`}
               >
                 <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <Shield size={16} /> Admin Portal
