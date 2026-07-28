@@ -251,7 +251,7 @@ export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhot
             className="story-trigger-btn"
             onClick={() => setShowStoryShowcase(true)}
           >
-            <Play size={14} fill="currentColor" /> Club Story Mode
+            <Play size={14} fill="currentColor" /> Story Mode
           </button>
         </div>
       </div>

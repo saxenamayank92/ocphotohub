@@ -3608,24 +3608,38 @@
     display: flex;
     align-items: center;
     justify-content: flex-start;
-    gap: 8px;
+    gap: 6px;
     width: 100%;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    padding-bottom: 4px;
+    flex-wrap: nowrap;
   }
 
-  .gallery-toolbar-actions::-webkit-scrollbar {
-    display: none;
+  .gallery-sort-select {
+    padding: 6px 8px;
+    font-size: 11px;
+    min-width: 0;
+  }
+
+  .gallery-layout-toggle {
+    padding: 2px;
+    gap: 1px;
+  }
+
+  .layout-btn {
+    padding: 5px 7px;
+    font-size: 11px;
+    gap: 3px;
+  }
+
+  .story-trigger-btn {
+    padding: 6px 10px;
+    font-size: 11px;
+    gap: 4px;
+    margin-left: auto;
   }
 
   .gallery-sort-select, .gallery-layout-toggle, .story-trigger-btn {
     flex-shrink: 0;
     white-space: nowrap;
-  }
-
-  .gallery-toolbar-actions .story-trigger-btn {
-    margin-left: auto;
   }
 
   .mobile-nav-item .active-dot {
