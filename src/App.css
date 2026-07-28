@@ -3460,10 +3460,32 @@
     min-height: 100%;
   }
 
+  html, body {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    height: 100dvh;
+    overflow: hidden !important;
+    margin: 0;
+    padding: 0;
+    overscroll-behavior: none;
+  }
+
+  #root {
+    width: 100%;
+    height: 100%;
+    height: 100dvh;
+    overflow: hidden !important;
+    position: fixed;
+    top: 0;
+    left: 0;
+  }
+
   .app-container {
     display: flex;
     flex-direction: column;
-    height: 100vh;
+    width: 100%;
+    height: 100%;
     height: 100dvh;
     overflow: hidden;
     position: fixed;
@@ -3479,14 +3501,17 @@
     top: 0;
     left: 0;
     right: 0;
-    height: 56px;
+    height: calc(56px + max(44px, env(safe-area-inset-top)));
     background: var(--club-white) !important;
     z-index: 1000;
-    padding: 0 16px;
+    padding-top: max(44px, env(safe-area-inset-top));
+    padding-left: 16px;
+    padding-right: 16px;
+    padding-bottom: 0;
+    box-sizing: border-box !important;
     display: flex;
     align-items: center;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
-    padding-top: env(safe-area-inset-top);
   }
 
   .header-content {
@@ -3513,12 +3538,13 @@
   /* Scrollable Middle Section */
   .content-wrapper {
     flex: 1;
-    margin-top: 56px;
-    margin-bottom: 72px;
+    margin-top: calc(56px + max(44px, env(safe-area-inset-top)));
+    margin-bottom: calc(64px + max(20px, env(safe-area-inset-bottom)));
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-y: contain;
     padding: 16px 12px 24px;
+    box-sizing: border-box !important;
   }
 
   /* Fixed Bottom Navigation Bar */
@@ -3527,14 +3553,18 @@
     bottom: 0;
     left: 0;
     right: 0;
-    height: 72px;
+    height: calc(64px + max(20px, env(safe-area-inset-bottom)));
     background: #ffffff;
     border-top: 1px solid rgba(0, 0, 0, 0.08);
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-around;
     z-index: 1000;
-    padding: 8px 10px env(safe-area-inset-bottom);
+    padding-top: 8px;
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
+    padding-left: 10px;
+    padding-right: 10px;
+    box-sizing: border-box !important;
     box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.06);
   }
 
@@ -3625,8 +3655,11 @@
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    padding: 24px 20px calc(16px + env(safe-area-inset-bottom));
-    box-sizing: border-box;
+    padding-top: max(44px, env(safe-area-inset-top));
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
+    padding-left: 20px;
+    padding-right: 20px;
+    box-sizing: border-box !important;
     position: fixed;
     top: 0;
     left: 0;
@@ -3705,7 +3738,7 @@
 
 /* The native entry screen is intentionally a single, calm login surface.
    Gallery and profile screens retain their normal scrolling behavior. */
-.native-login-screen {
+  .native-login-screen {
   height: 100dvh;
   min-height: 100dvh;
   overflow: hidden;

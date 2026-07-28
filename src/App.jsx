@@ -19,7 +19,7 @@ import {
   completeAdminPasswordReset, deleteCloudAccount, deleteCloudOrganization, registerCloudPushToken, resolveApiUrl
 } from './api';
 import { clubBrand } from './brand';
-import { initializeNativeApp, registerPushNotifications } from './services/pushNotifications';
+import { initializeNativeApp, registerPushNotifications, setNativeStatusBarForApp } from './services/pushNotifications';
 import './App.css';
 
 const PhotoUpload = lazy(() => import('./components/PhotoUpload'));
@@ -53,6 +53,10 @@ export default function App() {
   useEffect(() => {
     initializeNativeApp();
   }, []);
+
+  useEffect(() => {
+    setNativeStatusBarForApp(Boolean(currentUser));
+  }, [currentUser]);
 
   useEffect(() => {
     if (currentUser && import.meta.env.VITE_PUSH_NOTIFICATIONS === 'true') {
@@ -377,7 +381,7 @@ export default function App() {
       {!demoMode && trialDaysLeft !== null && currentUser?.role === 'owner' && <div className={`trial-status-banner ${trialDaysLeft === 0 ? 'expired' : ''}`}><span>{trialDaysLeft > 0 ? `${trialDaysLeft} days left in your free trial` : 'Your trial has ended. This workspace is now read-only.'}</span><a href="mailto:support@xtide.io?subject=Activate%20Club%20PhotoHub">Activate plan</a></div>}
       <main className="content-wrapper">
         <Suspense fallback={<div className="panel-loading" role="status"><div className="spinner" /><span>Loading…</span></div>}>
-          {activeTab === 'gallery' && <PhotoGallery photos={photos} currentUser={currentUser} isAdmin={isAdmin} onHeartPhoto={handleHeartPhoto} onDeletePhoto={handleDeletePhoto} />}
+          {activeTab === 'gallery' && <PhotoGallery photos={photos} currentUser={currentUser} isAdmin={isAdmin} onHeartPhoto={handleHeartPhoto} onDeletePhoto={handleDeletePhoto} addToast={addToast} />}
           {activeTab === 'upload' && <PhotoUpload user={currentUser} initialFiles={cameraFiles} onInitialFilesConsumed={() => setCameraFiles(null)} onUploadSuccess={handleUploadPhoto} addToast={addToast} />}
           {activeTab === 'profile' && <MemberProfile user={currentUser} club={currentClub || clubBrand} photos={photos} onLogout={handleLogout} />}
           {activeTab === 'admin' && isAdmin && <AdminPortal user={currentUser} club={currentClub || clubBrand} members={members} photos={photos} onUpdateClub={handleUpdateClub} onAddMember={handleAddMember} onAddMembers={handleAddMembers} onUpdateMember={handleUpdateMember} onDeleteMember={handleDeleteMember} onSetMemberPassword={handleSetMemberPassword} onDeletePhoto={handleDeletePhoto} onUpdatePhoto={handleUpdatePhoto} firebaseConfig={cloudActive ? { provider: 'managed' } : null} onResetDatabase={handleResetDatabase} addToast={addToast} />}

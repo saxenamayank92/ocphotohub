@@ -152,13 +152,20 @@ export default function PhotoUpload({ user, initialFiles, onInitialFilesConsumed
     return new Promise((resolve) => {
       const url = URL.createObjectURL(file);
       const img = new Image();
-      img.onload = () => {
-        URL.revokeObjectURL(url);
-        resolve(img);
-      };
-      img.onerror = () => {
+      const timeout = setTimeout(() => {
         URL.revokeObjectURL(url);
         resolve(null);
+      }, 3000);
+      const finish = (result) => {
+        clearTimeout(timeout);
+        URL.revokeObjectURL(url);
+        resolve(result);
+      };
+      img.onload = () => {
+        finish(img);
+      };
+      img.onerror = () => {
+        finish(null);
       };
       img.src = url;
     });
@@ -177,11 +184,15 @@ export default function PhotoUpload({ user, initialFiles, onInitialFilesConsumed
       const buffer = await rawFile.arrayBuffer();
       const cleanBlob = new Blob([buffer], { type: 'image/heic' });
 
-      const converted = await heic2any({
+      const conversion = heic2any({
         blob: cleanBlob,
         toType: 'image/jpeg',
         quality: 0.85
       });
+      const converted = await Promise.race([
+        conversion,
+        new Promise((_, reject) => setTimeout(() => reject(new Error('HEIC conversion timed out.')), 45000))
+      ]);
 
       const actualBlob = Array.isArray(converted) ? converted[0] : converted;
       return new File([actualBlob], rawFile.name.replace(/\.(heic|heif)$/i, '.jpg'), { type: 'image/jpeg' });

@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { Capacitor } from '@capacitor/core';
+import { Directory, Filesystem } from '@capacitor/filesystem';
 import {
   Heart, Trash2, X, Image as ImageIcon,
   Download, Search, LayoutGrid, ListFilter, Play
@@ -8,13 +10,14 @@ import { photoDownloadName } from '../brand';
 import { resolveApiUrl } from '../api';
 import StoryShowcase from './StoryShowcase';
 
-export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhoto, onDeletePhoto }) {
+export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhoto, onDeletePhoto, addToast }) {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [showOnlyMine, setShowOnlyMine] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('newest'); // 'newest' | 'popular' | 'oldest'
   const [layoutMode, setLayoutMode] = useState('grid'); // 'grid' | 'feed'
   const [showStoryShowcase, setShowStoryShowcase] = useState(false);
+  const [downloadingPhotoId, setDownloadingPhotoId] = useState(null);
 
   // Lightbox & Feed tracking
   const [activeLightboxIndex, setActiveLightboxIndex] = useState(null);
@@ -128,6 +131,51 @@ export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhot
   };
 
   const hasLiked = (photo) => photo.heartUsers?.includes(currentUser?.memberNumber);
+
+  const blobToBase64 = (blob) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result).split(',')[1] || '');
+    reader.onerror = () => reject(new Error('Could not prepare the photo for download.'));
+    reader.readAsDataURL(blob);
+  });
+
+  const handleDownload = async (event, photo) => {
+    event?.preventDefault();
+    event?.stopPropagation();
+    if (downloadingPhotoId === photo.id) return;
+
+    setDownloadingPhotoId(photo.id);
+    try {
+      const response = await fetch(resolveApiUrl(photo.downloadUrl || photo.url), { credentials: 'include' });
+      if (!response.ok) throw new Error(response.status === 401 ? 'Your session has expired. Please sign in again.' : 'The photo could not be downloaded.');
+      const blob = await response.blob();
+      const requestedName = photo.fileName?.split('/').pop() || photoDownloadName(photo.category);
+      const fileName = requestedName.replace(/[^a-zA-Z0-9._-]/g, '_');
+
+      if (Capacitor.isNativePlatform()) {
+        await Filesystem.writeFile({
+          path: fileName,
+          data: await blobToBase64(blob),
+          directory: Directory.Documents,
+          recursive: true
+        });
+        addToast?.('Photo saved to your device.', 'success');
+      } else {
+        const objectUrl = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = objectUrl;
+        anchor.download = fileName;
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+        setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+      }
+    } catch (error) {
+      addToast?.(error.message || 'Download failed.', 'error');
+    } finally {
+      setDownloadingPhotoId(null);
+    }
+  };
 
   // Mouse & Touch Pan events
   const handleMouseDown = (e) => {
@@ -303,9 +351,9 @@ export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhot
                           <Heart size={22} fill={userLiked ? 'currentColor' : 'none'} />
                           <span>{photo.hearts || 0}</span>
                         </button>
-                        <a href={resolveApiUrl(photo.downloadUrl || photo.url)} download={photo.fileName || photoDownloadName(photo.category)} className="feed-action" title="Download photo">
+                        <button type="button" className="feed-action" onClick={e => handleDownload(e, photo)} title="Download photo" disabled={downloadingPhotoId === photo.id} aria-label="Download photo">
                           <Download size={22} />
-                        </a>
+                        </button>
                         {canDelete && (
                           <button type="button" className="feed-action feed-delete" onClick={(e) => handleDeleteClick(e, photo.id)} title="Delete photo">
                             <Trash2 size={21} />
@@ -399,9 +447,9 @@ export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhot
                             <Heart size={22} fill={userLiked ? 'currentColor' : 'none'} />
                             <span>{photo.hearts || 0}</span>
                           </button>
-                          <a href={resolveApiUrl(photo.downloadUrl || photo.url)} download={photo.fileName || photoDownloadName(photo.category)} className="feed-action" aria-label="Download photo">
+                          <button type="button" className="feed-action" onClick={e => handleDownload(e, photo)} aria-label="Download photo" disabled={downloadingPhotoId === photo.id}>
                             <Download size={22} />
-                          </a>
+                          </button>
                           {canDelete && (
                             <button type="button" className="feed-action feed-delete" onClick={e => handleDeleteClick(e, photo.id)} aria-label="Delete photo">
                               <Trash2 size={21} />

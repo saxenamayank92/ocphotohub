@@ -6,6 +6,8 @@
   --club-green-light: #263A5C;
   --club-green-dark: #0D1728;
   --club-green-rgb: 23, 34, 56;
+  /* Compatibility alias for older component styles. */
+  --club-navy: #172238;
 
   --club-gold: #C8A76B;
   --club-gold-dark: #A78345;

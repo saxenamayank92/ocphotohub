@@ -17,8 +17,9 @@ export const resolveApiUrl = value => {
   if (/^(?:https?:|data:|blob:)/i.test(value)) return value;
   const baseUrl = (Capacitor.isNativePlatform() || isLocalhost) ? nativeApiBase : (configuredBase || '/api');
   if (value.startsWith('/api/')) return `${baseUrl}${value.slice(4)}`;
-  if (value.startsWith('/')) return `${baseUrl.replace(/\/api$/, '')}${value}`;
-  return `${baseUrl}/${value}`;
+  // Bundled demo assets and other public media must remain relative to the
+  // app origin. Only API-relative paths need the Worker base URL.
+  return value;
 };
 
 const request = async (path, options = {}) => {

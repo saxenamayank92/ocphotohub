@@ -14,7 +14,9 @@ export async function initializeNativeApp() {
     await SplashScreen.hide();
 
     // Style native status bar with club theme
-    await StatusBar.setStyle({ style: Style.Dark });
+    // The entry screen is navy, so use light status-bar content until the
+    // authenticated app switches to its light header.
+    await StatusBar.setStyle({ style: Style.Light });
     await StatusBar.setBackgroundColor({ color: '#172238' });
     await CapacitorApp.addListener('appUrlOpen', ({ url }) => {
       try {
@@ -29,6 +31,15 @@ export async function initializeNativeApp() {
   }
 
   return { isNative: true };
+}
+
+export async function setNativeStatusBarForApp(isAuthenticated) {
+  if (!Capacitor.isNativePlatform()) return;
+  try {
+    await StatusBar.setStyle({ style: isAuthenticated ? Style.Dark : Style.Light });
+  } catch (error) {
+    console.warn('Could not update native status-bar style:', error);
+  }
 }
 
 export async function registerPushNotifications(onTokenReceived, onNotificationReceived, addToast) {
