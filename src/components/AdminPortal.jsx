@@ -548,7 +548,7 @@ export default function AdminPortal({
                       <div key={photo.id} style={{ display: 'flex', gap: '12px', alignItems: 'center', background: 'var(--club-white)', padding: '10px', borderRadius: 'var(--radius-md)', border: '1px solid var(--club-gray)' }}>
                         <span style={{ fontSize: '18px', fontWeight: '700', width: '24px' }}>{index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}</span>
                         <div style={{ width: '48px', height: '48px', borderRadius: '4px', overflow: 'hidden', flexShrink: 0 }}>
-                          <img src={resolveApiUrl(photo.url)} crossOrigin="use-credentials" alt={photo.caption} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          <img src={resolveApiUrl(photo.url)} alt={photo.caption} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <p style={{ fontSize: '13px', fontWeight: '600', color: 'var(--club-green-dark)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>"{photo.caption}"</p>
@@ -984,7 +984,7 @@ export default function AdminPortal({
                 {filteredModPhotos.map(photo => (
                   <div key={photo.id} className="photo-card gallery-grid-card">
                     <span className="photo-card-img-wrapper">
-                      <img src={resolveApiUrl(photo.url)} crossOrigin="use-credentials" alt={photo.caption} className="photo-card-img" loading="lazy" />
+                      <img src={resolveApiUrl(photo.url)} alt={photo.caption} className="photo-card-img" loading="lazy" />
                       <span className="photo-card-category">{photo.category}</span>
                       <span className="photo-card-hearts"><Heart size={13} fill="currentColor" /> {photo.hearts || 0}</span>
                     </span>

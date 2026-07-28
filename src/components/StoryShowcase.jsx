@@ -133,7 +133,6 @@ export default function StoryShowcase({ photos, initialIndex = 0, onClose, onHea
             <img 
               key={currentPhoto.id}
               src={resolveApiUrl(currentPhoto.url)}
-              crossOrigin="use-credentials"
               alt={currentPhoto.caption} 
               className="story-image animate-pop-in"
             />

@@ -302,7 +302,7 @@ export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhot
                 aria-label={`Open photo from ${photo.uploaderName || 'club member'}`}
               >
                 <span className="photo-card-img-wrapper">
-                  <img src={resolveApiUrl(photo.url)} crossOrigin="use-credentials" alt={photo.caption} className="photo-card-img" loading="lazy" />
+                  <img src={resolveApiUrl(photo.url)} alt={photo.caption} className="photo-card-img" loading="lazy" />
                   <span className="photo-card-category">{photo.category}</span>
                   <span className="photo-card-hearts"><Heart size={13} fill="currentColor" /> {photo.hearts || 0}</span>
                 </span>
@@ -336,7 +336,7 @@ export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhot
                   </header>
 
                   <div className="feed-card-image-wrap" onClick={() => handleCardClick(photo)}>
-                    <img src={resolveApiUrl(photo.url)} crossOrigin="use-credentials" alt={photo.caption} className="feed-card-img" loading="lazy" />
+                    <img src={resolveApiUrl(photo.url)} alt={photo.caption} className="feed-card-img" loading="lazy" />
                   </div>
 
                   <div className="feed-card-body">
@@ -430,7 +430,6 @@ export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhot
                     >
                       <img 
                         src={resolveApiUrl(photo.url)}
-                        crossOrigin="use-credentials"
                         alt={photo.caption} 
                         className="photo-post-image" 
                         loading={index === activeLightboxIndex ? 'eager' : 'lazy'} 
