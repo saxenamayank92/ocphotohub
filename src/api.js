@@ -9,17 +9,37 @@ export const cloudApiEnabled = Boolean(configuredBase || import.meta.env.VITE_CL
 
 const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 const apiBase = configuredBase || (Capacitor.isNativePlatform() || isLocalhost ? nativeApiBase : '/api');
-let csrfToken = '';
+
+let csrfToken = (typeof localStorage !== 'undefined' && localStorage.getItem('oakville_csrf_token')) || '';
+
+const setCsrfToken = (token) => {
+  csrfToken = token || '';
+  if (typeof localStorage !== 'undefined') {
+    if (token) localStorage.setItem('oakville_csrf_token', token);
+    else localStorage.removeItem('oakville_csrf_token');
+  }
+};
+
 const REQUEST_TIMEOUT_MS = 20000;
 
 export const resolveApiUrl = value => {
   if (!value) return '';
-  if (/^(?:https?:|data:|blob:)/i.test(value)) return value;
-  const baseUrl = (Capacitor.isNativePlatform() || isLocalhost) ? nativeApiBase : (configuredBase || '/api');
-  if (value.startsWith('/api/')) return `${baseUrl}${value.slice(4)}`;
-  if (value.startsWith('/photos/')) return `${baseUrl}${value}`;
-  if (value.startsWith('photos/')) return `${baseUrl}/${value}`;
-  return value;
+  let resolved = value;
+  if (!/^(?:https?:|data:|blob:)/i.test(value)) {
+    const baseUrl = (Capacitor.isNativePlatform() || isLocalhost) ? nativeApiBase : (configuredBase || '/api');
+    if (value.startsWith('/api/')) resolved = `${baseUrl}${value.slice(4)}`;
+    else if (value.startsWith('/photos/')) resolved = `${baseUrl}${value}`;
+    else if (value.startsWith('photos/')) resolved = `${baseUrl}/${value}`;
+    else resolved = `${baseUrl}/${value.replace(/^\//, '')}`;
+  }
+
+  const token = csrfToken || (typeof localStorage !== 'undefined' && localStorage.getItem('oakville_csrf_token'));
+  if (token && resolved.includes('/photos/') && !resolved.includes('token=')) {
+    const separator = resolved.includes('?') ? '&' : '?';
+    resolved = `${resolved}${separator}token=${encodeURIComponent(token)}`;
+  }
+
+  return resolved;
 };
 
 const request = async (path, options = {}) => {
@@ -27,12 +47,14 @@ const request = async (path, options = {}) => {
   const timeout = setTimeout(() => controller.abort(), options.timeout || REQUEST_TIMEOUT_MS);
   let response;
   try {
+    const authHeaders = csrfToken ? { 'X-CSRF-Token': csrfToken, 'Authorization': `Bearer ${csrfToken}` } : {};
     response = await fetch(`${apiBase}${path}`, {
       ...options,
       credentials: 'include',
       signal: controller.signal,
       headers: {
         ...(options.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
+        ...authHeaders,
         ...(options.headers || {})
       }
     });
@@ -60,7 +82,7 @@ export const listCloudClubs = () => request('/clubs');
 
 export const cloudLogin = async credentials => {
   const result = await request('/auth/login', { method: 'POST', body: JSON.stringify(credentials) });
-  csrfToken = result.csrfToken || '';
+  setCsrfToken(result.csrfToken);
   return result;
 };
 
@@ -69,13 +91,13 @@ export const requestRegistrationCode = details => request('/auth/registration-co
 export const startClubOnboarding = details => request('/onboarding/start', { method: 'POST', body: JSON.stringify(details) });
 export const completeClubOnboarding = async details => {
   const result = await request('/onboarding/complete', { method: 'POST', body: JSON.stringify(details) });
-  csrfToken = result.csrfToken || '';
+  setCsrfToken(result.csrfToken);
   return result;
 };
 
 export const cloudRegister = async details => {
   const result = await request('/auth/register', { method: 'POST', body: JSON.stringify(details) });
-  csrfToken = result.csrfToken || '';
+  setCsrfToken(result.csrfToken);
   return result;
 };
 
@@ -87,11 +109,11 @@ export const completeAdminPasswordReset = details => request('/auth/admin-passwo
 
 export const cloudSession = async () => {
   const result = await request('/auth/me');
-  csrfToken = result.csrfToken || '';
+  setCsrfToken(result.csrfToken);
   return result;
 };
 
-export const cloudLogout = () => request('/auth/logout', { method: 'POST', headers: { 'X-CSRF-Token': csrfToken } }).finally(() => { csrfToken = ''; });
+export const cloudLogout = () => request('/auth/logout', { method: 'POST', headers: { 'X-CSRF-Token': csrfToken } }).finally(() => { setCsrfToken(''); });
 
 export const saveCloudPassword = (memberNumber, password) => request(`/members/${encodeURIComponent(memberNumber)}/password`, {
   method: 'PATCH',
@@ -172,10 +194,10 @@ export const toggleCloudHeart = (photoId, memberNumber) => request(`/photos/${en
 
 export const resetCloudData = () => request('/reset', { method: 'POST', headers: { 'X-CSRF-Token': csrfToken } });
 
-export const deleteCloudAccount = () => request('/account', { method: 'DELETE', headers: { 'X-CSRF-Token': csrfToken } }).finally(() => { csrfToken = ''; });
+export const deleteCloudAccount = () => request('/account', { method: 'DELETE', headers: { 'X-CSRF-Token': csrfToken } }).finally(() => { setCsrfToken(''); });
 
 export const deleteCloudOrganization = confirmName => request('/organization', {
   method: 'DELETE',
   headers: { 'X-CSRF-Token': csrfToken },
   body: JSON.stringify({ confirmName })
-}).finally(() => { csrfToken = ''; });
+}).finally(() => { setCsrfToken(''); });
