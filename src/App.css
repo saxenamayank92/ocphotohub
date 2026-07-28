@@ -3571,7 +3571,7 @@
     background: var(--club-gold-dark);
   }
 
-  .camera-action-item .camera-btn-circle {
+  .upload-center-item .upload-btn-circle {
     width: 52px;
     height: 52px;
     border-radius: 50%;
@@ -3584,8 +3584,12 @@
     transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  .camera-action-item:active .camera-btn-circle {
+  .upload-center-item:active .upload-btn-circle {
     transform: scale(0.92);
+  }
+
+  .upload-center-item.active .upload-btn-circle {
+    background: linear-gradient(135deg, var(--club-gold-dark), var(--club-gold));
   }
 }
 

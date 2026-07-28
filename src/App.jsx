@@ -384,7 +384,7 @@ export default function App() {
           {activeTab === 'account' && <AccountSettings user={currentUser} club={currentClub || clubBrand} isAdmin={isAdmin} demoMode={demoMode} onDeleteAccount={handleDeleteAccount} onDeleteOrganization={handleDeleteOrganization} addToast={addToast} />}
         </Suspense>
       </main>
-      <MobileBottomNav activeTab={activeTab} setActiveTab={setActiveTab} onDirectCameraCapture={(files) => { setCameraFiles(files); setActiveTab('upload'); }} />
+      <MobileBottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
       <div className="toast-container">
         {toasts.map(toast => <div key={toast.id} className={`toast ${toast.type}`}>
           {toast.type === 'success' && <ShieldCheck size={16} />}
