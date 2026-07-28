@@ -275,6 +275,10 @@ export default function PhotoUpload({ user, onUploadSuccess, addToast }) {
         addToast(`Skipped: ${rawFile.name} (> 40MB)`, 'error');
         continue;
       }
+      if (rawFile.type.startsWith('video/') || /\.(mp4|mov|avi|wmv|mkv|webm|m4v)$/i.test(rawFile.name)) {
+        addToast(`Videos are not supported at this time. Please upload photos (${rawFile.name}).`, 'error');
+        continue;
+      }
       const isImage = rawFile.type.startsWith('image/');
       const isHeic = rawFile.name.toLowerCase().endsWith('.heic') || rawFile.name.toLowerCase().endsWith('.heif');
 

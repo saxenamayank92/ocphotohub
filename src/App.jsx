@@ -7,6 +7,8 @@ import Header from './components/Header';
 import PhotoGallery from './components/PhotoGallery';
 import ClubOnboarding from './components/ClubOnboarding';
 import AccountSettings from './components/AccountSettings';
+import MemberProfile from './components/MemberProfile';
+import MobileBottomNav from './components/MobileBottomNav';
 import {
   addCloudMember, addCloudMembers, cloudApiEnabled, cloudLogin, cloudLogout, cloudSession,
   deleteCloudMember, deleteCloudPhoto, updateCloudPhoto, loadCloudData, resetCloudData,
@@ -378,10 +380,12 @@ export default function App() {
         <Suspense fallback={<div className="panel-loading" role="status"><div className="spinner" /><span>Loading…</span></div>}>
           {activeTab === 'gallery' && <PhotoGallery photos={photos} currentUser={currentUser} isAdmin={isAdmin} onHeartPhoto={handleHeartPhoto} onDeletePhoto={handleDeletePhoto} />}
           {activeTab === 'upload' && <PhotoUpload user={currentUser} onUploadSuccess={handleUploadPhoto} addToast={addToast} />}
+          {activeTab === 'profile' && <MemberProfile user={currentUser} club={currentClub || clubBrand} photos={photos} onLogout={handleLogout} />}
           {activeTab === 'admin' && isAdmin && <AdminPortal user={currentUser} club={currentClub || clubBrand} members={members} photos={photos} onUpdateClub={handleUpdateClub} onAddMember={handleAddMember} onAddMembers={handleAddMembers} onUpdateMember={handleUpdateMember} onDeleteMember={handleDeleteMember} onSetMemberPassword={handleSetMemberPassword} onDeletePhoto={handleDeletePhoto} onUpdatePhoto={handleUpdatePhoto} firebaseConfig={cloudActive ? { provider: 'managed' } : null} onResetDatabase={handleResetDatabase} addToast={addToast} />}
           {activeTab === 'account' && <AccountSettings user={currentUser} club={currentClub || clubBrand} isAdmin={isAdmin} demoMode={demoMode} onDeleteAccount={handleDeleteAccount} onDeleteOrganization={handleDeleteOrganization} addToast={addToast} />}
         </Suspense>
       </main>
+      <MobileBottomNav activeTab={activeTab} setActiveTab={setActiveTab} onDirectCameraCapture={() => setActiveTab('upload')} />
       <div className="toast-container">
         {toasts.map(toast => <div key={toast.id} className={`toast ${toast.type}`}>
           {toast.type === 'success' && <ShieldCheck size={16} />}
