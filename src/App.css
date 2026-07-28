@@ -3590,6 +3590,40 @@
     font-weight: 800;
   }
 
+  .gallery-toolbar {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 14px;
+    width: 100%;
+  }
+
+  .gallery-search-group {
+    width: 100%;
+    max-width: 100%;
+    min-width: 100%;
+  }
+
+  .gallery-toolbar-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+  }
+
+  .gallery-toolbar-actions::-webkit-scrollbar {
+    display: none;
+  }
+
+  .gallery-sort-select, .gallery-layout-toggle, .story-trigger-btn {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
   .mobile-nav-item .active-dot {
     position: absolute;
     bottom: 4px;

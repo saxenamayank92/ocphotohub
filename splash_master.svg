@@ -1,0 +1,11 @@
+<svg xmlns='http://www.w3.org/2000/svg' width='2732' height='2732' viewBox='0 0 2732 2732'>
+  <rect width='2732' height='2732' fill='#F4F4F2'/>
+  <!-- Circular Navy Badge -->
+  <circle cx='1366' cy='1366' r='240' fill='#172238'/>
+  <!-- Gold C Camera Icon -->
+  <path d='M 1366 1196 A 170 170 0 1 0 1516 1426 L 1566 1426 A 220 220 0 1 1 1366 1146 Z' fill='#C5A059'/>
+  <!-- Center Camera Lens Ring -->
+  <circle cx='1336' cy='1366' r='60' fill='#172238' stroke='#C5A059' stroke-width='14'/>
+  <circle cx='1336' cy='1366' r='26' fill='#2E5A44'/>
+  <circle cx='1344' cy='1358' r='8' fill='#FFFFFF'/>
+</svg>
