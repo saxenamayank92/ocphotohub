@@ -70,7 +70,17 @@ export default function Login({
   const [adminPassword, setAdminPassword] = useState('');
   const [error, setError] = useState('');
   const [infoMessage, setInfoMessage] = useState('');
-  const selectedClub = clubs.find(club => club.id === clubId);
+
+  React.useEffect(() => {
+    if (directClubId && clubs.length > 0) {
+      const match = clubs.find(c => c.id === directClubId || c.slug === directClubId || c.id?.includes('oakville'));
+      if (match) setClubId(match.id);
+    } else if (clubs.length === 1 && !clubId) {
+      setClubId(clubs[0].id);
+    }
+  }, [directClubId, clubs, clubId]);
+
+  const selectedClub = clubs.find(club => club.id === clubId) || (clubs.length === 1 ? clubs[0] : null);
   const resetParams = new URLSearchParams(window.location.search);
   const resetToken = resetParams.get(adminResetMode ? 'adminReset' : 'reset');
 
@@ -82,18 +92,19 @@ export default function Login({
 
   const handleMemberSubmit = async event => {
     event.preventDefault(); clearMessages();
-    if (!clubId || !lastName || !memberNumber) return setError('Choose your club, then enter your last name and member number.');
+    const effectiveClubId = clubId || (clubs.length === 1 ? clubs[0]?.id : directClubId);
+    if (!effectiveClubId || !lastName || !memberNumber) return setError('Choose your club, then enter your last name and member number.');
     if (firebaseEnabled) {
       if (!showPassword) {
         try {
-          const result = await onCloudCheckMember({ clubId, lastName: lastName.trim(), memberNumber: memberNumber.trim() });
+          const result = await onCloudCheckMember({ clubId: effectiveClubId, lastName: lastName.trim(), memberNumber: memberNumber.trim() });
           if (result.registered) { setShowPassword(true); setInfoMessage('Membership verified. Enter your password.'); }
           else { setRegisteredMember({ lastName: lastName.trim(), memberNumber: memberNumber.trim() }); setIsRegistering(true); setInfoMessage('Membership verified. Now confirm the email address held by your club.'); }
         } catch (cloudError) { setError(cloudError.message || 'Invalid membership details.'); }
         return;
       }
       if (!password) return setError('Enter your password.');
-      try { await onCloudLogin({ mode: 'member', clubId, lastName: lastName.trim(), memberNumber: memberNumber.trim(), password }); }
+      try { await onCloudLogin({ mode: 'member', clubId: effectiveClubId, lastName: lastName.trim(), memberNumber: memberNumber.trim(), password }); }
       catch (cloudError) {
         if (cloudError.code === 'NEEDS_REGISTRATION') { setRegisteredMember({ lastName: lastName.trim(), memberNumber: memberNumber.trim() }); setIsRegistering(true); return; }
         setError(cloudError.message || 'Invalid credentials.');
@@ -221,19 +232,26 @@ export default function Login({
       <button className="btn-gold login-btn">Open admin portal</button>
       {firebaseEnabled && <button type="button" className="btn-text" onClick={() => { setAdminResetMode(true); setResetMode(true); setError(''); }}>Forgot administrator password?</button>}
     </form>}
-    {firebaseEnabled && !directClubId && (
-      <div className="club-signup-link">
-        {typeof window !== 'undefined' && window.innerWidth <= 768 ? (
-          <span style={{ fontSize: '11px', color: 'var(--club-gray-dark)', textAlign: 'center', display: 'block', width: '100%' }}>
-            Workspace setup & club administration available from desktop.
-          </span>
-        ) : (
-          <>
+    {typeof window !== 'undefined' && window.innerWidth <= 768 ? (
+      <div className="club-signup-link" style={{ marginTop: '16px' }}>
+        <span style={{ fontSize: '11px', color: 'var(--club-gray-dark)', textAlign: 'center', display: 'block', width: '100%' }}>
+          Create your workspace or access admin portal from desktop.
+        </span>
+      </div>
+    ) : (
+      <>
+        <div className="admin-toggle-link">
+          <button onClick={() => { setIsAdminMode(value => !value); resetMemberFlow(); }}>
+            {isAdminMode ? '← Back to member access' : 'Access admin portal →'}
+          </button>
+        </div>
+        {firebaseEnabled && !directClubId && (
+          <div className="club-signup-link">
             <span>Represent a club or organization?</span>
             <button type="button" onClick={onCreateClub}>Create your workspace</button>
-          </>
+          </div>
         )}
-      </div>
+      </>
     )}
   </div></div>;
 }
