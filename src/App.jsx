@@ -130,12 +130,10 @@ export default function App() {
         setPhotos(data.photos || []);
         setCloudActive(true);
       } catch (error) {
-        console.error('Cloud API unavailable:', error);
+        console.error('Cloud API unavailable, falling back to local storage:', error);
         if (!cancelled) {
-          setCloudActive(true);
-          setMembers([]);
-          setPhotos([]);
-          setStartupError('Club PhotoHub is temporarily unavailable. Please check your connection and try again.');
+          setCloudActive(false);
+          loadLocal();
         }
       }
     };

@@ -7,9 +7,8 @@ const nativeApiBase = 'https://pictide-api.summer-wind-c5c6.workers.dev/api';
 // VITE_CLOUD_API flag is optional. Local development remains offline-friendly.
 export const cloudApiEnabled = Boolean(configuredBase || import.meta.env.VITE_CLOUD_API === 'true' || import.meta.env.PROD);
 
-// The Vercel site uses its same-origin /api proxy. Native Capacitor builds do
-// not have that proxy, so they must call the managed API directly.
-const apiBase = configuredBase || (Capacitor.isNativePlatform() ? nativeApiBase : '/api');
+const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+const apiBase = configuredBase || (Capacitor.isNativePlatform() || isLocalhost ? nativeApiBase : '/api');
 let csrfToken = '';
 const REQUEST_TIMEOUT_MS = 20000;
 
