@@ -47,6 +47,75 @@ const verificationCode = () => {
   return String(100000 + (values[0] % 900000));
 };
 
+let fcmAccessToken = { value: '', expiresAt: 0 };
+
+const pemToArrayBuffer = pem => {
+  const base64 = String(pem || '').replace(/-----(BEGIN|END) PRIVATE KEY-----/g, '').replace(/\s/g, '');
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+  return bytes.buffer;
+};
+
+const getFcmAccessToken = async env => {
+  if (fcmAccessToken.value && fcmAccessToken.expiresAt > Date.now() + 60_000) return fcmAccessToken.value;
+  if (!env.FCM_SERVICE_ACCOUNT_JSON) throw new Error('Firebase messaging is not configured.');
+  const serviceAccount = JSON.parse(env.FCM_SERVICE_ACCOUNT_JSON);
+  const now = Math.floor(Date.now() / 1000);
+  const header = b64(encoder.encode(JSON.stringify({ alg: 'RS256', typ: 'JWT' })));
+  const claim = b64(encoder.encode(JSON.stringify({
+    iss: serviceAccount.client_email,
+    scope: 'https://www.googleapis.com/auth/firebase.messaging',
+    aud: 'https://oauth2.googleapis.com/token',
+    iat: now,
+    exp: now + 3600
+  })));
+  const signingInput = `${header}.${claim}`;
+  const key = await crypto.subtle.importKey('pkcs8', pemToArrayBuffer(serviceAccount.private_key), { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['sign']);
+  const signature = b64(await crypto.subtle.sign('RSASSA-PKCS1-v1_5', key, encoder.encode(signingInput)));
+  const response = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer', assertion: `${signingInput}.${signature}` })
+  });
+  const payload = await response.json();
+  if (!response.ok || !payload.access_token) throw new Error('Could not obtain a Firebase messaging token.');
+  fcmAccessToken = { value: payload.access_token, expiresAt: Date.now() + (Number(payload.expires_in || 3600) * 1000) };
+  return fcmAccessToken.value;
+};
+
+const notifyPhotoUploaded = async (env, { clubId, clubName, uploaderId, uploaderName, photoId, category }) => {
+  if (!env.FCM_SERVICE_ACCOUNT_JSON) return;
+  const devices = await env.DB.prepare('SELECT token FROM device_push_tokens WHERE club_id = ? AND member_number <> ? COLLATE NOCASE').bind(clubId, uploaderId).all();
+  const tokens = [...new Set((devices.results || []).map(device => device.token).filter(Boolean))];
+  if (!tokens.length) return;
+  const accessToken = await getFcmAccessToken(env);
+  const title = `New photo in ${clubName}`;
+  const body = `${uploaderName || 'A member'} shared a ${String(category || 'new').toLowerCase()} photo.`;
+  for (let start = 0; start < tokens.length; start += 20) {
+    const batch = tokens.slice(start, start + 20);
+    await Promise.all(batch.map(async token => {
+      const response = await fetch(`https://fcm.googleapis.com/v1/projects/${JSON.parse(env.FCM_SERVICE_ACCOUNT_JSON).project_id}/messages:send`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: {
+          token,
+          notification: { title, body },
+          data: { type: 'photo', photoId: String(photoId), clubId: String(clubId), url: '/app' },
+          android: { priority: 'high', notification: { channel_id: 'club_photos', sound: 'default' } },
+          apns: { headers: { 'apns-priority': '10' }, payload: { aps: { sound: 'default' } } }
+        } })
+      });
+      if (response.ok) return;
+      const error = await response.json().catch(() => ({}));
+      const code = error?.error?.details?.find(detail => detail.errorCode)?.errorCode;
+      if (code === 'UNREGISTERED' || response.status === 404) {
+        await env.DB.prepare('DELETE FROM device_push_tokens WHERE club_id = ? AND token = ?').bind(clubId, token).run();
+      }
+    }));
+  }
+};
+
 const derivePassword = async (password, salt) => {
   const key = await crypto.subtle.importKey('raw', encoder.encode(password), 'PBKDF2', false, ['deriveBits']);
   const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', salt: encoder.encode(salt), iterations: 100000, hash: 'SHA-256' }, key, 256);
@@ -69,7 +138,7 @@ const responseHeaders = (origin, extra = {}) => {
   const headers = new Headers({
     'Content-Type': 'application/json; charset=utf-8',
     'Access-Control-Allow-Credentials': 'true',
-    'Access-Control-Allow-Headers': 'Content-Type, X-CSRF-Token',
+    'Access-Control-Allow-Headers': 'Content-Type, X-CSRF-Token, Authorization',
     'Access-Control-Allow-Methods': 'GET,POST,PATCH,DELETE,OPTIONS',
     'Cache-Control': 'no-store',
     'X-Content-Type-Options': 'nosniff',
@@ -107,9 +176,9 @@ async function getClub(env, clubId) {
 }
 
 async function auth(request, env) {
-  const token = cookies(request).pt_session;
-  if (!token) return null;
-  return env.DB.prepare(`SELECT s.*, COALESCE(m.first_name, a.first_name) AS firstName,
+  const sessionCookie = cookies(request).pt_session;
+  const bearer = request.headers.get('Authorization')?.match(/^Bearer\s+(.+)$/i)?.[1] || '';
+  const lookup = (credentialColumn) => `SELECT s.*, COALESCE(m.first_name, a.first_name) AS firstName,
     COALESCE(m.last_name, a.last_name) AS lastName, a.email AS adminEmail,
     c.name AS clubName, c.short_name AS clubShortName, c.slug AS clubSlug, c.logo_url AS clubLogoUrl,
     c.organization_type AS organizationType, c.plan_status AS planStatus,
@@ -120,8 +189,18 @@ async function auth(request, env) {
     JOIN clubs c ON c.id = s.club_id AND c.status = 'active'
     LEFT JOIN members m ON m.club_id = s.club_id AND m.member_number = s.member_number
     LEFT JOIN club_admins a ON a.club_id = s.club_id AND ('admin:' || a.id) = s.member_number AND a.status = 'active'
-    WHERE s.token_hash = ? AND s.expires_at > ?
-      AND ((s.role = 'admin' AND a.id IS NOT NULL) OR (s.role != 'admin' AND m.member_number IS NOT NULL))`).bind(await hash(token), Date.now()).first();
+    WHERE s.${credentialColumn} = ? AND s.expires_at > ?
+      AND ((s.role = 'admin' AND a.id IS NOT NULL) OR (s.role != 'admin' AND m.member_number IS NOT NULL))`;
+  if (sessionCookie) {
+    const session = await env.DB.prepare(lookup('token_hash')).bind(await hash(sessionCookie), Date.now()).first();
+    if (session) return session;
+  }
+  // WKWebView may omit the HttpOnly session cookie on cross-origin asset
+  // requests. The CSRF token is session-bound and already held by the app;
+  // accept it as a bearer for authenticated photo reads.
+  if (bearer) return env.DB.prepare(lookup('csrf_hash')).bind(await hash(bearer), Date.now()).first()
+    .catch(() => null);
+  return null;
 }
 
 async function requireAuth(request, env, role) {
@@ -428,7 +507,7 @@ async function resetAdminPassword(request, env, origin) {
 }
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const origin = originFor(request, env);
     if (request.headers.get('Origin') && !origin) return json({ error: 'Origin not allowed.' }, 403, '');
     if (request.method === 'OPTIONS') return noContent(204, origin);
@@ -708,7 +787,9 @@ export default {
         try {
           await env.DB.prepare('INSERT INTO photos (id, club_id, object_key, caption, category, uploader_name, uploader_id, created_at, hearts, byte_size) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?)').bind(photoId, session.club_id, objectKey, caption || fallbackCaption, category, `${session.firstName || ''} ${session.lastName || ''}`.trim(), session.member_number, createdAt || new Date().toISOString(), stored.size).run();
         } catch (error) { await env.PHOTOS.delete(objectKey); throw error; }
-        return json({ id: photoId, url: `/api/photos/${encodeURIComponent(photoId)}/file`, downloadUrl: `/api/photos/${encodeURIComponent(photoId)}/file?download=1`, fileName: objectKey, caption: caption || fallbackCaption, category, uploaderName: `${session.firstName || ''} ${session.lastName || ''}`.trim(), uploaderId: session.member_number, createdAt: createdAt || new Date().toISOString(), hearts: 0, heartUsers: [] }, 201, origin);
+        const uploaderName = `${session.firstName || ''} ${session.lastName || ''}`.trim();
+        ctx?.waitUntil(notifyPhotoUploaded(env, { clubId: session.club_id, clubName: session.clubName || 'your club', uploaderId: session.member_number, uploaderName, photoId, category }).catch(error => console.error('Photo notification delivery failed:', error.message)));
+        return json({ id: photoId, url: `/api/photos/${encodeURIComponent(photoId)}/file`, downloadUrl: `/api/photos/${encodeURIComponent(photoId)}/file?download=1`, fileName: objectKey, caption: caption || fallbackCaption, category, uploaderName, uploaderId: session.member_number, createdAt: createdAt || new Date().toISOString(), hearts: 0, heartUsers: [] }, 201, origin);
       }
       const fileMatch = path.match(/^\/photos\/([^/]+)\/file$/);
       if (fileMatch && request.method === 'GET') {

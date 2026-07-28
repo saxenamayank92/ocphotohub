@@ -7,7 +7,14 @@ const MemberApp = lazy(() => import('./App.jsx'));
 
 export default function Root() {
   const currentUrl = new URL(window.location.href);
-  const isNativeApp = Capacitor.isNativePlatform();
+  // Capacitor normally reports the native platform, but the protocol/host
+  // fallback also covers a freshly installed WebView before plugins finish
+  // initializing. Native builds must never fall through to the marketing demo.
+  const isNativeApp = Capacitor.isNativePlatform()
+    || currentUrl.protocol === 'capacitor:'
+    || currentUrl.protocol === 'ionic:'
+    || currentUrl.hostname === 'localhost'
+    || currentUrl.hostname === '127.0.0.1';
   const isOakvilleHost = currentUrl.hostname === 'ocphotohub.xtide.io';
   const isMemberApp = isNativeApp
     || isOakvilleHost

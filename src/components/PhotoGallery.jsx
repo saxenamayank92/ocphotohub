@@ -7,7 +7,7 @@ import {
   Download, Search, LayoutGrid, ListFilter, Play
 } from 'lucide-react';
 import { photoDownloadName } from '../brand';
-import { resolveApiUrl } from '../api';
+import { fetchAuthenticatedPhoto, fetchAuthenticatedPhotoBlob, resolveApiUrl } from '../api';
 import StoryShowcase from './StoryShowcase';
 
 export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhoto, onDeletePhoto, addToast }) {
@@ -18,6 +18,34 @@ export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhot
   const [layoutMode, setLayoutMode] = useState('grid'); // 'grid' | 'feed'
   const [showStoryShowcase, setShowStoryShowcase] = useState(false);
   const [downloadingPhotoId, setDownloadingPhotoId] = useState(null);
+  const [photoUrls, setPhotoUrls] = useState({});
+
+  useEffect(() => {
+    let cancelled = false;
+    const blobUrls = [];
+    const loadPhotos = async () => {
+      const entries = await Promise.all(photos.map(async photo => {
+        const source = resolveApiUrl(photo.url);
+        if (!source || /^(?:data:|blob:|https?:\/\/images\.unsplash\.com\/)/i.test(source)) {
+          return [photo.id, source];
+        }
+        try {
+          const blobUrl = await fetchAuthenticatedPhoto(source);
+          blobUrls.push(blobUrl);
+          return [photo.id, blobUrl];
+        } catch (error) {
+          console.warn('Could not load protected photo:', photo.id, error);
+          return [photo.id, ''];
+        }
+      }));
+      if (!cancelled) setPhotoUrls(Object.fromEntries(entries));
+    };
+    loadPhotos();
+    return () => {
+      cancelled = true;
+      blobUrls.forEach(url => URL.revokeObjectURL(url));
+    };
+  }, [photos]);
 
   // Lightbox & Feed tracking
   const [activeLightboxIndex, setActiveLightboxIndex] = useState(null);
@@ -146,9 +174,7 @@ export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhot
 
     setDownloadingPhotoId(photo.id);
     try {
-      const response = await fetch(resolveApiUrl(photo.downloadUrl || photo.url), { credentials: 'include' });
-      if (!response.ok) throw new Error(response.status === 401 ? 'Your session has expired. Please sign in again.' : 'The photo could not be downloaded.');
-      const blob = await response.blob();
+      const blob = await fetchAuthenticatedPhotoBlob(photo.downloadUrl || photo.url);
       const requestedName = photo.fileName?.split('/').pop() || photoDownloadName(photo.category);
       const fileName = requestedName.replace(/[^a-zA-Z0-9._-]/g, '_');
 
@@ -302,7 +328,7 @@ export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhot
                 aria-label={`Open photo from ${photo.uploaderName || 'club member'}`}
               >
                 <span className="photo-card-img-wrapper">
-                  <img src={resolveApiUrl(photo.url)} alt={photo.caption} className="photo-card-img" loading="lazy" />
+                  <img src={photoUrls[photo.id] || undefined} alt={photo.caption} className="photo-card-img" loading="lazy" />
                   <span className="photo-card-category">{photo.category}</span>
                   <span className="photo-card-hearts"><Heart size={13} fill="currentColor" /> {photo.hearts || 0}</span>
                 </span>
@@ -336,7 +362,7 @@ export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhot
                   </header>
 
                   <div className="feed-card-image-wrap" onClick={() => handleCardClick(photo)}>
-                    <img src={resolveApiUrl(photo.url)} alt={photo.caption} className="feed-card-img" loading="lazy" />
+                    <img src={photoUrls[photo.id] || undefined} alt={photo.caption} className="feed-card-img" loading="lazy" />
                   </div>
 
                   <div className="feed-card-body">
@@ -429,7 +455,7 @@ export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhot
                       style={{ touchAction: index === activeLightboxIndex && zoomScale > 1 ? 'none' : 'pan-y' }}
                     >
                       <img 
-                        src={resolveApiUrl(photo.url)}
+                        src={photoUrls[photo.id] || undefined}
                         alt={photo.caption} 
                         className="photo-post-image" 
                         loading={index === activeLightboxIndex ? 'eager' : 'lazy'} 

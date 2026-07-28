@@ -43,13 +43,6 @@ export async function setNativeStatusBarForApp(isAuthenticated) {
 }
 
 export async function registerPushNotifications(onTokenReceived, onNotificationReceived, addToast) {
-  // FCM is intentionally opt-in until the Android/iOS project has its native
-  // Firebase configuration. Calling register() without it can terminate the
-  // native shell on some Android builds.
-  if (import.meta.env.VITE_PUSH_NOTIFICATIONS !== 'true') {
-    return { success: false, reason: 'not-configured' };
-  }
-
   if (!Capacitor.isNativePlatform()) {
     console.log('Push notifications running in Web browser mode.');
     return { success: false, reason: 'web' };

@@ -8,7 +8,11 @@ const nativeApiBase = 'https://pictide-api.summer-wind-c5c6.workers.dev/api';
 export const cloudApiEnabled = Boolean(configuredBase || import.meta.env.VITE_CLOUD_API === 'true' || import.meta.env.PROD);
 
 const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-const apiBase = configuredBase || (Capacitor.isNativePlatform() || isLocalhost ? nativeApiBase : '/api');
+const isNativeApp = Capacitor.isNativePlatform()
+  || Capacitor.getPlatform?.() === 'ios'
+  || Capacitor.getPlatform?.() === 'android'
+  || (typeof window !== 'undefined' && ['capacitor:', 'ionic:'].includes(window.location.protocol));
+const apiBase = configuredBase || (isNativeApp || isLocalhost ? nativeApiBase : '/api');
 
 let csrfToken = (typeof localStorage !== 'undefined' && localStorage.getItem('oakville_csrf_token')) || '';
 
@@ -26,7 +30,7 @@ export const resolveApiUrl = value => {
   if (!value) return '';
   let resolved = value;
   if (!/^(?:https?:|data:|blob:)/i.test(value)) {
-    const baseUrl = (Capacitor.isNativePlatform() || isLocalhost) ? nativeApiBase : (configuredBase || '/api');
+    const baseUrl = (isNativeApp || isLocalhost) ? nativeApiBase : (configuredBase || '/api');
     if (value.startsWith('/api/')) resolved = `${baseUrl}${value.slice(4)}`;
     else if (value.startsWith('/photos/')) resolved = `${baseUrl}${value}`;
     else if (value.startsWith('photos/')) resolved = `${baseUrl}/${value}`;
@@ -47,13 +51,18 @@ const request = async (path, options = {}) => {
   const timeout = setTimeout(() => controller.abort(), options.timeout || REQUEST_TIMEOUT_MS);
   let response;
   try {
-    const authHeaders = csrfToken ? { 'X-CSRF-Token': csrfToken, 'Authorization': `Bearer ${csrfToken}` } : {};
+    const publicRead = (options.method === 'GET' || options.method === 'HEAD') && (path === '/clubs' || path === '/health');
+    const authHeaders = csrfToken && !publicRead
+      ? { 'X-CSRF-Token': csrfToken, 'Authorization': `Bearer ${csrfToken}` }
+      : {};
     response = await fetch(`${apiBase}${path}`, {
       ...options,
       credentials: 'include',
       signal: controller.signal,
       headers: {
-        ...(options.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
+        ...(options.method !== 'GET' && options.method !== 'HEAD' && !(options.body instanceof FormData)
+          ? { 'Content-Type': 'application/json' }
+          : {}),
         ...authHeaders,
         ...(options.headers || {})
       }
@@ -79,6 +88,27 @@ const request = async (path, options = {}) => {
 
 export const loadCloudData = () => request('/bootstrap');
 export const listCloudClubs = () => request('/clubs');
+
+// Protected photo URLs cannot be used directly as <img src> values in every
+// native WebView because those requests may not include the session cookie.
+// Fetch the asset with the authenticated API request and let the UI render a
+// short-lived local blob URL instead.
+const fetchAuthenticatedPhotoResponse = value => fetch(resolveApiUrl(value), {
+  credentials: 'include',
+  headers: csrfToken ? { 'Authorization': `Bearer ${csrfToken}` } : {}
+});
+
+export const fetchAuthenticatedPhoto = async value => {
+  const response = await fetchAuthenticatedPhotoResponse(value);
+  if (!response.ok) throw new Error(`Photo request failed (${response.status})`);
+  return URL.createObjectURL(await response.blob());
+};
+
+export const fetchAuthenticatedPhotoBlob = async value => {
+  const response = await fetchAuthenticatedPhotoResponse(value);
+  if (!response.ok) throw new Error(`Photo request failed (${response.status})`);
+  return response.blob();
+};
 
 export const cloudLogin = async credentials => {
   const result = await request('/auth/login', { method: 'POST', body: JSON.stringify(credentials) });

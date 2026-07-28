@@ -1,4 +1,5 @@
 import React, { lazy, Suspense, useEffect, useState } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { ShieldCheck, AlertCircle, Info } from 'lucide-react';
 import { getAllPhotos, savePhoto, deletePhoto as localDeletePhoto, clearAllPhotos } from './db';
 import { demoClub, demoMembers, demoPhotos, demoUser, seedMembers, seedPhotos } from './seedData';
@@ -26,8 +27,13 @@ const PhotoUpload = lazy(() => import('./components/PhotoUpload'));
 const AdminPortal = lazy(() => import('./components/AdminPortal'));
 
 export default function App() {
+  const isNativeApp = Capacitor.isNativePlatform()
+    || window.location.protocol === 'capacitor:'
+    || window.location.protocol === 'ionic:'
+    || window.location.hostname === 'localhost'
+    || window.location.hostname === '127.0.0.1';
   const directClubId = window.location.hostname === 'ocphotohub.xtide.io' ? 'oakville-club' : null;
-  const demoMode = new URLSearchParams(window.location.search).get('demo') === '1';
+  const demoMode = !isNativeApp && new URLSearchParams(window.location.search).get('demo') === '1';
   const [currentUser, setCurrentUser] = useState(demoMode ? demoUser : null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [activeTab, setActiveTab] = useState('gallery');
@@ -35,7 +41,7 @@ export default function App() {
   const [photos, setPhotos] = useState(demoMode ? demoPhotos : []);
   const [toasts, setToasts] = useState([]);
   const [cloudActive, setCloudActive] = useState(false);
-  const [clubs, setClubs] = useState([clubBrand]);
+  const [clubs, setClubs] = useState(isNativeApp ? [] : [clubBrand]);
   const [currentClub, setCurrentClub] = useState(demoMode ? demoClub : null);
   const [startupError, setStartupError] = useState('');
   const [cameraFiles, setCameraFiles] = useState(null);
@@ -59,12 +65,10 @@ export default function App() {
   }, [currentUser]);
 
   useEffect(() => {
-    if (currentUser && import.meta.env.VITE_PUSH_NOTIFICATIONS === 'true') {
+    if (currentUser && cloudActive && Capacitor.isNativePlatform()) {
       registerPushNotifications(
         (token) => {
-          if (cloudActive) {
-            registerCloudPushToken({ token, platform: 'native' }).catch(error => console.warn('Could not register push device:', error.message));
-          }
+          registerCloudPushToken({ token, platform: Capacitor.getPlatform() }).catch(error => console.warn('Could not register push device:', error.message));
         },
         () => {},
         addToast
