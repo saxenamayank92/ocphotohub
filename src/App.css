@@ -3619,13 +3619,13 @@
     display: none;
   }
 
-  .gallery-sort-select, .gallery-layout-toggle {
+  .gallery-sort-select, .gallery-layout-toggle, .story-trigger-btn {
     flex-shrink: 0;
     white-space: nowrap;
   }
 
-  .gallery-toolbar > .story-trigger-btn {
-    align-self: flex-start;
+  .gallery-toolbar-actions .story-trigger-btn {
+    margin-left: auto;
   }
 
   .mobile-nav-item .active-dot {
