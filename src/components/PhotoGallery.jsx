@@ -244,16 +244,16 @@ export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhot
               <ListFilter size={16} /> Feed
             </button>
           </div>
-
-          {/* Story Showcase Trigger */}
-          <button 
-            type="button" 
-            className="story-trigger-btn"
-            onClick={() => setShowStoryShowcase(true)}
-          >
-            <Play size={14} fill="currentColor" /> Club Story Mode
-          </button>
         </div>
+
+        {/* Story Showcase Trigger - own row */}
+        <button 
+          type="button" 
+          className="story-trigger-btn"
+          onClick={() => setShowStoryShowcase(true)}
+        >
+          <Play size={14} fill="currentColor" /> Club Story Mode
+        </button>
       </div>
 
       {/* Category Pills & Ownership Filter */}

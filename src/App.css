@@ -3619,9 +3619,13 @@
     display: none;
   }
 
-  .gallery-sort-select, .gallery-layout-toggle, .story-trigger-btn {
+  .gallery-sort-select, .gallery-layout-toggle {
     flex-shrink: 0;
     white-space: nowrap;
+  }
+
+  .gallery-toolbar > .story-trigger-btn {
+    align-self: flex-start;
   }
 
   .mobile-nav-item .active-dot {
