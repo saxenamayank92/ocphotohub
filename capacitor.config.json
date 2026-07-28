@@ -10,7 +10,8 @@
       "presentationOptions": ["badge", "sound", "alert"]
     },
     "SplashScreen": {
-      "launchShowDuration": 2000,
+      "launchShowDuration": 1000,
+      "launchAutoHide": true,
       "backgroundColor": "#172238",
       "showSpinner": false,
       "splashFullScreen": true,
@@ -18,7 +19,11 @@
     },
     "StatusBar": {
       "style": "DARK",
-      "backgroundColor": "#172238"
+      "backgroundColor": "#172238",
+      "overlaysWebView": true
     }
+  },
+  "ios": {
+    "contentInset": "never"
   }
 }
