@@ -12,18 +12,18 @@
     "SplashScreen": {
       "launchShowDuration": 1000,
       "launchAutoHide": true,
-      "backgroundColor": "#172238",
+      "backgroundColor": "#EDEDED",
       "showSpinner": false,
       "splashFullScreen": true,
       "splashImmersive": true
     },
     "StatusBar": {
       "style": "DARK",
-      "backgroundColor": "#172238",
-      "overlaysWebView": true
+      "backgroundColor": "#FFFFFF",
+      "overlaysWebView": false
     }
   },
   "ios": {
-    "contentInset": "never"
+    "contentInset": "always"
   }
 }
