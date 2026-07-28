@@ -1,4 +1,5 @@
 import React, { lazy, Suspense } from 'react';
+import { Capacitor } from '@capacitor/core';
 import LandingPage from './components/LandingPage.jsx';
 import { AdminGuide, FAQPage, FeaturesPage, MemberGuide, PrivacyPage, TermsPage } from './components/InfoPage.jsx';
 
@@ -6,8 +7,10 @@ const MemberApp = lazy(() => import('./App.jsx'));
 
 export default function Root() {
   const currentUrl = new URL(window.location.href);
+  const isNativeApp = Capacitor.isNativePlatform();
   const isOakvilleHost = currentUrl.hostname === 'ocphotohub.xtide.io';
-  const isMemberApp = isOakvilleHost
+  const isMemberApp = isNativeApp
+    || isOakvilleHost
     || currentUrl.pathname === '/app'
     || currentUrl.pathname.startsWith('/app/')
     || currentUrl.searchParams.has('reset')

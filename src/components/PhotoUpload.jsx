@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { clubBrand } from '../brand';
 
-export default function PhotoUpload({ user, onUploadSuccess, addToast }) {
+export default function PhotoUpload({ user, initialFiles, onInitialFilesConsumed, onUploadSuccess, addToast }) {
   const [uploadQueue, setUploadQueue] = useState([]); // [{ id, fileName, previewUrl, originalFile, caption, category, aiSuggestions, isGeneratingCaption, filterPreset, brightness, contrast, saturation, vignette }]
   const [globalCategory, setGlobalCategory] = useState('General');
   const [batchTagText, setBatchTagText] = useState('');
@@ -25,6 +25,7 @@ export default function PhotoUpload({ user, onUploadSuccess, addToast }) {
 
   const fileInputRef = useRef(null);
   const previewUrlsRef = useRef(new Set());
+  const processFilesRef = useRef(null);
 
   const categories = ['General', 'Tennis', 'Golf', 'Dining', 'Clubhouse', 'Events'];
 
@@ -330,6 +331,16 @@ export default function PhotoUpload({ user, onUploadSuccess, addToast }) {
       addToast(`Added ${processedCount} photo(s) to upload queue!`, 'success');
     }
   };
+
+  // Keep the latest processor available without making the file-consumption
+  // effect re-run whenever the parent recreates its toast callback.
+  processFilesRef.current = processMultipleFiles;
+
+  useEffect(() => {
+    if (!initialFiles?.length) return;
+    processFilesRef.current?.(initialFiles);
+    onInitialFilesConsumed?.();
+  }, [initialFiles, onInitialFilesConsumed]);
 
   const handleOpenStudio = (item) => {
     setEditingItemId(item.id);

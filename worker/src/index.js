@@ -57,6 +57,12 @@ const originFor = (request, env) => {
   const requestOrigin = request.headers.get('Origin');
   const allowed = String(env.ALLOWED_ORIGIN || '').split(',').map(value => value.trim()).filter(Boolean);
   if (!requestOrigin) return allowed[0] || '';
+  // Capacitor serves the bundled app from a trusted local origin. Native
+  // WebViews still send Origin on fetches (including protected photo files),
+  // so allow the local app origins explicitly instead of treating them as an
+  // untrusted website origin. The session cookie remains the authorization
+  // boundary for every protected endpoint.
+  if (['capacitor://localhost', 'http://localhost', 'https://localhost', 'ionic://localhost'].includes(requestOrigin)) return requestOrigin;
   return allowed.includes(requestOrigin) ? requestOrigin : '';
 };
 const responseHeaders = (origin, extra = {}) => {

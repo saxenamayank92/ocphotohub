@@ -12,6 +12,15 @@ const apiBase = configuredBase || (Capacitor.isNativePlatform() || isLocalhost ?
 let csrfToken = '';
 const REQUEST_TIMEOUT_MS = 20000;
 
+export const resolveApiUrl = value => {
+  if (!value) return '';
+  if (/^(?:https?:|data:|blob:)/i.test(value)) return value;
+  const baseUrl = (Capacitor.isNativePlatform() || isLocalhost) ? nativeApiBase : (configuredBase || '/api');
+  if (value.startsWith('/api/')) return `${baseUrl}${value.slice(4)}`;
+  if (value.startsWith('/')) return `${baseUrl.replace(/\/api$/, '')}${value}`;
+  return `${baseUrl}/${value}`;
+};
+
 const request = async (path, options = {}) => {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), options.timeout || REQUEST_TIMEOUT_MS);

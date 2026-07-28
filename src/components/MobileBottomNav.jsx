@@ -5,11 +5,7 @@ export default function MobileBottomNav({ activeTab, setActiveTab, onDirectCamer
   const cameraInputRef = useRef(null);
 
   const handleCameraClick = () => {
-    if (onDirectCameraCapture) {
-      onDirectCameraCapture();
-    } else if (cameraInputRef.current) {
-      cameraInputRef.current.click();
-    }
+    cameraInputRef.current?.click();
   };
 
   return (

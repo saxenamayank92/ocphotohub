@@ -1,5 +1,5 @@
 import React from 'react';
-import { User, Shield, Crown, Building2, LogOut, Image, Heart, Award } from 'lucide-react';
+import { User, Shield, Crown, Building2, LogOut, Image, Heart } from 'lucide-react';
 import { platformBrand } from '../brand';
 
 export default function MemberProfile({ user, club, photos = [], onLogout }) {

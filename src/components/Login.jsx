@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { AlertCircle, Building2, KeyRound, Lock, Mail, ShieldCheck, User } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
 import { platformBrand } from '../brand';
 
 function LoginBrand({ compact = false }) {
@@ -47,6 +48,7 @@ export default function Login({
   onCompletePasswordReset, onRequestAdminPasswordReset, onCompleteAdminPasswordReset,
   onRegisterPassword, onCreateClub, firebaseEnabled, directClubId = null
 }) {
+  const loginScreenClass = Capacitor.isNativePlatform() ? 'login-screen native-login-screen' : 'login-screen';
   const [clubId, setClubId] = useState(directClubId || '');
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [lastName, setLastName] = useState('');
@@ -177,7 +179,69 @@ export default function Login({
     } catch (resetError) { setError(resetError.message || 'This reset link is invalid or expired.'); }
   };
 
-  if (resetMode) return <div className="login-screen"><div className="login-card">
+  const isMobileOrNative = typeof window !== 'undefined' && (window.innerWidth <= 768 || Boolean(window.Capacitor?.isNativePlatform?.()));
+
+  if (isMobileOrNative && !resetMode) {
+    return (
+      <div className="login-screen mobile-native-login">
+        {/* Top App Branding Hero */}
+        <div className="mobile-app-brand-hero">
+          <img src={platformBrand.mark} alt="" className="mobile-app-logo" />
+          <h1 className="mobile-app-title">{platformBrand.name}</h1>
+          <p className="mobile-app-tagline">Private moments. Shared with members.</p>
+        </div>
+
+        {/* Integrated Mobile Single-Page Login Box */}
+        <div className="mobile-login-card-inner">
+          <p style={{ margin: '0 0 16px', fontSize: '12px', fontWeight: '800', color: 'var(--club-gold-dark)', textTransform: 'uppercase', letterSpacing: '0.08em', textAlign: 'center' }}>
+            {isRegistering ? 'Secure First-Time Setup' : 'Member Access'}
+          </p>
+
+          {error && <div className="login-error" role="alert" style={{ marginBottom: '14px' }}><AlertCircle size={16} /><span>{error}</span></div>}
+          {infoMessage && <div className="login-info" style={{ marginBottom: '14px' }}><ShieldCheck size={16} /><span>{infoMessage}</span></div>}
+
+          {!isRegistering ? (
+            <form className="login-form" onSubmit={handleMemberSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              {!directClubId && <ClubPicker clubs={clubs} clubId={clubId} setClubId={setClubId} disabled={showPassword} directClubId={directClubId} />}
+              <Field id="memberNumber" label="Member Number" icon={User} placeholder="e.g. 1001" value={memberNumber} onChange={event => { setMemberNumber(event.target.value); setShowPassword(false); }} disabled={showPassword} required />
+              <Field id="lastName" label="Last Name" icon={User} placeholder="e.g. Smith" value={lastName} onChange={event => { setLastName(event.target.value); setShowPassword(false); }} disabled={showPassword} required />
+              {showPassword && <Field id="password" label="Password" icon={Lock} type="password" placeholder="Enter your password" value={password} onChange={event => setPassword(event.target.value)} autoFocus required />}
+              <button className="btn-primary login-btn" style={{ height: '48px', borderRadius: '12px', fontSize: '15px', fontWeight: '700', marginTop: '4px' }}>
+                {showPassword ? 'Sign In to App' : 'Continue'}
+              </button>
+              {showPassword && (
+                <button type="button" className="btn-text" onClick={resetMemberFlow} style={{ fontSize: '12px', marginTop: '4px' }}>
+                  Use different member details
+                </button>
+              )}
+            </form>
+          ) : (
+            <form className="login-form" onSubmit={handleRegisterSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div className="verified-member-summary"><ShieldCheck size={18} /><span>Member #{registeredMember?.memberNumber} · {registeredMember?.lastName}</span></div>
+              {firebaseEnabled && <>
+                <Field id="registrationEmail" label="Email registered with your club" icon={Mail} type="email" placeholder="you@example.com" value={email} onChange={event => { setEmail(event.target.value); setCodeSent(false); }} disabled={codeSent} required />
+                {!codeSent && <button type="button" className="btn-secondary login-btn" onClick={handleSendCode}>Send verification code</button>}
+                {codeSent && <Field id="verificationCode" label="6-digit verification code" icon={ShieldCheck} inputMode="numeric" pattern="[0-9]{6}" maxLength={6} placeholder="000000" value={code} onChange={event => setCode(event.target.value.replace(/\D/g, ''))} required />}
+              </>}
+              {(!firebaseEnabled || codeSent) && <>
+                <Field id="newPassword" label="Create password" icon={KeyRound} type="password" placeholder="At least 10 characters" value={newPassword} onChange={event => setNewPassword(event.target.value)} required />
+                <Field id="confirmPassword" label="Confirm password" icon={KeyRound} type="password" placeholder="Repeat your password" value={confirmPassword} onChange={event => setConfirmPassword(event.target.value)} required />
+                <button className="btn-gold login-btn">Create account & sign in</button>
+              </>}
+              <button type="button" className="btn-text" onClick={resetMemberFlow}>Back to sign in</button>
+            </form>
+          )}
+        </div>
+
+        {/* Non-scrollable Single Page Footer */}
+        <div className="mobile-footer-note">
+          Workspace setup & admin portal available from desktop.
+        </div>
+      </div>
+    );
+  }
+
+  if (resetMode) return <div className={loginScreenClass}><div className="login-card">
     <LoginBrand compact /><h2 className="login-section-title">Reset your {adminResetMode ? 'administrator ' : ''}password</h2>
     {error && <div className="login-error" role="alert"><AlertCircle size={16} /><span>{error}</span></div>}
     {resetMessage && <div className="login-info"><ShieldCheck size={16} /><span>{resetMessage}</span></div>}
@@ -194,7 +258,7 @@ export default function Login({
     </form>}
   </div></div>;
 
-  return <div className="login-screen"><div className="login-card">
+  return <div className={loginScreenClass}><div className="login-card">
     {directClubId ? <DirectClubBrand /> : <LoginBrand />}
     {!directClubId && selectedClub && <div className="tenant-brand-card">
       {selectedClub.logoUrl ? <img src={selectedClub.logoUrl} alt="" className="tenant-brand-logo" /> : <div className="tenant-brand-fallback"><Building2 size={22} /></div>}

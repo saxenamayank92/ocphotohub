@@ -3457,7 +3457,7 @@
 @media (max-width: 768px) {
   html, body {
     height: 100%;
-    overflow: hidden;
+    min-height: 100%;
   }
 
   .app-container {
@@ -3480,7 +3480,7 @@
     left: 0;
     right: 0;
     height: 56px;
-    background: var(--club-navy);
+    background: var(--club-white) !important;
     z-index: 1000;
     padding: 0 16px;
     display: flex;
@@ -3507,14 +3507,14 @@
   .brand-title {
     font-size: 16px !important;
     font-weight: 800 !important;
-    color: #ffffff !important;
+    color: var(--club-green-dark) !important;
   }
 
   /* Scrollable Middle Section */
   .content-wrapper {
     flex: 1;
     margin-top: 56px;
-    margin-bottom: 64px;
+    margin-bottom: 72px;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-y: contain;
@@ -3527,14 +3527,14 @@
     bottom: 0;
     left: 0;
     right: 0;
-    height: 64px;
+    height: 72px;
     background: #ffffff;
     border-top: 1px solid rgba(0, 0, 0, 0.08);
     display: flex;
     align-items: center;
     justify-content: space-around;
     z-index: 1000;
-    padding-bottom: env(safe-area-inset-bottom);
+    padding: 8px 10px env(safe-area-inset-bottom);
     box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.06);
   }
 
@@ -3546,7 +3546,7 @@
     background: none;
     border: none;
     color: var(--club-gray-dark);
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 600;
     gap: 3px;
     cursor: pointer;
@@ -3558,7 +3558,7 @@
   }
 
   .mobile-nav-item.active {
-    color: var(--club-navy);
+    color: var(--club-green-dark);
     font-weight: 800;
   }
 
@@ -3572,17 +3572,16 @@
   }
 
   .camera-action-item .camera-btn-circle {
-    width: 44px;
-    height: 44px;
+    width: 52px;
+    height: 52px;
     border-radius: 50%;
     background: linear-gradient(135deg, var(--club-navy), #243552);
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 4px 12px rgba(23, 34, 56, 0.3);
-    margin-top: -12px;
-    border: 3px solid #ffffff;
-    transition: transform 0.15s ease;
+    box-shadow: 0 6px 16px rgba(23, 34, 56, 0.35), 0 0 0 3px #FFFFFF, 0 0 0 5px var(--club-gold);
+    margin-top: -24px;
+    transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .camera-action-item:active .camera-btn-circle {
@@ -3590,3 +3589,211 @@
   }
 }
 
+/* --- HIGH-CONTRAST TEXT READABILITY FIXES --- */
+.photo-card, .photo-card-details, .photo-card-caption, .gallery-grid-card, .profile-card, .login-card-inner {
+  color: var(--club-navy) !important;
+}
+
+.photo-card-caption, .photo-card-details p, .photo-card-details span {
+  color: #1E293B !important;
+}
+
+.photo-card-date {
+  color: #64748B !important;
+}
+
+.input-field {
+  color: #0F172A !important;
+  background-color: #FFFFFF !important;
+}
+
+.input-field::placeholder {
+  color: #64748B !important;
+}
+
+/* --- MOBILE NATIVE SINGLE-PAGE LOGIN EXPERIENCE --- */
+@media (max-width: 768px) {
+  .login-screen.mobile-native-login {
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+    background: linear-gradient(180deg, #172238 0%, #0F172A 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 24px 20px calc(16px + env(safe-area-inset-bottom));
+    box-sizing: border-box;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 9999;
+  }
+
+  .mobile-native-login .mobile-app-brand-hero {
+    text-align: center;
+    padding-top: 12px;
+  }
+
+  .mobile-native-login .mobile-app-logo {
+    width: 68px;
+    height: 68px;
+    border-radius: 18px;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.4), 0 0 0 2px rgba(197, 160, 89, 0.5);
+    margin-bottom: 12px;
+  }
+
+  .mobile-native-login .mobile-app-title {
+    font-size: 24px;
+    font-weight: 800;
+    color: #ffffff !important;
+    margin: 0 0 4px;
+    letter-spacing: -0.5px;
+    font-family: var(--font-serif);
+  }
+
+  .mobile-native-login .mobile-app-tagline {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.75) !important;
+    margin: 0;
+  }
+
+  .mobile-native-login .mobile-login-card-inner {
+    background: #ffffff;
+    border-radius: 20px;
+    padding: 24px 20px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .mobile-native-login .input-field {
+    background: #F8FAFC !important;
+    border: 1.5px solid #CBD5E1 !important;
+    color: #0F172A !important;
+    font-size: 15px;
+    font-weight: 600;
+    height: 46px;
+    border-radius: 10px;
+  }
+
+  .mobile-native-login .input-field::placeholder {
+    color: #94A3B8 !important;
+  }
+
+  .mobile-native-login label {
+    color: #334155 !important;
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .mobile-native-login .mobile-footer-note {
+    text-align: center;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.6) !important;
+    padding-bottom: 4px;
+    font-weight: 500;
+  }
+}
+
+/* The native entry screen is intentionally a single, calm login surface.
+   Gallery and profile screens retain their normal scrolling behavior. */
+.native-login-screen {
+  height: 100dvh;
+  min-height: 100dvh;
+  overflow: hidden;
+  overscroll-behavior: none;
+  padding: max(12px, env(safe-area-inset-top)) 14px max(12px, env(safe-area-inset-bottom));
+  align-items: center;
+}
+
+.native-login-screen .login-card {
+  max-height: calc(100dvh - 24px);
+  overflow: hidden;
+  padding: 24px 22px 18px;
+  border-radius: 22px;
+}
+
+.native-login-screen .direct-login-brand {
+  display: grid;
+  grid-template-columns: 58px 1fr;
+  grid-template-areas: 'logo title' 'logo subtitle';
+  column-gap: 14px;
+  align-items: center;
+  margin: 0 0 18px;
+  text-align: left;
+}
+
+.native-login-screen .direct-login-brand img {
+  grid-area: logo;
+  width: 58px;
+  height: 58px;
+  margin: 0;
+}
+
+.native-login-screen .direct-login-brand h1 {
+  grid-area: title;
+  font-size: 27px;
+  line-height: 1.05;
+}
+
+.native-login-screen .direct-login-brand p {
+  grid-area: subtitle;
+  margin: 2px 0 0;
+  font-size: 12px;
+}
+
+.native-login-screen .tenant-brand-card {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+}
+
+.native-login-screen .login-context-label {
+  margin: 8px 0 12px;
+}
+
+.native-login-screen .login-form {
+  gap: 10px;
+}
+
+.native-login-screen .form-group {
+  gap: 4px;
+}
+
+.native-login-screen .input-field {
+  min-height: 48px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+.native-login-screen .login-btn {
+  min-height: 48px;
+  margin-top: 4px;
+}
+
+.native-login-screen .admin-toggle-link,
+.native-login-screen .club-signup-link {
+  margin-top: 12px;
+}
+
+@media (max-height: 760px) {
+  .native-login-screen .login-card {
+    padding: 18px 18px 12px;
+  }
+  .native-login-screen .direct-login-brand {
+    margin-bottom: 12px;
+  }
+  .native-login-screen .direct-login-brand img {
+    width: 48px;
+    height: 48px;
+  }
+  .native-login-screen .direct-login-brand h1 {
+    font-size: 23px;
+  }
+  .native-login-screen .input-field {
+    min-height: 42px;
+  }
+}

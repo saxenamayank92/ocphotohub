@@ -16,7 +16,7 @@ import {
   requestCloudPasswordReset, completeCloudPasswordReset, checkCloudMember,
   listCloudClubs, requestRegistrationCode, updateCloudMember, startClubOnboarding,
   completeClubOnboarding, updateCurrentClub, requestAdminPasswordReset,
-  completeAdminPasswordReset, deleteCloudAccount, deleteCloudOrganization, registerCloudPushToken
+  completeAdminPasswordReset, deleteCloudAccount, deleteCloudOrganization, registerCloudPushToken, resolveApiUrl
 } from './api';
 import { clubBrand } from './brand';
 import { initializeNativeApp, registerPushNotifications } from './services/pushNotifications';
@@ -38,6 +38,7 @@ export default function App() {
   const [clubs, setClubs] = useState([clubBrand]);
   const [currentClub, setCurrentClub] = useState(demoMode ? demoClub : null);
   const [startupError, setStartupError] = useState('');
+  const [cameraFiles, setCameraFiles] = useState(null);
   const [showClubOnboarding, setShowClubOnboarding] = useState(() => new URLSearchParams(window.location.search).get('onboard') === 'club');
   const trialDaysLeft = currentClub?.planStatus === 'trialing' && currentClub.trialEndsAt
     ? Math.max(0, Math.ceil((Date.parse(currentClub.trialEndsAt) - Date.now()) / (24 * 60 * 60 * 1000)))
@@ -54,7 +55,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (currentUser) {
+    if (currentUser && import.meta.env.VITE_PUSH_NOTIFICATIONS === 'true') {
       registerPushNotifications(
         (token) => {
           if (cloudActive) {
@@ -127,7 +128,7 @@ export default function App() {
         const data = await loadCloudData();
         if (cancelled) return;
         setMembers(data.members || []);
-        setPhotos(data.photos || []);
+        setPhotos((data.photos || []).map(p => ({ ...p, url: resolveApiUrl(p.url) })));
         setCloudActive(true);
       } catch (error) {
         console.error('Cloud API unavailable, falling back to local storage:', error);
@@ -377,13 +378,13 @@ export default function App() {
       <main className="content-wrapper">
         <Suspense fallback={<div className="panel-loading" role="status"><div className="spinner" /><span>Loading…</span></div>}>
           {activeTab === 'gallery' && <PhotoGallery photos={photos} currentUser={currentUser} isAdmin={isAdmin} onHeartPhoto={handleHeartPhoto} onDeletePhoto={handleDeletePhoto} />}
-          {activeTab === 'upload' && <PhotoUpload user={currentUser} onUploadSuccess={handleUploadPhoto} addToast={addToast} />}
+          {activeTab === 'upload' && <PhotoUpload user={currentUser} initialFiles={cameraFiles} onInitialFilesConsumed={() => setCameraFiles(null)} onUploadSuccess={handleUploadPhoto} addToast={addToast} />}
           {activeTab === 'profile' && <MemberProfile user={currentUser} club={currentClub || clubBrand} photos={photos} onLogout={handleLogout} />}
           {activeTab === 'admin' && isAdmin && <AdminPortal user={currentUser} club={currentClub || clubBrand} members={members} photos={photos} onUpdateClub={handleUpdateClub} onAddMember={handleAddMember} onAddMembers={handleAddMembers} onUpdateMember={handleUpdateMember} onDeleteMember={handleDeleteMember} onSetMemberPassword={handleSetMemberPassword} onDeletePhoto={handleDeletePhoto} onUpdatePhoto={handleUpdatePhoto} firebaseConfig={cloudActive ? { provider: 'managed' } : null} onResetDatabase={handleResetDatabase} addToast={addToast} />}
           {activeTab === 'account' && <AccountSettings user={currentUser} club={currentClub || clubBrand} isAdmin={isAdmin} demoMode={demoMode} onDeleteAccount={handleDeleteAccount} onDeleteOrganization={handleDeleteOrganization} addToast={addToast} />}
         </Suspense>
       </main>
-      <MobileBottomNav activeTab={activeTab} setActiveTab={setActiveTab} onDirectCameraCapture={() => setActiveTab('upload')} />
+      <MobileBottomNav activeTab={activeTab} setActiveTab={setActiveTab} onDirectCameraCapture={(files) => { setCameraFiles(files); setActiveTab('upload'); }} />
       <div className="toast-container">
         {toasts.map(toast => <div key={toast.id} className={`toast ${toast.type}`}>
           {toast.type === 'success' && <ShieldCheck size={16} />}

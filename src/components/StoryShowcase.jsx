@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Play, Pause, ChevronLeft, ChevronRight, Heart, Sparkles } from 'lucide-react';
+import { resolveApiUrl } from '../api';
 
 export default function StoryShowcase({ photos, initialIndex = 0, onClose, onHeartPhoto, currentUser }) {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
@@ -67,7 +68,7 @@ export default function StoryShowcase({ photos, initialIndex = 0, onClose, onHea
         {/* Dynamic Ambient Glow Background */}
         <div 
           className="story-ambient-backdrop" 
-          style={{ backgroundImage: `url(${currentPhoto.url})` }}
+          style={{ backgroundImage: `url(${resolveApiUrl(currentPhoto.url)})` }}
         />
 
         {/* Top Header Controls & Multi-Progress Bars */}
@@ -131,7 +132,8 @@ export default function StoryShowcase({ photos, initialIndex = 0, onClose, onHea
           <div className="story-image-frame">
             <img 
               key={currentPhoto.id}
-              src={currentPhoto.url} 
+              src={resolveApiUrl(currentPhoto.url)}
+              crossOrigin="use-credentials"
               alt={currentPhoto.caption} 
               className="story-image animate-pop-in"
             />

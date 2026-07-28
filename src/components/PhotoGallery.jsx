@@ -5,6 +5,7 @@ import {
   Download, Search, LayoutGrid, ListFilter, Play
 } from 'lucide-react';
 import { photoDownloadName } from '../brand';
+import { resolveApiUrl } from '../api';
 import StoryShowcase from './StoryShowcase';
 
 export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhoto, onDeletePhoto }) {
@@ -253,7 +254,7 @@ export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhot
                 aria-label={`Open photo from ${photo.uploaderName || 'club member'}`}
               >
                 <span className="photo-card-img-wrapper">
-                  <img src={photo.url} alt={photo.caption} className="photo-card-img" loading="lazy" />
+                  <img src={resolveApiUrl(photo.url)} crossOrigin="use-credentials" alt={photo.caption} className="photo-card-img" loading="lazy" />
                   <span className="photo-card-category">{photo.category}</span>
                   <span className="photo-card-hearts"><Heart size={13} fill="currentColor" /> {photo.hearts || 0}</span>
                 </span>
@@ -287,7 +288,7 @@ export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhot
                   </header>
 
                   <div className="feed-card-image-wrap" onClick={() => handleCardClick(photo)}>
-                    <img src={photo.url} alt={photo.caption} className="feed-card-img" loading="lazy" />
+                    <img src={resolveApiUrl(photo.url)} crossOrigin="use-credentials" alt={photo.caption} className="feed-card-img" loading="lazy" />
                   </div>
 
                   <div className="feed-card-body">
@@ -302,7 +303,7 @@ export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhot
                           <Heart size={22} fill={userLiked ? 'currentColor' : 'none'} />
                           <span>{photo.hearts || 0}</span>
                         </button>
-                        <a href={photo.downloadUrl || photo.url} download={photo.fileName || photoDownloadName(photo.category)} className="feed-action" title="Download photo">
+                        <a href={resolveApiUrl(photo.downloadUrl || photo.url)} download={photo.fileName || photoDownloadName(photo.category)} className="feed-action" title="Download photo">
                           <Download size={22} />
                         </a>
                         {canDelete && (
@@ -380,7 +381,8 @@ export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhot
                       style={{ touchAction: index === activeLightboxIndex && zoomScale > 1 ? 'none' : 'pan-y' }}
                     >
                       <img 
-                        src={photo.url} 
+                        src={resolveApiUrl(photo.url)}
+                        crossOrigin="use-credentials"
                         alt={photo.caption} 
                         className="photo-post-image" 
                         loading={index === activeLightboxIndex ? 'eager' : 'lazy'} 
@@ -397,7 +399,7 @@ export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhot
                             <Heart size={22} fill={userLiked ? 'currentColor' : 'none'} />
                             <span>{photo.hearts || 0}</span>
                           </button>
-                          <a href={photo.downloadUrl || photo.url} download={photo.fileName || photoDownloadName(photo.category)} className="feed-action" aria-label="Download photo">
+                          <a href={resolveApiUrl(photo.downloadUrl || photo.url)} download={photo.fileName || photoDownloadName(photo.category)} className="feed-action" aria-label="Download photo">
                             <Download size={22} />
                           </a>
                           {canDelete && (
