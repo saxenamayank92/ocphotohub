@@ -10,10 +10,10 @@ function LoginBrand({ compact = false }) {
   </div>;
 }
 
-function DirectClubBrand() {
+function DirectClubBrand({ club }) {
   return <div className="direct-login-brand">
-    <img src="/oakville-logo.jpg" alt="Oakville Club crest" />
-    <h1>Oakville Club</h1>
+    <img src={club?.logoUrl || platformBrand.mark} alt={club?.name ? `${club.name} logo` : ''} />
+    <h1>{club?.name || 'Club PhotoHub'}</h1>
     <p>Member Photo Collection Hub</p>
   </div>;
 }
@@ -259,7 +259,7 @@ export default function Login({
   </div></div>;
 
   return <div className={loginScreenClass}><div className="login-card">
-    {directClubId ? <DirectClubBrand /> : <LoginBrand />}
+    {directClubId ? <DirectClubBrand club={selectedClub} /> : <LoginBrand />}
     {!directClubId && selectedClub && <div className="tenant-brand-card">
       {selectedClub.logoUrl ? <img src={selectedClub.logoUrl} alt="" className="tenant-brand-logo" /> : <div className="tenant-brand-fallback"><Building2 size={22} /></div>}
       <div><span>Private gallery for</span><strong>{selectedClub.name}</strong></div>

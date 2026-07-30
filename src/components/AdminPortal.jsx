@@ -265,7 +265,7 @@ export default function AdminPortal({
     return acc;
   }, {});
 
-  const handleAddMemberSubmit = (e) => {
+  const handleAddMemberSubmit = async (e) => {
     e.preventDefault();
     if (!newMemberNum || !newLastName || !newFirstName || !/^\S+@\S+\.\S+$/.test(newEmail)) {
       addToast('Please fill out all member fields.', 'error');
@@ -292,8 +292,13 @@ export default function AdminPortal({
       registeredAt: ''
     };
 
-    onAddMember(newMember);
-    addToast(`${newRole === 'owner' ? 'Club Owner' : newRole === 'admin' ? 'Staff Admin' : 'Member'} ${newFirstName} ${newLastName} added!`, 'success');
+    try {
+      await onAddMember(newMember);
+      addToast(`${newRole === 'owner' ? 'Club Owner' : newRole === 'admin' ? 'Staff Admin' : 'Member'} ${newFirstName} ${newLastName} added!`, 'success');
+    } catch (error) {
+      addToast(error.message || 'Could not add this person to the roster.', 'error');
+      return;
+    }
 
     setNewMemberNum('');
     setNewLastName('');
@@ -327,7 +332,7 @@ export default function AdminPortal({
       await onUpdateMember(member.memberNumber, { role: nextRole });
       addToast(
         nextRole === 'admin'
-          ? `${member.firstName} ${member.lastName} granted Staff Admin privileges!`
+          ? `${member.firstName} ${member.lastName} is now a Staff Admin. They can sign in with their member number and password.`
           : `${member.firstName} ${member.lastName} admin privileges revoked. Returned to member roster.`,
         'success'
       );

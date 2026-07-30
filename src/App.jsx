@@ -32,7 +32,8 @@ export default function App() {
     || window.location.protocol === 'ionic:'
     || window.location.hostname === 'localhost'
     || window.location.hostname === '127.0.0.1';
-  const directClubId = window.location.hostname === 'ocphotohub.xtide.io' ? 'oakville-club' : null;
+  const directPathSlug = window.location.pathname.match(/^\/([a-z0-9][a-z0-9-]{0,59})\/?$/i)?.[1]?.toLowerCase() || null;
+  const directClubId = directPathSlug;
   const demoMode = !isNativeApp && new URLSearchParams(window.location.search).get('demo') === '1';
   const [currentUser, setCurrentUser] = useState(demoMode ? demoUser : null);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -90,7 +91,7 @@ export default function App() {
         sessionStorage.removeItem('oakville_is_admin');
       }
     }
-  }, [demoMode]);
+  }, [demoMode, directClubId]);
 
   useEffect(() => {
     if (demoMode) return;
@@ -116,6 +117,10 @@ export default function App() {
   const loadCloud = async () => {
       try {
         const clubData = await listCloudClubs();
+        if (directClubId && !clubData.clubs?.some(club => club.id === directClubId || club.slug === directClubId)) {
+          if (!cancelled) setStartupError('This club link is unavailable. Please check the address with your club.');
+          return;
+        }
         if (!cancelled) setClubs(clubData.clubs || []);
         const session = await cloudSession();
         if (!session.authenticated) {
@@ -151,7 +156,7 @@ export default function App() {
     else if (import.meta.env.PROD) setStartupError('This workspace is not configured yet. Please contact support.');
     else loadLocal();
     return () => { cancelled = true; };
-  }, [demoMode]);
+  }, [demoMode, directClubId]);
 
   const handleRegisterPassword = async (memberNumber, password) => {
     const registeredAt = new Date().toISOString();
@@ -210,9 +215,9 @@ export default function App() {
   };
 
   const handleAddMember = async (member) => {
-    if (cloudActive) await addCloudMember(member);
+    const savedMember = cloudActive ? await addCloudMember(member) : member;
     setMembers(previous => {
-      const updatedMembers = [...previous, member];
+      const updatedMembers = [...previous, savedMember];
       if (!cloudActive) localStorage.setItem('oakville_members', JSON.stringify(updatedMembers));
       return updatedMembers;
     });
@@ -241,7 +246,7 @@ export default function App() {
     setCurrentClub(result.club);
     setClubs(previous => [...previous.filter(club => club.id !== result.club.id), result.club].sort((left, right) => left.name.localeCompare(right.name)));
     setMembers([]); setPhotos([]); setShowClubOnboarding(false);
-    window.history.replaceState({}, '', '/app');
+    window.history.replaceState({}, '', `/${result.club.slug}`);
     handleLoginSuccess(result.user, true);
   };
 

@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { AlertCircle, ArrowLeft, Building2, Check, KeyRound, Mail, ShieldCheck, User } from 'lucide-react';
 import { platformBrand } from '../brand';
 
+const workspaceSlug = value => value.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60);
+
 function Field({ id, label, icon: Icon, ...props }) {
   return <div className="form-group">
     <label htmlFor={id}>{label}</label>
@@ -13,6 +15,7 @@ export default function ClubOnboarding({ onStart, onComplete, onCancel }) {
   const [step, setStep] = useState(1);
   const [signupId, setSignupId] = useState('');
   const [clubName, setClubName] = useState('');
+  const [workspaceUrl, setWorkspaceUrl] = useState('');
   const [shortName, setShortName] = useState('');
   const [organizationType, setOrganizationType] = useState('Private Club');
   const [logoUrl, setLogoUrl] = useState('');
@@ -32,7 +35,7 @@ export default function ClubOnboarding({ onStart, onComplete, onCancel }) {
     if (!/^\S+@\S+\.\S+$/.test(email)) return setError('Enter a valid administrator email.');
     setWorking(true);
     try {
-      const result = await onStart({ clubName, shortName: shortName || clubName, organizationType, logoUrl, firstName, lastName, email });
+      const result = await onStart({ clubName, workspaceSlug: workspaceUrl || workspaceSlug(clubName), shortName: shortName || clubName, organizationType, logoUrl, firstName, lastName, email });
       setSignupId(result.signupId); setMessage(result.message); setStep(2);
     } catch (requestError) { setError(requestError.message || 'We could not start club onboarding.'); }
     finally { setWorking(false); }
@@ -78,8 +81,13 @@ export default function ClubOnboarding({ onStart, onComplete, onCancel }) {
       <div className="onboarding-pilot-notice"><ShieldCheck size={18} /><span><strong>Start your 30-day free trial</strong><small>No credit card is required. Verify your administrator email to create your private workspace.</small></span></div>
       <div className="onboarding-section-heading"><span>Club details</span><p>This creates a completely separate workspace for your members and photos.</p></div>
       <div className="onboarding-two-column">
-        <Field id="onboardClubName" label="Club name" icon={Building2} placeholder="Harbour Club" value={clubName} onChange={event => setClubName(event.target.value)} maxLength={80} required />
+        <Field id="onboardClubName" label="Club name" icon={Building2} placeholder="Harbour Club" value={clubName} onChange={event => { const value = event.target.value; setClubName(value); if (!workspaceUrl) setWorkspaceUrl(workspaceSlug(value)); }} maxLength={80} required />
         <Field id="onboardShortName" label="Short name" icon={Building2} placeholder="Harbour" value={shortName} onChange={event => setShortName(event.target.value)} maxLength={40} />
+      </div>
+      <div className="form-group">
+        <label htmlFor="onboardWorkspaceUrl">Your private Club PhotoHub link</label>
+        <div className="input-with-icon"><input id="onboardWorkspaceUrl" className="input-field" placeholder={workspaceSlug(clubName) || 'harbour-club'} value={workspaceUrl} onChange={event => setWorkspaceUrl(workspaceSlug(event.target.value))} maxLength={60} required /><Building2 size={18} /></div>
+        <small>clubphotohub.com/{workspaceUrl || workspaceSlug(clubName) || 'harbour-club'} · Unique for your organization</small>
       </div>
       <div className="form-group"><label htmlFor="onboardOrganizationType">Organization type</label><div className="input-with-icon"><select id="onboardOrganizationType" className="input-field" value={organizationType} onChange={event => setOrganizationType(event.target.value)} required><option>Private Club</option><option>Golf Club</option><option>Racquet Club</option><option>Yacht Club</option><option>Residential Community</option><option>Alumni Association</option><option>Hospitality Organization</option><option>Other Private Community</option></select><Building2 size={18} /></div></div>
       <div className="form-group logo-upload-field"><label htmlFor="onboardLogoFile">Club logo (optional)</label><input id="onboardLogoFile" className="input-field" type="file" accept="image/png,image/jpeg,image/webp" onChange={handleLogoChange} /><small>Upload a PNG, JPG, or WebP up to 256 KB.</small>{logoPreview && <img className="onboarding-logo-preview" src={logoPreview} alt="Selected club logo preview" />}</div>
