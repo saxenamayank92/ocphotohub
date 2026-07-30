@@ -28,6 +28,14 @@ const REQUEST_TIMEOUT_MS = 20000;
 
 export const resolveApiUrl = value => {
   if (!value) return '';
+
+  // Bundled demo assets are part of the app shell, not protected Worker
+  // uploads. Keeping these paths local lets the public product demo render
+  // consistently in browsers and native WebViews.
+  if (/^(?:\.\/|\/)?demo\//i.test(value)) {
+    return new URL(value.replace(/^\.\//, ''), window.location.origin).href;
+  }
+
   let resolved = value;
   if (!/^(?:https?:|data:|blob:)/i.test(value)) {
     const baseUrl = (isNativeApp || isLocalhost) ? nativeApiBase : (configuredBase || '/api');

@@ -693,7 +693,7 @@ export default function AdminPortal({
                   <table className="admin-table">
                     <thead>
                       <tr style={{ background: 'rgba(217, 119, 6, 0.1)' }}>
-                        <th>Owner #</th>
+                        <th>Owner Access</th>
                         <th>Owner Name</th>
                         <th>Email</th>
                         <th>Privileges</th>
@@ -703,7 +703,9 @@ export default function AdminPortal({
                     <tbody>
                       {owners.map(owner => (
                         <tr key={owner.memberNumber} style={{ background: '#fff' }}>
-                          <td style={{ fontWeight: '800', color: '#B45309' }}>#{owner.memberNumber}</td>
+                          <td style={{ fontWeight: '800', color: '#B45309' }}>
+                            {owner.memberNumber === user?.memberNumber ? 'Primary owner' : 'Club owner'}
+                          </td>
                           <td style={{ fontWeight: '700', color: 'var(--club-navy)' }}>
                             {owner.firstName} {owner.lastName}
                             {owner.memberNumber === user?.memberNumber && <span style={{ marginLeft: '6px', fontSize: '10px', background: '#FEF3C7', color: '#B45309', padding: '2px 6px', borderRadius: '4px', fontWeight: '800' }}>You</span>}

@@ -32,7 +32,10 @@ export default function App() {
     || window.location.protocol === 'ionic:'
     || window.location.hostname === 'localhost'
     || window.location.hostname === '127.0.0.1';
-  const directPathSlug = window.location.pathname.match(/^\/([a-z0-9][a-z0-9-]{0,59})\/?$/i)?.[1]?.toLowerCase() || null;
+  // Only a top-level club slug should lock member access to one club. `/app`
+  // is the shared entry point, not a club called "app".
+  const pathSlugCandidate = window.location.pathname.match(/^\/([a-z0-9][a-z0-9-]{0,59})\/?$/i)?.[1]?.toLowerCase() || null;
+  const directPathSlug = pathSlugCandidate === 'app' ? null : pathSlugCandidate;
   const directClubId = directPathSlug;
   const demoMode = !isNativeApp && new URLSearchParams(window.location.search).get('demo') === '1';
   const [currentUser, setCurrentUser] = useState(demoMode ? demoUser : null);

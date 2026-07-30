@@ -35,3 +35,10 @@ dist-ssr
 
 # Reproducible feature-video exports and intermediates
 artifacts/
+
+# Signing keys and release bundles
+*.keystore
+*.jks
+keystore.properties
+*.aab
+
