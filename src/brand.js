@@ -4,7 +4,7 @@ export const platformBrand = {
   descriptor: 'The private photo hub for clubs',
   tagline: 'Private moments. Shared with members.',
   mark: '/club-photo-hub-mark.svg',
-  siteUrl: 'https://clubphotohub.xtide.io',
+  siteUrl: 'https://clubphotohub.com',
   operator: 'xTide Apps',
   supportEmail: 'support@xtide.io'
 };

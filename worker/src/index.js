@@ -34,6 +34,7 @@ const cleanText = (value, max) => Array.from(String(value || '').trim()).filter(
 }).join('').slice(0, max);
 const escapeHtml = value => String(value).replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
 const clubSlug = value => cleanText(value, 80).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60);
+const reservedClubSlugs = new Set(['api', 'app', 'assets', 'faq', 'features', 'help', 'privacy', 'terms']);
 const secureLogoUrl = value => {
   const logoUrl = String(value || '').trim();
   if (!logoUrl || /^https:\/\//i.test(logoUrl)) return logoUrl;
@@ -183,14 +184,14 @@ async function auth(request, env) {
     c.name AS clubName, c.short_name AS clubShortName, c.slug AS clubSlug, c.logo_url AS clubLogoUrl,
     c.organization_type AS organizationType, c.plan_status AS planStatus,
     c.trial_started_at AS trialStartedAt, c.trial_ends_at AS trialEndsAt,
-    a.role AS adminRole,
+    a.role AS adminRole, m.role AS memberRole,
     c.storage_limit_bytes AS storageLimitBytes
     FROM sessions s
     JOIN clubs c ON c.id = s.club_id AND c.status = 'active'
     LEFT JOIN members m ON m.club_id = s.club_id AND m.member_number = s.member_number
     LEFT JOIN club_admins a ON a.club_id = s.club_id AND ('admin:' || a.id) = s.member_number AND a.status = 'active'
     WHERE s.${credentialColumn} = ? AND s.expires_at > ?
-      AND ((s.role = 'admin' AND a.id IS NOT NULL) OR (s.role != 'admin' AND m.member_number IS NOT NULL))`;
+      AND ((s.role = 'admin' AND (a.id IS NOT NULL OR (m.member_number IS NOT NULL AND m.role IN ('admin', 'owner')))) OR (s.role != 'admin' AND m.member_number IS NOT NULL))`;
   if (sessionCookie) {
     const session = await env.DB.prepare(lookup('token_hash')).bind(await hash(sessionCookie), Date.now()).first();
     if (session) return session;
@@ -318,8 +319,8 @@ async function login(request, env, origin) {
     if (namesMatch && !member.password_hash) return json({ error: 'Complete your first-time registration.', code: 'NEEDS_REGISTRATION' }, 403, origin);
     if (!namesMatch || !member.password_hash || !(await safeEqual(await derivePassword(body.password || '', member.password_salt), member.password_hash))) return json({ error: 'Invalid credentials.' }, 401, origin);
     memberNumber = member.member_number;
-    user = { memberNumber, firstName: member.first_name, lastName: member.last_name };
-    role = member.role || 'member';
+    user = { memberNumber, firstName: member.first_name, lastName: member.last_name, role: member.role || 'member' };
+    role = ['admin', 'owner'].includes(member.role) ? 'admin' : 'member';
   }
   const session = await createSession(env, club.id, memberNumber, role);
   return json({ user, club: accountClub(club), role, csrfToken: session.csrf }, 200, origin, { 'Set-Cookie': [cookie('pt_session', session.token, SESSION_MAX_AGE, true), cookie('pt_csrf', session.csrf, SESSION_MAX_AGE, false)] });
@@ -330,15 +331,16 @@ async function startClubOnboarding(request, env, origin) {
   const clubName = cleanText(body.clubName, 80);
   const shortName = cleanText(body.shortName || clubName, 40);
   const organizationType = cleanText(body.organizationType, 50);
-  const slug = clubSlug(clubName);
+  const slug = clubSlug(body.workspaceSlug || clubName);
   const firstName = cleanText(body.firstName, 50);
   const lastName = cleanText(body.lastName, 50);
   const email = normalize(body.email);
   const logoUrl = secureLogoUrl(body.logoUrl);
-  if (clubName.length < 2 || shortName.length < 2 || !organizationType || !slug || !firstName || !lastName || !validEmail(email) || logoUrl === null) {
+  if (clubName.length < 2 || shortName.length < 2 || !organizationType || !slug || reservedClubSlugs.has(slug) || !firstName || !lastName || !validEmail(email) || logoUrl === null) {
     return json({ error: 'Enter the organization name and type, administrator name, and a valid work email. Logo URLs must use HTTPS.' }, 400, origin);
   }
   if (await env.DB.prepare('SELECT 1 FROM clubs WHERE slug = ?').bind(slug).first()) return json({ error: 'A club workspace with that name already exists.' }, 409, origin);
+  if (await env.DB.prepare('SELECT 1 FROM clubs WHERE lower(name) = lower(?)').bind(clubName).first()) return json({ error: 'An organization with that name already exists.' }, 409, origin);
   const signupId = randomToken(24);
   const code = verificationCode();
   await env.DB.prepare('DELETE FROM club_signup_challenges WHERE expires_at <= ? OR admin_email = ?').bind(Date.now(), email).run();
@@ -369,6 +371,7 @@ async function completeClubOnboarding(request, env, origin) {
   await env.DB.prepare('UPDATE club_signup_challenges SET attempts = attempts + 1 WHERE id = ?').bind(challenge.id).run();
   if (!(await safeEqual(await hash(String(body.code)), challenge.code_hash))) return json({ error: 'The verification code is invalid or expired.' }, 400, origin);
   if (await env.DB.prepare('SELECT 1 FROM clubs WHERE slug = ?').bind(challenge.club_slug).first()) return json({ error: 'That club workspace was already created. Sign in instead.' }, 409, origin);
+  if (await env.DB.prepare('SELECT 1 FROM clubs WHERE lower(name) = lower(?)').bind(challenge.club_name).first()) return json({ error: 'An organization with that name already exists.' }, 409, origin);
   const adminId = randomToken(12);
   const salt = randomToken(16);
   const now = new Date().toISOString();
@@ -431,8 +434,9 @@ async function registerMember(request, env, origin) {
     env.DB.prepare('UPDATE members SET password = \'\', password_hash = ?, password_salt = ?, registered_at = ? WHERE club_id = ? AND member_number = ? COLLATE NOCASE').bind(await derivePassword(body.password, salt), salt, new Date().toISOString(), club.id, member.member_number),
     env.DB.prepare('DELETE FROM registration_challenges WHERE club_id = ? AND member_number = ? COLLATE NOCASE').bind(club.id, member.member_number)
   ]);
-  const session = await createSession(env, club.id, member.member_number, member.role || 'member');
-  return json({ user: { memberNumber: member.member_number, firstName: member.first_name, lastName: member.last_name }, club: accountClub(club), role: member.role || 'member', csrfToken: session.csrf }, 201, origin, { 'Set-Cookie': [cookie('pt_session', session.token, SESSION_MAX_AGE, true), cookie('pt_csrf', session.csrf, SESSION_MAX_AGE, false)] });
+  const sessionRole = ['admin', 'owner'].includes(member.role) ? 'admin' : 'member';
+  const session = await createSession(env, club.id, member.member_number, sessionRole);
+  return json({ user: { memberNumber: member.member_number, firstName: member.first_name, lastName: member.last_name, role: member.role || 'member' }, club: accountClub(club), role: sessionRole, csrfToken: session.csrf }, 201, origin, { 'Set-Cookie': [cookie('pt_session', session.token, SESSION_MAX_AGE, true), cookie('pt_csrf', session.csrf, SESSION_MAX_AGE, false)] });
 }
 
 async function requestPasswordReset(request, env, origin) {
@@ -573,7 +577,7 @@ export default {
         if (!session) return json({ authenticated: false }, 200, origin);
         const csrf = randomToken(24);
         await env.DB.prepare('UPDATE sessions SET csrf_hash = ? WHERE token_hash = ?').bind(await hash(csrf), session.token_hash).run();
-        return json({ authenticated: true, user: { memberNumber: session.member_number, firstName: session.firstName || 'Club', lastName: session.lastName || 'Management', email: session.adminEmail || undefined, role: session.adminRole || (session.role === 'admin' ? 'admin' : session.role) }, club: sessionClub(session), role: session.role, csrfToken: csrf }, 200, origin, { 'Set-Cookie': cookie('pt_csrf', csrf, SESSION_MAX_AGE, false) });
+        return json({ authenticated: true, user: { memberNumber: session.member_number, firstName: session.firstName || 'Club', lastName: session.lastName || 'Management', email: session.adminEmail || undefined, role: session.adminRole || session.memberRole || (session.role === 'admin' ? 'admin' : session.role) }, club: sessionClub(session), role: session.role, csrfToken: csrf }, 200, origin, { 'Set-Cookie': cookie('pt_csrf', csrf, SESSION_MAX_AGE, false) });
       }
       if (path === '/bootstrap' && request.method === 'GET') {
         const data = await bootstrap(request, env);
@@ -598,7 +602,7 @@ export default {
       if (path === '/account' && request.method === 'DELETE') {
         const session = await requireAuth(request, env);
         if (!session) return json({ error: 'Unauthorized.' }, 401, origin);
-        if (session.role === 'admin') {
+        if (session.role === 'admin' && session.member_number.startsWith('admin:')) {
           const admins = Number((await env.DB.prepare("SELECT COUNT(*) AS count FROM club_admins WHERE club_id = ? AND status = 'active'").bind(session.club_id).first())?.count || 0);
           if (admins <= 1) return json({ error: 'The only organization owner cannot delete just their account. Delete the organization workspace instead.', code: 'SOLE_OWNER' }, 409, origin);
           const adminId = session.member_number.replace(/^admin:/, '');
@@ -609,6 +613,10 @@ export default {
             env.DB.prepare('DELETE FROM club_admins WHERE club_id = ? AND id = ?').bind(session.club_id, adminId)
           ]);
         } else {
+          if (session.memberRole === 'owner') {
+            const owners = Number((await env.DB.prepare("SELECT (SELECT COUNT(*) FROM club_admins WHERE club_id = ? AND status = 'active' AND role = 'owner') + (SELECT COUNT(*) FROM members WHERE club_id = ? AND role = 'owner') AS count").bind(session.club_id, session.club_id).first())?.count || 0);
+            if (owners <= 1) return json({ error: 'The only organization owner cannot delete their account. Assign another owner first.' }, 409, origin);
+          }
           const photos = await env.DB.prepare('SELECT id, object_key FROM photos WHERE club_id = ? AND uploader_id = ?').bind(session.club_id, session.member_number).all();
           await Promise.all(photos.results.filter(photo => photo.object_key).map(photo => env.PHOTOS.delete(photo.object_key)));
           await env.DB.batch([
@@ -627,9 +635,7 @@ export default {
       if (path === '/organization' && request.method === 'DELETE') {
         const session = await requireAuth(request, env, 'admin');
         if (!session) return json({ error: 'Forbidden.' }, 403, origin);
-        const adminId = session.member_number.replace(/^admin:/, '');
-        const owner = await env.DB.prepare("SELECT role FROM club_admins WHERE club_id = ? AND id = ? AND status = 'active'").bind(session.club_id, adminId).first();
-        if (owner?.role !== 'owner') return json({ error: 'Only the organization owner can delete this workspace.' }, 403, origin);
+        if (session.adminRole !== 'owner' && session.memberRole !== 'owner') return json({ error: 'Only the organization owner can delete this workspace.' }, 403, origin);
         const body = await request.json().catch(() => ({}));
         const club = await env.DB.prepare('SELECT name FROM clubs WHERE id = ?').bind(session.club_id).first();
         if (!club || String(body.confirmName || '').trim() !== club.name) return json({ error: 'Enter the exact organization name to confirm deletion.' }, 400, origin);
@@ -670,9 +676,14 @@ export default {
         const member = await request.json();
         if (!member.memberNumber || !member.lastName || !member.firstName || !validEmail(member.email)) return json({ error: 'Member number, name, and a valid roster email are required.' }, 400, origin);
         const memberNumber = normalizeMemberNumber(member.memberNumber);
+        const role = ['member', 'admin', 'owner'].includes(member.role) ? member.role : 'member';
         if (await env.DB.prepare('SELECT 1 FROM members WHERE club_id = ? AND member_number = ? COLLATE NOCASE').bind(session.club_id, memberNumber).first()) return json({ error: 'That member number already exists.' }, 409, origin);
-        await env.DB.prepare('INSERT INTO members (club_id, member_number, last_name, first_name, email) VALUES (?, ?, ?, ?, ?)').bind(session.club_id, memberNumber, String(member.lastName).trim(), String(member.firstName).trim(), normalize(member.email)).run();
-        return json(publicMember({ ...member, memberNumber, email: normalize(member.email), registeredAt: '', role: 'member' }), 201, origin);
+        if (role === 'owner') {
+          const owners = Number((await env.DB.prepare("SELECT (SELECT COUNT(*) FROM club_admins WHERE club_id = ? AND status = 'active' AND role = 'owner') + (SELECT COUNT(*) FROM members WHERE club_id = ? AND role = 'owner') AS count").bind(session.club_id, session.club_id).first())?.count || 0);
+          if (owners >= 3) return json({ error: 'A club can have at most three owners.' }, 409, origin);
+        }
+        await env.DB.prepare('INSERT INTO members (club_id, member_number, last_name, first_name, email, role) VALUES (?, ?, ?, ?, ?, ?)').bind(session.club_id, memberNumber, String(member.lastName).trim(), String(member.firstName).trim(), normalize(member.email), role).run();
+        return json(publicMember({ ...member, memberNumber, email: normalize(member.email), registeredAt: '', role }), 201, origin);
       }
       if (path === '/members/bulk' && request.method === 'POST') {
         const session = await requireAuth(request, env, 'admin');
@@ -735,10 +746,24 @@ export default {
         if (!session) return json({ error: 'Forbidden.' }, 403, origin);
         if (!await requireWritableClub(env, session)) return readOnly(origin);
         const body = await request.json();
-        if (!validEmail(body.email)) return json({ error: 'Enter a valid roster email.' }, 400, origin);
         const memberNumber = decodeURIComponent(memberMatch[1]);
-        const result = await env.DB.prepare('UPDATE members SET email = ? WHERE club_id = ? AND member_number = ? COLLATE NOCASE').bind(normalize(body.email), session.club_id, memberNumber).run();
-        if (!result.meta.changes) return json({ error: 'Member not found.' }, 404, origin);
+        const hasEmail = Object.prototype.hasOwnProperty.call(body, 'email');
+        const hasRole = Object.prototype.hasOwnProperty.call(body, 'role');
+        if (!hasEmail && !hasRole) return json({ error: 'Provide an email address or access role to update.' }, 400, origin);
+        if (hasEmail && !validEmail(body.email)) return json({ error: 'Enter a valid roster email.' }, 400, origin);
+        const role = hasRole ? cleanText(body.role, 16).toLowerCase() : null;
+        if (hasRole && !['member', 'admin', 'owner'].includes(role)) return json({ error: 'Choose a valid access role.' }, 400, origin);
+        const existing = await env.DB.prepare('SELECT role FROM members WHERE club_id = ? AND member_number = ? COLLATE NOCASE').bind(session.club_id, memberNumber).first();
+        if (!existing) return json({ error: 'Member not found.' }, 404, origin);
+        if (role === 'owner' && existing.role !== 'owner') {
+          const owners = Number((await env.DB.prepare("SELECT (SELECT COUNT(*) FROM club_admins WHERE club_id = ? AND status = 'active' AND role = 'owner') + (SELECT COUNT(*) FROM members WHERE club_id = ? AND role = 'owner') AS count").bind(session.club_id, session.club_id).first())?.count || 0);
+          if (owners >= 3) return json({ error: 'A club can have at most three owners.' }, 409, origin);
+        }
+        if (existing.role === 'owner' && role && role !== 'owner') {
+          const owners = Number((await env.DB.prepare("SELECT (SELECT COUNT(*) FROM club_admins WHERE club_id = ? AND status = 'active' AND role = 'owner') + (SELECT COUNT(*) FROM members WHERE club_id = ? AND role = 'owner') AS count").bind(session.club_id, session.club_id).first())?.count || 0);
+          if (owners <= 1) return json({ error: 'At least one organization owner is required.' }, 409, origin);
+        }
+        await env.DB.prepare('UPDATE members SET email = COALESCE(?, email), role = COALESCE(?, role) WHERE club_id = ? AND member_number = ? COLLATE NOCASE').bind(hasEmail ? normalize(body.email) : null, role, session.club_id, memberNumber).run();
         const member = await env.DB.prepare('SELECT member_number AS memberNumber, last_name AS lastName, first_name AS firstName, email, registered_at AS registeredAt, role FROM members WHERE club_id = ? AND member_number = ? COLLATE NOCASE').bind(session.club_id, memberNumber).first();
         return json(publicMember(member), 200, origin);
       }

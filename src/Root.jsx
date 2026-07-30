@@ -15,9 +15,10 @@ export default function Root() {
     || currentUrl.protocol === 'ionic:'
     || currentUrl.hostname === 'localhost'
     || currentUrl.hostname === '127.0.0.1';
-  const isOakvilleHost = currentUrl.hostname === 'ocphotohub.xtide.io';
+  const directClubPath = /^\/[a-z0-9][a-z0-9-]{0,59}\/?$/i.test(currentUrl.pathname)
+    && !['/api', '/app', '/assets', '/faq', '/features', '/help', '/privacy', '/terms'].includes(currentUrl.pathname.toLowerCase());
   const isMemberApp = isNativeApp
-    || isOakvilleHost
+    || directClubPath
     || currentUrl.pathname === '/app'
     || currentUrl.pathname.startsWith('/app/')
     || currentUrl.searchParams.has('reset')
