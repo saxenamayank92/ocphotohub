@@ -126,6 +126,26 @@ export default function App() {
         }
         if (!cancelled) setClubs(clubData.clubs || []);
         const session = await cloudSession();
+        const sessionMatchesDirectClub = !directClubId
+          || !session.authenticated
+          || session.club?.id === directClubId
+          || session.club?.slug === directClubId;
+        if (session.authenticated && !sessionMatchesDirectClub) {
+          // A direct club URL must never inherit a session or branding from a
+          // different tenant (for example, an Oakville session at /yourclub).
+          await cloudLogout().catch(error => console.error('Stale tenant logout failed:', error));
+          if (!cancelled) {
+            setCurrentUser(null);
+            setCurrentClub(null);
+            setIsAdmin(false);
+            setCloudActive(true);
+            setMembers([]);
+            setPhotos([]);
+            sessionStorage.removeItem('oakville_user');
+            sessionStorage.removeItem('oakville_is_admin');
+          }
+          return;
+        }
         if (!session.authenticated) {
           if (!cancelled) {
             setCloudActive(true);

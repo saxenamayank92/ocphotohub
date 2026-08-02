@@ -18,10 +18,15 @@ function DirectClubBrand({ club }) {
   </div>;
 }
 
+function findClubByRoute(clubs, routeClubId) {
+  if (!routeClubId) return null;
+  return clubs.find(club => club.id === routeClubId || club.slug === routeClubId) || null;
+}
+
 function ClubPicker({ clubs, clubId, setClubId, disabled = false, directClubId = null }) {
   if (directClubId) {
-    const directClub = clubs.find(club => club.id === directClubId);
-    return <div className="form-group"><label>Club</label><div className="direct-club-lock"><Building2 size={18} /><span>{directClub?.name || 'Oakville Club'}</span><small>Direct club login</small></div></div>;
+    const directClub = findClubByRoute(clubs, directClubId);
+    return <div className="form-group"><label>Club</label><div className="direct-club-lock"><Building2 size={18} /><span>{directClub?.name || 'Club PhotoHub'}</span><small>Direct club login</small></div></div>;
   }
   return <div className="form-group">
     <label htmlFor="clubId">Your club</label>
@@ -75,14 +80,16 @@ export default function Login({
 
   React.useEffect(() => {
     if (directClubId && clubs.length > 0) {
-      const match = clubs.find(c => c.id === directClubId || c.slug === directClubId || c.id?.includes('oakville'));
+      const match = findClubByRoute(clubs, directClubId);
       if (match) setClubId(match.id);
     } else if (clubs.length === 1 && !clubId) {
       setClubId(clubs[0].id);
     }
   }, [directClubId, clubs, clubId]);
 
-  const selectedClub = clubs.find(club => club.id === clubId) || (clubs.length === 1 ? clubs[0] : null);
+  const selectedClub = (directClubId ? findClubByRoute(clubs, directClubId) : null)
+    || clubs.find(club => club.id === clubId)
+    || (clubs.length === 1 ? clubs[0] : null);
   const resetParams = new URLSearchParams(window.location.search);
   const resetToken = resetParams.get(adminResetMode ? 'adminReset' : 'reset');
 
