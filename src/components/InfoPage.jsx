@@ -257,7 +257,7 @@ export function TermsPage() {
         <h2>1. The service</h2>
         <p>Club PhotoHub provides organizations with private, branded photo workspaces, member verification, uploads, downloads and administrative controls. Each organization is responsible for its member directory, authorized administrators and lawful use of the service.</p>
         <h2>2. Trial and plans</h2>
-        <p>Organizations receive a 30-day trial without a credit card. The launch plan is $60 per month or $600 per year and includes 25 GB of fair-use photo storage. Taxes may apply. After a trial or paid term ends, the workspace may become read-only until service is renewed.</p>
+        <p>Organizations receive a 30-day trial without a credit card. The launch plan is $60 USD or CAD per month, or $600 USD or CAD per year, and includes 25 GB of fair-use photo storage. Taxes may apply. After a trial or paid term ends, the workspace may become read-only until service is renewed.</p>
         <h2>3. Accounts and security</h2>
         <p>You must provide accurate information, protect credentials and promptly report suspected unauthorized access. Accounts may not be shared with people who are not authorized by the organization. Administrators must remove members whose access is no longer appropriate.</p>
         <h2>4. Photos and acceptable use</h2>

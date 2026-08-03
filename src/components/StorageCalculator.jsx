@@ -102,7 +102,7 @@ export default function StorageCalculator() {
           <div className="calculator-summary-box">
             <div className="summary-row">
               <span>Base Plan (25 GB + Unlimited Members):</span>
-              <strong>$60/mo</strong>
+              <strong>$60 USD or CAD/mo</strong>
             </div>
             {storageGb > 25 && (
               <div className="summary-row add-on">

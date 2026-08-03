@@ -251,8 +251,8 @@ export default function LandingPage() {
           <div className="pricing-card">
             <div>
               <span>Club PhotoHub</span>
-              <p><strong>$60</strong> / month</p>
-              <small>or $600 billed annually, save $120</small>
+              <p><strong>$60 USD or CAD</strong> / month</p>
+              <small>or $600 USD or CAD billed annually, save $120</small>
             </div>
             <ul>
               <li><Check size={16} /> Unlimited members during launch</li>
