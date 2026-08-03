@@ -2,7 +2,7 @@ import React, { lazy, Suspense, useEffect, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { ShieldCheck, AlertCircle, Info } from 'lucide-react';
 import { getAllPhotos, savePhoto, deletePhoto as localDeletePhoto, clearAllPhotos } from './db';
-import { demoClub, demoMembers, demoPhotos, demoUser, seedMembers, seedPhotos } from './seedData';
+import { demoAdminUser, demoClub, demoMembers, demoPhotos, demoUser, seedMembers, seedPhotos } from './seedData';
 import Login from './components/Login';
 import Header from './components/Header';
 import PhotoGallery from './components/PhotoGallery';
@@ -37,10 +37,17 @@ export default function App() {
   const pathSlugCandidate = window.location.pathname.match(/^\/([a-z0-9][a-z0-9-]{0,59})\/?$/i)?.[1]?.toLowerCase() || null;
   const directPathSlug = pathSlugCandidate === 'app' ? null : pathSlugCandidate;
   const directClubId = directPathSlug;
-  const demoMode = !isNativeApp && new URLSearchParams(window.location.search).get('demo') === '1';
-  const [currentUser, setCurrentUser] = useState(demoMode ? demoUser : null);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [activeTab, setActiveTab] = useState('gallery');
+  const queryParams = new URLSearchParams(window.location.search);
+  // Local browser previews should support the public demo too. Capacitor
+  // shells are still excluded by their native protocol/platform check.
+  const demoMode = !Capacitor.isNativePlatform()
+    && !['capacitor:', 'ionic:'].includes(window.location.protocol)
+    && queryParams.get('demo') === '1';
+  const initialDemoAdmin = demoMode && queryParams.get('demoView') === 'admin';
+  const [demoAdminView, setDemoAdminView] = useState(initialDemoAdmin);
+  const [currentUser, setCurrentUser] = useState(initialDemoAdmin ? demoAdminUser : (demoMode ? demoUser : null));
+  const [isAdmin, setIsAdmin] = useState(initialDemoAdmin);
+  const [activeTab, setActiveTab] = useState(initialDemoAdmin ? 'admin' : 'gallery');
   const [members, setMembers] = useState(demoMode ? demoMembers : []);
   const [photos, setPhotos] = useState(demoMode ? demoPhotos : []);
   const [toasts, setToasts] = useState([]);
@@ -237,6 +244,22 @@ export default function App() {
     addToast('Signed out successfully.', 'info');
   };
 
+  const handleDemoViewChange = view => {
+    if (!demoMode) return;
+    const admin = view === 'admin';
+    setDemoAdminView(admin);
+    setCurrentUser(admin ? demoAdminUser : demoUser);
+    setIsAdmin(admin);
+    setActiveTab(admin ? 'admin' : 'gallery');
+
+    // Keep the preview link shareable without causing a navigation or reload.
+    const nextUrl = new URL(window.location.href);
+    nextUrl.searchParams.set('demo', '1');
+    if (admin) nextUrl.searchParams.set('demoView', 'admin');
+    else nextUrl.searchParams.delete('demoView');
+    window.history.replaceState({}, '', `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`);
+  };
+
   const handleAddMember = async (member) => {
     const savedMember = cloudActive ? await addCloudMember(member) : member;
     setMembers(previous => {
@@ -409,8 +432,17 @@ export default function App() {
   return (
     <div className="app-container">
       <Header user={currentUser} club={currentClub || clubBrand} isAdmin={isAdmin} activeTab={activeTab} setActiveTab={setActiveTab} onLogout={handleLogout} />
-      {demoMode && <div className="demo-mode-banner"><span><ShieldCheck size={15} /> Exploring the read-only Your Club demo</span><a href="/app?onboard=club">Create your workspace</a></div>}
-      {!demoMode && trialDaysLeft !== null && currentUser?.role === 'owner' && <div className={`trial-status-banner ${trialDaysLeft === 0 ? 'expired' : ''}`}><span>{trialDaysLeft > 0 ? `${trialDaysLeft} days left in your free trial` : 'Your trial has ended. This workspace is now read-only.'}</span><a href="mailto:support@xtide.io?subject=Activate%20Club%20PhotoHub">Activate plan</a></div>}
+      {demoMode && <div className="demo-mode-banner">
+        <div className="demo-banner-copy">
+          <span><ShieldCheck size={15} /> Exploring the read-only Your Club demo</span>
+          <a href="/app?onboard=club">Create your workspace</a>
+        </div>
+        <div className="demo-view-switcher" role="tablist" aria-label="Demo view">
+          <button type="button" role="tab" aria-selected={!demoAdminView} className={!demoAdminView ? 'active' : ''} onClick={() => handleDemoViewChange('member')}>Member view</button>
+          <button type="button" role="tab" aria-selected={demoAdminView} className={demoAdminView ? 'active' : ''} onClick={() => handleDemoViewChange('admin')}>Admin view</button>
+        </div>
+      </div>}
+      {!demoMode && trialDaysLeft !== null && currentUser?.role === 'owner' && <div className={`trial-status-banner ${trialDaysLeft === 0 ? 'expired' : ''}`}><span>{trialDaysLeft > 0 ? `${trialDaysLeft} days left in your free trial` : 'Your trial has ended. This workspace is now read-only.'}</span><a href="/pricing#pricing-links">Choose a plan</a></div>}
       <main className="content-wrapper">
         <Suspense fallback={<div className="panel-loading" role="status"><div className="spinner" /><span>Loading…</span></div>}>
           {activeTab === 'gallery' && <PhotoGallery photos={photos} currentUser={currentUser} isAdmin={isAdmin} onHeartPhoto={handleHeartPhoto} onDeletePhoto={handleDeletePhoto} addToast={addToast} />}

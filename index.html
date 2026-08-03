@@ -7,20 +7,71 @@
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="description" content="Club PhotoHub is a private place for club members to share and preserve their favourite moments." />
+
+    <!-- Preconnect performance hints -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <meta name="description" content="Club PhotoHub provides private, branded photo sharing galleries for country clubs, golf clubs, yacht clubs, and member organizations." />
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="Club PhotoHub" />
-    <meta property="og:description" content="Every club moment, in one private place." />
+    <meta property="og:site_name" content="Club PhotoHub" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:title" content="Club PhotoHub | Private Photo Sharing for Member Clubs" />
+    <meta property="og:description" content="Give your club a private, branded place for members to share, like, and preserve their favourite moments." />
     <meta property="og:url" content="https://clubphotohub.com" />
+    <meta property="og:image" content="https://clubphotohub.com/demo/product-feed.png" />
+    <meta property="og:image:width" content="1000" />
+    <meta property="og:image:height" content="750" />
+    <meta property="og:image:alt" content="Club PhotoHub private member gallery interface" />
     <link rel="canonical" href="https://clubphotohub.com" />
-    <meta name="twitter:card" content="summary" />
-    <meta name="twitter:title" content="Club PhotoHub" />
-    <meta name="twitter:description" content="Every club moment, in one private place." />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@xTideApps" />
+    <meta name="twitter:title" content="Club PhotoHub | Private Photo Sharing for Member Clubs" />
+    <meta name="twitter:description" content="Give your club a private, branded place for members to share, like, and preserve their favourite moments." />
+    <meta name="twitter:image" content="https://clubphotohub.com/demo/product-feed.png" />
+
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="Club PhotoHub" />
     <meta name="theme-color" content="#172238" />
-    <title>Club PhotoHub | Private moments, shared with members</title>
+    <title>Club PhotoHub | Private photo sharing for member clubs</title>
+
+    <!-- Schema.org JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Club PhotoHub",
+      "url": "https://clubphotohub.com",
+      "logo": "https://clubphotohub.com/club-photo-hub-mark.svg",
+      "image": "https://clubphotohub.com/demo/product-feed.png",
+      "description": "Private, branded photo-sharing platform for golf clubs, yacht clubs, country clubs, and alumni associations.",
+      "applicationCategory": "MultimediaApplication",
+      "operatingSystem": "Web, iOS, Android",
+      "offers": {
+        "@type": "Offer",
+        "price": "60.00",
+        "priceCurrency": "CAD",
+        "priceValidUntil": "2027-12-31",
+        "availability": "https://schema.org/InStock"
+      },
+      "author": {
+        "@type": "Organization",
+        "name": "xTide Apps",
+        "url": "https://xtide.io",
+        "email": "support@xtide.io",
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "217-56A Mill St E",
+          "addressLocality": "Acton",
+          "addressRegion": "ON",
+          "postalCode": "L7J 1H3",
+          "addressCountry": "CA"
+        }
+      }
+    }
+    </script>
   </head>
   <body>
     <div id="root"></div>

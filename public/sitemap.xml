@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+  <url>
+    <loc>https://clubphotohub.com/</loc>
+    <lastmod>2026-08-03</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+    <image:image>
+      <image:loc>https://clubphotohub.com/demo/product-feed.png</image:loc>
+      <image:title>Club PhotoHub Private Member Gallery Interface</image:title>
+    </image:image>
+    <image:image>
+      <image:loc>https://clubphotohub.com/demo/golf-morning.jpg</image:loc>
+      <image:title>Golf Club Member Event Photo Sharing</image:title>
+    </image:image>
+    <image:image>
+      <image:loc>https://clubphotohub.com/demo/tennis-social.jpg</image:loc>
+      <image:title>Tennis &amp; Racquet Club Tournament Photo Gallery</image:title>
+    </image:image>
+    <image:image>
+      <image:loc>https://clubphotohub.com/demo/garden-dinner.jpg</image:loc>
+      <image:title>Clubhouse Dining &amp; Social Dinner Photos</image:title>
+    </image:image>
+    <image:image>
+      <image:loc>https://clubphotohub.com/demo/lakeside-social.jpg</image:loc>
+      <image:title>Yacht Club &amp; Waterfront Social Photos</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://clubphotohub.com/features</loc>
+    <lastmod>2026-08-03</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://clubphotohub.com/pricing</loc>
+    <lastmod>2026-08-03</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://clubphotohub.com/faq</loc>
+    <lastmod>2026-08-03</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://clubphotohub.com/help/admin</loc>
+    <lastmod>2026-08-03</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://clubphotohub.com/help/members</loc>
+    <lastmod>2026-08-03</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://clubphotohub.com/privacy</loc>
+    <lastmod>2026-08-03</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://clubphotohub.com/terms</loc>
+    <lastmod>2026-08-03</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+</urlset>

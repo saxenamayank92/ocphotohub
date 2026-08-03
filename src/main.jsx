@@ -1,13 +1,16 @@
 import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
+import { createRoot, hydrateRoot } from 'react-dom/client'
 import './index.css'
 import Root from './Root.jsx'
 
-createRoot(document.getElementById('root')).render(
-  <StrictMode>
-    <Root />
-  </StrictMode>,
-)
+const rootElement = document.getElementById('root')
+const app = <StrictMode><Root /></StrictMode>
+
+if (rootElement.hasChildNodes()) {
+  hydrateRoot(rootElement, app)
+} else {
+  createRoot(rootElement).render(app)
+}
 
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
   window.addEventListener('load', () => {

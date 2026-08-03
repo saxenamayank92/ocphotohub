@@ -23,6 +23,17 @@ export const demoUser = {
   email: 'member@example.com'
 };
 
+// Used only by the public, read-only demo. This is intentionally separate
+// from the member account so the admin preview can show the correct role and
+// permissions without creating or exposing a real administrator.
+export const demoAdminUser = {
+  memberNumber: 'admin:demo-owner',
+  firstName: 'Club',
+  lastName: 'Manager',
+  email: 'admin@yourclub.example',
+  role: 'owner'
+};
+
 export const demoMembers = [
   { memberNumber: 'DEMO-1001', firstName: 'Alex', lastName: 'Morgan', email: 'member@example.com', registeredAt: '2026-06-14T14:00:00.000Z', role: 'member' },
   { memberNumber: 'DEMO-1002', firstName: 'Jordan', lastName: 'Lee', email: 'jordan@example.com', registeredAt: '2026-06-18T14:00:00.000Z', role: 'member' },

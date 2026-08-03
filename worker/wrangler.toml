@@ -17,6 +17,9 @@ ADMIN_EMAIL = "admin@oakville.com"
 APP_ORIGIN = "https://clubphotohub.com"
 LEGACY_PHOTO_HOSTS = "images.unsplash.com"
 
+[triggers]
+crons = ["0 9 * * *"]
+
 [[ratelimits]]
 name = "AUTH_RATE_LIMITER"
 namespace_id = "1001"

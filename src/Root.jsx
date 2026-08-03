@@ -6,12 +6,13 @@ import PricingPage from './components/PricingPage.jsx';
 
 const MemberApp = lazy(() => import('./App.jsx'));
 
-export default function Root() {
-  const currentUrl = new URL(window.location.href);
+export default function Root({ url }) {
+  const currentUrl = new URL(url || window.location.href, 'https://clubphotohub.com');
   // Capacitor normally reports the native platform, but the protocol/host
   // fallback also covers a freshly installed WebView before plugins finish
   // initializing. Native builds must never fall through to the marketing demo.
-  const isNativeApp = Capacitor.isNativePlatform()
+  const isBrowser = typeof window !== 'undefined';
+  const isNativeApp = (isBrowser && Capacitor.isNativePlatform())
     || currentUrl.protocol === 'capacitor:'
     || currentUrl.protocol === 'ionic:'
     || (!import.meta.env.DEV && (currentUrl.hostname === 'localhost' || currentUrl.hostname === '127.0.0.1'));

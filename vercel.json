@@ -28,6 +28,15 @@
           "value": "default-src 'self'; script-src 'self' blob:; worker-src 'self' blob:; child-src 'self' blob:; style-src 'self' https://fonts.googleapis.com; style-src-attr 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://images.unsplash.com https://*.workers.dev; connect-src 'self' https://*.workers.dev blob:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; upgrade-insecure-requests"
         }
       ]
+    },
+    {
+      "source": "/app/:path*",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
     }
   ],
   "rewrites": [
@@ -37,35 +46,39 @@
     },
     {
       "source": "/app/:path*",
-      "destination": "/index.html"
+      "destination": "/app-shell.html"
     },
     {
       "source": "/features",
-      "destination": "/index.html"
+      "destination": "/features/index.html"
     },
     {
-      "source": "/help/:path*",
-      "destination": "/index.html"
+      "source": "/help/admin",
+      "destination": "/help/admin/index.html"
+    },
+    {
+      "source": "/help/members",
+      "destination": "/help/members/index.html"
     },
     {
       "source": "/faq",
-      "destination": "/index.html"
+      "destination": "/faq/index.html"
     },
     {
       "source": "/privacy",
-      "destination": "/index.html"
+      "destination": "/privacy/index.html"
     },
     {
       "source": "/terms",
-      "destination": "/index.html"
+      "destination": "/terms/index.html"
     },
     {
       "source": "/pricing",
-      "destination": "/index.html"
+      "destination": "/pricing/index.html"
     },
     {
       "source": "/:clubSlug([a-zA-Z0-9-]+)",
-      "destination": "/index.html"
+      "destination": "/app-shell.html"
     }
   ]
 }

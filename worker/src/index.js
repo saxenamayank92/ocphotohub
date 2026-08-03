@@ -267,6 +267,69 @@ const clubPhotoHubEmail = ({ eyebrow = 'Secure member access', title, intro, cod
   return `<!doctype html><html><body style="margin:0;background:#f5f2ed;color:#24213f;font-family:Arial,Helvetica,sans-serif"><div style="padding:32px 16px"><div style="max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #e0e4df;border-top:8px solid #c8a354;border-radius:22px;overflow:hidden;box-shadow:0 10px 28px rgba(23,19,63,.08)"><div style="padding:28px 32px 24px;background:#29216b;color:#ffffff"><div style="display:inline-block;width:44px;height:44px;line-height:44px;border-radius:50%;background:#c8a354;color:#29216b;font-family:Georgia,serif;font-size:18px;font-weight:700;text-align:center">CP</div><div style="margin-top:18px;color:#e9d9b3;font-family:Arial,sans-serif;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase">Club PhotoHub</div><div style="margin-top:8px;font-family:Georgia,'Times New Roman',serif;font-size:28px;line-height:1.2">${emailEscape(title)}</div></div><div style="padding:32px"><div style="color:#a27a2b;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase">${emailEscape(eyebrow)}</div><p style="margin:16px 0 0;font-size:17px;line-height:1.6">${emailEscape(intro)}</p>${codeMarkup}${details ? `<p style="margin:0;color:#6f7e76;font-size:14px;line-height:1.6">${emailEscape(details)}</p>` : ''}${actionMarkup}<p style="margin:28px 0 0;color:#6f7e76;font-size:13px;line-height:1.6">If you did not request this email, you can safely ignore it. For help, contact <a href="mailto:support@xtide.io" style="color:#29216b">support@xtide.io</a>.</p></div><div style="padding:18px 32px;background:#faf9f6;border-top:1px solid #e6e8e4;color:#7c8b83;font-size:12px;line-height:1.5">Private photo sharing for clubs and member organizations.<br><span style="color:#a27a2b">xTide Apps</span></div></div></div></body></html>`;
 };
 
+const trialReminderDays = [7, 3, 1];
+
+async function sendTrialReminders(env) {
+  if (!env.MAILERSEND_API_TOKEN || !env.MAIL_FROM) {
+    console.warn('Trial reminders skipped because email delivery is not configured.');
+    return;
+  }
+
+  const clubs = await env.DB.prepare(
+    "SELECT id, name, trial_ends_at AS trialEndsAt FROM clubs WHERE status = 'active' AND plan_status = 'trialing' AND trial_ends_at <> ''"
+  ).all();
+  const now = Date.now();
+  const dayMs = 24 * 60 * 60 * 1000;
+
+  for (const club of clubs.results || []) {
+    const trialEndsAt = Date.parse(club.trialEndsAt);
+    if (!Number.isFinite(trialEndsAt) || trialEndsAt <= now) continue;
+    const daysRemaining = Math.ceil((trialEndsAt - now) / dayMs);
+    if (!trialReminderDays.includes(daysRemaining)) continue;
+
+    const claim = await env.DB.prepare(
+      'INSERT OR IGNORE INTO trial_reminders_sent (club_id, reminder_days, sent_at) VALUES (?, ?, ?)'
+    ).bind(club.id, daysRemaining, new Date().toISOString()).run();
+    if (!claim.meta?.changes) continue;
+
+    const owners = await env.DB.prepare(
+      "SELECT email, first_name AS firstName FROM club_admins WHERE club_id = ? AND status = 'active' AND role = 'owner'"
+    ).bind(club.id).all();
+    const recipients = [...new Map((owners.results || [])
+      .filter(owner => validEmail(owner.email))
+      .map(owner => [normalize(owner.email), owner])).values()];
+
+    if (!recipients.length) {
+      await env.DB.prepare('DELETE FROM trial_reminders_sent WHERE club_id = ? AND reminder_days = ?').bind(club.id, daysRemaining).run();
+      continue;
+    }
+
+    const pricingUrl = `${env.APP_ORIGIN || 'https://clubphotohub.com'}/pricing#pricing-links`;
+    const subject = `${club.name}: ${daysRemaining} day${daysRemaining === 1 ? '' : 's'} left in your Club PhotoHub trial`;
+    const intro = `Your ${club.name} workspace has ${daysRemaining} day${daysRemaining === 1 ? '' : 's'} left in its free trial.`;
+    const details = 'Choose a monthly or annual plan before the trial ends to keep uploads, moderation and workspace administration active. Members will retain access to existing photos, but the workspace becomes read-only after the trial ends until a plan is activated.';
+
+    try {
+      await Promise.all(recipients.map(owner => sendMail(env, {
+        to: normalize(owner.email),
+        subject,
+        text: `${owner.firstName ? `Hi ${owner.firstName},\\n\\n` : ''}${intro}\\n\\n${details}\\n\\nChoose a plan: ${pricingUrl}`,
+        html: clubPhotoHubEmail({
+          eyebrow: 'Workspace billing reminder',
+          title: `${daysRemaining} days left in your trial`,
+          intro,
+          details,
+          actionLabel: 'Choose a plan',
+          actionUrl: pricingUrl
+        })
+      })));
+    } catch (error) {
+      await env.DB.prepare('DELETE FROM trial_reminders_sent WHERE club_id = ? AND reminder_days = ?').bind(club.id, daysRemaining).run();
+      console.error('Trial reminder delivery failed', { clubId: club.id, reminderDays: daysRemaining, message: error.message });
+    }
+  }
+}
+
 async function createSession(env, clubId, principalId, role) {
   const token = randomToken();
   const csrf = randomToken(24);
@@ -511,6 +574,9 @@ async function resetAdminPassword(request, env, origin) {
 }
 
 export default {
+  async scheduled(controller, env, ctx) {
+    ctx.waitUntil(sendTrialReminders(env));
+  },
   async fetch(request, env, ctx) {
     const origin = originFor(request, env);
     if (request.headers.get('Origin') && !origin) return json({ error: 'Origin not allowed.' }, 403, '');
