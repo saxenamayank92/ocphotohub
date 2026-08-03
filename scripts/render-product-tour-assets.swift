@@ -201,7 +201,7 @@ text("CLUB PHOTOHUB", NSRect(x: 140, y: 910, width: 700, height: 40), 22, gold, 
 text("A private photo home\nfor every community.", NSRect(x: 135, y: 555, width: 1000, height: 300), 92, .white, .semibold, serif: true)
 text("Private pilot now accepting organizations", NSRect(x: 145, y: 475, width: 850, height: 40), 26, NSColor(calibratedWhite: 1, alpha: 0.78), .medium)
 rounded(NSRect(x: 145, y: 340, width: 440, height: 70), 13, gold); text("Request pilot access", NSRect(x: 145, y: 361, width: 440, height: 30), 18, navy, .bold, .center)
-text("$60 CAD monthly · $600 annually · 25 GB included", NSRect(x: 145, y: 280, width: 840, height: 30), 18, NSColor(calibratedWhite: 1, alpha: 0.62), .medium)
+text("$60 monthly · $600 annually · 25 GB included", NSRect(x: 145, y: 280, width: 840, height: 30), 18, NSColor(calibratedWhite: 1, alpha: 0.62), .medium)
 rounded(NSRect(x: 1160, y: 190, width: 570, height: 700), 30, .white)
 fillImage("public/demo/product-feed.png", NSRect(x: 1190, y: 220, width: 510, height: 640))
 text("clubphotohub.xtide.io · Operated by xTide Apps", NSRect(x: 145, y: 80, width: 900, height: 30), 15, NSColor(calibratedWhite: 1, alpha: 0.48), .medium)

@@ -91,7 +91,7 @@ export default function LandingPage() {
             <div className="marketing-trust-row">
               <span><Check size={15} /> No credit card</span>
               <span><Check size={15} /> 25 GB included</span>
-              <span><Check size={15} /> CAD pricing</span>
+              <span><Check size={15} /> Simple pricing</span>
             </div>
             <div className="store-badges" aria-label="Mobile apps coming soon">
               <span className="store-badges-label">Coming soon</span>
@@ -251,8 +251,8 @@ export default function LandingPage() {
           <div className="pricing-card">
             <div>
               <span>Club PhotoHub</span>
-              <p><strong>$60</strong> CAD / month</p>
-              <small>or $600 CAD billed annually, save $120</small>
+              <p><strong>$60</strong> / month</p>
+              <small>or $600 billed annually, save $120</small>
             </div>
             <ul>
               <li><Check size={16} /> Unlimited members during launch</li>

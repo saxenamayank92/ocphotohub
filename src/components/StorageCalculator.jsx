@@ -94,7 +94,7 @@ export default function StorageCalculator() {
             </div>
             <div className="result-metric-sub">
               <small>Cost / Member</small>
-              <strong>${costPerMember} CAD</strong>
+              <strong>${costPerMember}</strong>
               <span>/ member / month</span>
             </div>
           </div>
@@ -102,17 +102,17 @@ export default function StorageCalculator() {
           <div className="calculator-summary-box">
             <div className="summary-row">
               <span>Base Plan (25 GB + Unlimited Members):</span>
-              <strong>$60 CAD/mo</strong>
+              <strong>$60/mo</strong>
             </div>
             {storageGb > 25 && (
               <div className="summary-row add-on">
                 <span>Storage Add-on (+{storageGb - 25} GB):</span>
-                <strong>+${costMonthly - 60} CAD/mo</strong>
+                <strong>+${costMonthly - 60}/mo</strong>
               </div>
             )}
             <div className="summary-row total">
               <span>Estimated Total Investment:</span>
-              <strong>${costMonthly} CAD/mo</strong>
+              <strong>${costMonthly}/mo</strong>
             </div>
           </div>
 

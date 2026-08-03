@@ -26,8 +26,8 @@ const routes = [
   },
   {
     path: '/pricing',
-    title: 'Pricing & Plans | Club PhotoHub CAD $60/mo',
-    description: 'Simple, transparent Canadian pricing for private club photo galleries. $60 CAD/mo base plan includes 25 GB storage and unlimited members.',
+    title: 'Pricing & Plans | Club PhotoHub',
+    description: 'Simple, transparent pricing for private club photo galleries. The base plan includes 25 GB storage and unlimited members.',
     image: `${siteUrl}/demo/product-feed.png`,
     schemaType: 'Product'
   },
@@ -55,7 +55,7 @@ const routes = [
   {
     path: '/privacy',
     title: 'Privacy Policy | Club PhotoHub Security & Data Protection',
-    description: 'Learn how Club PhotoHub protects member privacy, isolates workspace data, and processes photo media under Canadian privacy standards.',
+    description: 'Learn how Club PhotoHub protects member privacy, keeps each club separate, and handles member photos and information.',
     image: `${siteUrl}/demo/product-feed.png`,
     schemaType: 'Legal'
   },
@@ -159,15 +159,7 @@ function generateRouteSchema(route) {
         "@type": "Product",
         "name": "Club PhotoHub Launch Plan",
         "description": "Private, branded photo sharing workspace for member clubs with 25 GB storage.",
-        "image": `${siteUrl}/demo/product-feed.png`,
-        "offers": {
-          "@type": "Offer",
-          "url": canonical,
-          "price": "60.00",
-          "priceCurrency": "CAD",
-          "priceValidUntil": "2027-12-31",
-          "availability": "https://schema.org/InStock"
-        }
+        "image": `${siteUrl}/demo/product-feed.png`
       }
     ];
   }
