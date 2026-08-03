@@ -228,7 +228,7 @@ export function PrivacyPage() {
         <h2>3. How we use information</h2>
         <p>We use information to verify membership, create and secure accounts, display organization galleries, deliver emails, provide support, prevent abuse, maintain the service and comply with legal obligations. We do not sell member personal information or use member photos for advertising.</p>
         <h2>4. Service providers and storage</h2>
-        <p>Club PhotoHub works with trusted service providers to operate the service and send account emails. They handle information only as needed to provide those services and must follow their own security and privacy commitments. Information may be processed outside your province or country.</p>
+        <p>Club PhotoHub works with trusted service providers to operate the service and send account emails. They handle information only as needed to provide those services and must follow their own security and privacy commitments. Information may be processed in different countries.</p>
         <h2>5. Retention and deletion</h2>
         <p>We retain information while an organization account is active and as reasonably needed for security, support and legal obligations. Members may initiate account deletion from account settings. Deletion includes personal account data and user-generated photos unless retention is legally required. Organization owners may request workspace export or deletion.</p>
         <h2>6. Security</h2>
@@ -236,11 +236,11 @@ export function PrivacyPage() {
         <h2>7. Young users</h2>
         <p>Club PhotoHub is not directed to children under 13. Organizations must not add a child under 13 without a lawful basis, appropriate consent and a written arrangement with Club PhotoHub.</p>
         <h2>8. Your choices</h2>
-        <p>You may request access, correction or deletion through your organization administrator or at support@xtide.io. You may also complain to the Office of the Privacy Commissioner of Canada or the appropriate local regulator.</p>
+        <p>You may request access, correction or deletion through your organization administrator or at support@xtide.io. You may also contact the privacy regulator that applies where you live.</p>
         <h2>9. Changes</h2>
         <p>We may update this policy as the product and legal requirements evolve. Material changes will be communicated in the service or by email.</p>
         <h2>10. Contact</h2>
-        <p>Contact xTide Apps at support@xtide.io or by mail at 217-56A Mill St E, Ontario, L7J 1H3, Canada.</p>
+        <p>Contact xTide Apps at support@xtide.io.</p>
       </div>
     </InfoLayout>
   );
@@ -271,9 +271,9 @@ export function TermsPage() {
         <h2>8. Disclaimers and liability</h2>
         <p>To the extent permitted by law, the service is provided without implied warranties and Club PhotoHub is not liable for indirect or consequential losses. Any total liability will not exceed the fees paid by the organization in the prior 12 months. Consumer rights that cannot legally be excluded remain unaffected.</p>
         <h2>9. Governing law</h2>
-        <p>These terms are governed by the laws of Ontario and the federal laws of Canada applicable there, without limiting mandatory rights that apply in another jurisdiction.</p>
+        <p>These terms are governed by applicable laws, without limiting any rights that must apply where you live.</p>
         <h2>10. Contact</h2>
-        <p>Questions may be sent to xTide Apps at support@xtide.io or by mail at 217-56A Mill St E, Ontario, L7J 1H3, Canada.</p>
+        <p>Questions may be sent to xTide Apps at support@xtide.io.</p>
       </div>
     </InfoLayout>
   );

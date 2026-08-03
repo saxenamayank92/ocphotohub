@@ -228,11 +228,11 @@ export default function LandingPage() {
               <li><ShieldCheck size={18} /> A private photo hub for each club</li>
               <li><ShieldCheck size={18} /> New members confirm the email held by their club</li>
               <li><ShieldCheck size={18} /> Photos are shared only with approved members</li>
-              <li><ShieldCheck size={18} /> Club information stays in Canada and out of public searches</li>
+              <li><ShieldCheck size={18} /> Club information stays private and out of public searches</li>
             </ul>
           </div>
           <div className="marketing-phone-card">
-            <div className="marketing-phone-top"><Smartphone size={18} /> Mobile-first today. Native apps next.</div>
+            <div className="marketing-phone-top"><Smartphone size={18} /> Works on your phone today. iPhone and Android apps next.</div>
             <img className="marketing-real-phone-photo" src="./demo/lakeside-social.jpg" alt="Your Club members sharing a lakeside social" loading="lazy" decoding="async" />
             <div className="marketing-phone-caption">
               <strong>Every club moment, in your pocket</strong>
@@ -294,7 +294,7 @@ export default function LandingPage() {
           <a href="/privacy">Privacy</a>
           <a href="/terms">Terms</a>
         </div>
-        <span>© {new Date().getFullYear()} xTide Apps · Operated from Ontario, Canada</span>
+        <span>© {new Date().getFullYear()} xTide Apps</span>
       </footer>
     </div>
   );
