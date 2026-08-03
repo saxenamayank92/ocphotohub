@@ -67,9 +67,9 @@ export default function PricingPage() {
               <button type="button" className={isAnnual ? 'active' : ''} onClick={() => setBillingInterval('annual')}>Annual <span>save 2 months</span></button>
             </div>
             <p className="pricing-plan-price">
-              <strong>{isAnnual ? '$600 USD or CAD' : '$60 USD or CAD'}</strong> <span>{isAnnual ? '/ year' : '/ month'}</span>
+              <strong>{isAnnual ? '$600' : '$60'}</strong> <span>{isAnnual ? '/ year' : '/ month'}</span>
             </p>
-            <p className="pricing-plan-annual">{isAnnual ? 'One annual payment. No credit card required during the trial.' : 'Or $600 USD or CAD billed annually and save $120.'}</p>
+            <p className="pricing-plan-annual">{isAnnual ? 'One annual payment. No credit card required during the trial.' : 'Or $600 billed annually and save $120.'}</p>
             <ul>
               {[
                 '25 GB photo storage (~12,500 high-res photos)',
