@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AlertCircle, Building2, KeyRound, Lock, Mail, ShieldCheck, User } from 'lucide-react';
+import { AlertCircle, Building2, KeyRound, Lock, Mail, Search, ShieldCheck, User } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import { platformBrand } from '../brand';
 
@@ -23,20 +23,41 @@ function findClubByRoute(clubs, routeClubId) {
   return clubs.find(club => club.id === routeClubId || club.slug === routeClubId) || null;
 }
 
-function ClubPicker({ clubs, clubId, setClubId, disabled = false, directClubId = null }) {
+const SAVED_CLUB_KEY = 'clubphotohub_selected_club';
+
+function highlightedName(name, query) {
+  const matchAt = name.toLocaleLowerCase().indexOf(query.trim().toLocaleLowerCase());
+  if (matchAt < 0 || !query.trim()) return name;
+  return <>{name.slice(0, matchAt)}<mark>{name.slice(matchAt, matchAt + query.trim().length)}</mark>{name.slice(matchAt + query.trim().length)}</>;
+}
+
+function ClubPicker({ clubs, clubId, setClubId, disabled = false, directClubId = null, query = '', onQueryChange, searching = false, searchError = '' }) {
   if (directClubId) {
     const directClub = findClubByRoute(clubs, directClubId);
     return <div className="form-group"><label>Club</label><div className="direct-club-lock"><Building2 size={18} /><span>{directClub?.name || 'Club PhotoHub'}</span><small>Direct club login</small></div></div>;
   }
+  const selectedClub = clubs.find(club => club.id === clubId);
+  if (disabled && selectedClub) {
+    return <div className="form-group"><label>Your club</label><div className="direct-club-lock"><Building2 size={18} /><span>{selectedClub.name}</span><small>Selected club</small></div></div>;
+  }
   return <div className="form-group">
-    <label htmlFor="clubId">Your club</label>
-    <div className="input-with-icon">
-      <select id="clubId" className="input-field" value={clubId} onChange={event => setClubId(event.target.value)} disabled={disabled} required>
-        <option value="">Choose your club</option>
-        {clubs.map(club => <option key={club.id} value={club.id}>{club.name}</option>)}
-      </select>
-      <Building2 size={18} />
+    <label htmlFor="clubSearch">Search for your club</label>
+    <div className="club-search-control">
+      <div className="input-with-icon">
+        <input id="clubSearch" className="input-field" type="search" role="combobox" aria-autocomplete="list" aria-expanded={query.trim().length >= 3 && !clubId} aria-controls="clubSearchResults" autoComplete="off" placeholder="Type at least 3 characters" value={query} onChange={event => onQueryChange(event.target.value)} disabled={disabled} required />
+        <Search size={18} />
+      </div>
+      {searching && <small className="club-search-status" role="status">Searching clubs…</small>}
+      {searchError && <small className="club-search-status error" role="alert">{searchError}</small>}
+      {!clubId && query.trim().length >= 3 && clubs.length > 0 && <div id="clubSearchResults" className="club-search-results" role="listbox">
+        {clubs.map(club => <button key={club.id} type="button" role="option" aria-selected="false" onClick={() => setClubId(club.id)}>
+          {club.logoUrl ? <img src={club.logoUrl} alt="" /> : <span className="club-search-logo"><Building2 size={17} /></span>}
+          <span>{highlightedName(club.name, query)}</span>
+        </button>)}
+      </div>}
+      {!searching && !searchError && !clubId && query.trim().length >= 3 && clubs.length === 0 && <small className="club-search-status">No matching club found. Try another part of its name.</small>}
     </div>
+    <small>Search using any part of the club name.</small>
   </div>;
 }
 
@@ -51,10 +72,18 @@ export default function Login({
   clubs = [], members, onLoginSuccess, onCloudLogin, onCloudCheckMember,
   onCloudRequestRegistrationCode, onCloudRegister, onRequestPasswordReset,
   onCompletePasswordReset, onRequestAdminPasswordReset, onCompleteAdminPasswordReset,
-  onRegisterPassword, onCreateClub, firebaseEnabled, directClubId = null
+  onRegisterPassword, onCreateClub, onSearchClubs, firebaseEnabled, directClubId = null
 }) {
   const loginScreenClass = Capacitor.isNativePlatform() ? 'login-screen native-login-screen' : 'login-screen';
-  const [clubId, setClubId] = useState(directClubId || '');
+  const [rememberedClub, setRememberedClub] = useState(() => {
+    if (directClubId || typeof localStorage === 'undefined') return null;
+    try { return JSON.parse(localStorage.getItem(SAVED_CLUB_KEY)) || null; } catch { return null; }
+  });
+  const [clubId, setClubId] = useState(directClubId || rememberedClub?.id || '');
+  const [clubQuery, setClubQuery] = useState(rememberedClub?.name || '');
+  const [clubSearchResults, setClubSearchResults] = useState([]);
+  const [clubSearchLoading, setClubSearchLoading] = useState(false);
+  const [clubSearchError, setClubSearchError] = useState('');
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [lastName, setLastName] = useState('');
   const [memberNumber, setMemberNumber] = useState('');
@@ -87,9 +116,71 @@ export default function Login({
     }
   }, [directClubId, clubs, clubId]);
 
-  const selectedClub = (directClubId ? findClubByRoute(clubs, directClubId) : null)
-    || clubs.find(club => club.id === clubId)
-    || (clubs.length === 1 ? clubs[0] : null);
+  const availableClubs = [...clubs, ...clubSearchResults, ...(rememberedClub ? [rememberedClub] : [])]
+    .filter((club, index, all) => all.findIndex(candidate => candidate.id === club.id) === index);
+  const selectedClub = (directClubId ? findClubByRoute(availableClubs, directClubId) : null)
+    || availableClubs.find(club => club.id === clubId)
+    || (availableClubs.length === 1 && !onSearchClubs ? availableClubs[0] : null);
+
+  React.useEffect(() => {
+    if (directClubId || !onSearchClubs || clubId || clubQuery.trim().length < 3) {
+      setClubSearchResults([]);
+      setClubSearchLoading(false);
+      setClubSearchError('');
+      return undefined;
+    }
+    let cancelled = false;
+    setClubSearchLoading(true);
+    setClubSearchError('');
+    const timeout = window.setTimeout(async () => {
+      try {
+        const result = await onSearchClubs(clubQuery.trim());
+        if (!cancelled) setClubSearchResults(result.clubs || []);
+      } catch (searchError) {
+        if (!cancelled) {
+          setClubSearchResults([]);
+          setClubSearchError(searchError.message || 'Club search is temporarily unavailable.');
+        }
+      } finally {
+        if (!cancelled) setClubSearchLoading(false);
+      }
+    }, 300);
+    return () => { cancelled = true; window.clearTimeout(timeout); };
+  }, [clubId, clubQuery, directClubId, onSearchClubs]);
+
+  const handleClubQueryChange = value => {
+    setClubQuery(value);
+    setClubSearchResults([]);
+    setClubSearchError('');
+    if (clubId) {
+      setClubId('');
+      setRememberedClub(null);
+      localStorage.removeItem(SAVED_CLUB_KEY);
+    }
+  };
+
+  const handleClubSelect = id => {
+    const club = availableClubs.find(item => item.id === id);
+    if (!club) return;
+    const savedClub = { id: club.id, slug: club.slug, name: club.name, shortName: club.shortName };
+    setClubId(club.id);
+    setClubQuery(club.name);
+    setClubSearchResults([]);
+    setRememberedClub(savedClub);
+    localStorage.setItem(SAVED_CLUB_KEY, JSON.stringify(savedClub));
+    resetMemberFlow();
+  };
+
+  const clubPickerProps = {
+    clubs: availableClubs,
+    clubId,
+    setClubId: handleClubSelect,
+    directClubId,
+    query: clubQuery,
+    onQueryChange: handleClubQueryChange,
+    searching: clubSearchLoading,
+    searchError: clubSearchError
+  };
   const resetParams = new URLSearchParams(window.location.search);
   const resetToken = resetParams.get(adminResetMode ? 'adminReset' : 'reset');
 
@@ -102,7 +193,7 @@ export default function Login({
   const handleMemberSubmit = async event => {
     event.preventDefault(); clearMessages();
     const effectiveClubId = clubId || (clubs.length === 1 ? clubs[0]?.id : directClubId);
-    if (!effectiveClubId || !lastName || !memberNumber) return setError('Choose your club, then enter your last name and member number.');
+    if (!effectiveClubId || !lastName || !memberNumber) return setError('Search for and select your club, then enter your last name and member number.');
     if (firebaseEnabled) {
       if (!showPassword) {
         try {
@@ -166,7 +257,7 @@ export default function Login({
 
   const handleResetRequest = async event => {
     event.preventDefault(); setError('');
-    if (!clubId) return setError('Choose your club.');
+    if (!clubId) return setError('Search for and select your club.');
     try {
       const result = adminResetMode
         ? await onRequestAdminPasswordReset({ clubId, email: adminEmail })
@@ -213,7 +304,7 @@ export default function Login({
 
           {!isRegistering ? (
             <form className="login-form" onSubmit={handleMemberSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              {!directClubId && <ClubPicker clubs={clubs} clubId={clubId} setClubId={setClubId} disabled={showPassword} directClubId={directClubId} />}
+              {!directClubId && <ClubPicker {...clubPickerProps} disabled={showPassword} />}
               <Field id="memberNumber" label="Member Number" icon={User} placeholder="e.g. 1001" value={memberNumber} onChange={event => { setMemberNumber(event.target.value); setShowPassword(false); }} disabled={showPassword} required />
               <Field id="lastName" label="Last Name" icon={User} placeholder="e.g. Smith" value={lastName} onChange={event => { setLastName(event.target.value); setShowPassword(false); }} disabled={showPassword} required />
               {showPassword && <Field id="password" label="Password" icon={Lock} type="password" placeholder="Enter your password" value={password} onChange={event => setPassword(event.target.value)} autoFocus required />}
@@ -261,7 +352,7 @@ export default function Login({
       <Field id="resetConfirmPassword" label="Confirm password" type="password" value={confirmPassword} onChange={event => setConfirmPassword(event.target.value)} minLength={10} required />
       <button className="btn-primary login-btn">Set new password</button>
     </form> : <form className="login-form" onSubmit={handleResetRequest}>
-      {!directClubId && <ClubPicker clubs={clubs} clubId={clubId} setClubId={setClubId} directClubId={directClubId} />}
+      {!directClubId && <ClubPicker {...clubPickerProps} />}
       {adminResetMode
         ? <Field id="resetAdminEmail" label="Administrator email" type="email" icon={Mail} value={adminEmail} onChange={event => setAdminEmail(event.target.value)} required />
         : <><Field id="resetMemberNumber" label="Member number" value={memberNumber} onChange={event => setMemberNumber(event.target.value)} required /><Field id="resetLastName" label="Last name" value={lastName} onChange={event => setLastName(event.target.value)} required /></>}
@@ -280,7 +371,7 @@ export default function Login({
     {infoMessage && <div className="login-info"><ShieldCheck size={16} /><span>{infoMessage}</span></div>}
 
     {!isAdminMode && isRegistering ? <form className="login-form" onSubmit={handleRegisterSubmit}>
-      {!directClubId && <ClubPicker clubs={clubs} clubId={clubId} setClubId={setClubId} disabled directClubId={directClubId} />}
+      {!directClubId && <ClubPicker {...clubPickerProps} disabled />}
       <div className="verified-member-summary"><ShieldCheck size={18} /><span>Member #{registeredMember?.memberNumber} · {registeredMember?.lastName}</span></div>
       {firebaseEnabled && <>
         <Field id="registrationEmail" label="Email registered with your club" icon={Mail} type="email" placeholder="you@example.com" value={email} onChange={event => { setEmail(event.target.value); setCodeSent(false); }} disabled={codeSent} required />
@@ -294,14 +385,14 @@ export default function Login({
       </>}
       <button type="button" className="btn-text" onClick={resetMemberFlow}>Back to sign in</button>
     </form> : !isAdminMode ? <form className="login-form" onSubmit={handleMemberSubmit}>
-      {!directClubId && <ClubPicker clubs={clubs} clubId={clubId} setClubId={value => { setClubId(value); resetMemberFlow(); }} disabled={showPassword || Boolean(directClubId)} directClubId={directClubId} />}
+      {!directClubId && <ClubPicker {...clubPickerProps} disabled={showPassword} />}
       <Field id="memberNumber" label="Member number" icon={User} placeholder="e.g. 1001" value={memberNumber} onChange={event => { setMemberNumber(event.target.value); setShowPassword(false); }} disabled={showPassword} required />
       <Field id="lastName" label="Last name" icon={User} placeholder="e.g. Smith" value={lastName} onChange={event => { setLastName(event.target.value); setShowPassword(false); }} disabled={showPassword} required />
       {showPassword && <Field id="password" label="Password" icon={Lock} type="password" placeholder="Enter your password" value={password} onChange={event => setPassword(event.target.value)} autoFocus required />}
       <button className="btn-primary login-btn">{showPassword ? 'Sign in' : 'Continue'}</button>
       {showPassword && <><button type="button" className="btn-text" onClick={() => { setAdminResetMode(false); setResetMode(true); }}>Forgot password?</button><button type="button" className="btn-text" onClick={resetMemberFlow}>Use different details</button></>}
     </form> : <form className="login-form" onSubmit={handleAdminSubmit}>
-      {!directClubId && <ClubPicker clubs={clubs} clubId={clubId} setClubId={setClubId} directClubId={directClubId} />}
+      {!directClubId && <ClubPicker {...clubPickerProps} />}
       <Field id="adminEmail" label="Admin email" icon={User} type="email" placeholder="admin@yourclub.com" value={adminEmail} onChange={event => setAdminEmail(event.target.value)} required />
       <Field id="adminPassword" label="Password" icon={Lock} type="password" value={adminPassword} onChange={event => setAdminPassword(event.target.value)} required />
       <button className="btn-gold login-btn">Open admin portal</button>

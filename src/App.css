@@ -427,6 +427,18 @@
 .input-with-icon select.input-field:disabled,
 .input-with-icon input.input-field:disabled { color: var(--club-charcoal); background: var(--club-gray-light); opacity: .78; }
 
+.club-search-control { position: relative; }
+.club-search-results { position: absolute; top: calc(100% + 6px); right: 0; left: 0; z-index: 30; display: grid; max-height: 250px; overflow-y: auto; border: 1px solid var(--club-gray); border-radius: var(--radius-md); background: var(--club-white); box-shadow: var(--shadow-lg); }
+.club-search-results button { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 48px; padding: 8px 11px; border: 0; border-bottom: 1px solid var(--club-gray); color: var(--club-charcoal); background: transparent; font: inherit; font-weight: 650; text-align: left; cursor: pointer; }
+.club-search-results button:last-child { border-bottom: 0; }
+.club-search-results button:hover,
+.club-search-results button:focus-visible { outline: 0; color: var(--club-green-dark); background: var(--club-gray-light); }
+.club-search-results img,
+.club-search-logo { display: grid; place-items: center; width: 32px; height: 32px; flex: 0 0 32px; padding: 3px; border: 1px solid var(--club-gray); border-radius: 8px; object-fit: contain; background: var(--club-white); }
+.club-search-results mark { color: inherit; background: rgba(197, 160, 89, .28); }
+.club-search-status { display: block; margin-top: 6px; color: var(--club-gray-dark); font-size: 11px; line-height: 1.4; }
+.club-search-status.error { color: var(--club-error); }
+
 .verified-member-summary {
   display: flex;
   align-items: center;

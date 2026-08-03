@@ -59,7 +59,7 @@ const request = async (path, options = {}) => {
   const timeout = setTimeout(() => controller.abort(), options.timeout || REQUEST_TIMEOUT_MS);
   let response;
   try {
-    const publicRead = (options.method === 'GET' || options.method === 'HEAD') && (path === '/clubs' || path === '/health');
+    const publicRead = (options.method === 'GET' || options.method === 'HEAD') && (path.startsWith('/clubs/') || path === '/health');
     const authHeaders = csrfToken && !publicRead
       ? { 'X-CSRF-Token': csrfToken, 'Authorization': `Bearer ${csrfToken}` }
       : {};
@@ -95,7 +95,8 @@ const request = async (path, options = {}) => {
 };
 
 export const loadCloudData = () => request('/bootstrap');
-export const listCloudClubs = () => request('/clubs');
+export const searchCloudClubs = query => request(`/clubs/search?q=${encodeURIComponent(query)}`);
+export const resolveCloudClub = slug => request(`/clubs/resolve?slug=${encodeURIComponent(slug)}`);
 
 // Protected photo URLs cannot be used directly as <img src> values in every
 // native WebView because those requests may not include the session cookie.

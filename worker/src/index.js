@@ -10,6 +10,7 @@ const b64 = bytes => btoa(String.fromCharCode(...new Uint8Array(bytes))).replace
 const randomToken = (size = 32) => b64(crypto.getRandomValues(new Uint8Array(size)));
 const hash = async value => b64(await crypto.subtle.digest('SHA-256', encoder.encode(String(value))));
 const normalize = value => String(value || '').trim().toLowerCase();
+const normalizeClubSearch = value => normalize(value).normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
 const normalizeMemberNumber = value => String(value || '').trim().toUpperCase();
 const sameMemberNumber = (left, right) => normalizeMemberNumber(left) === normalizeMemberNumber(right);
 const validEmail = email => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalize(email));
@@ -585,9 +586,28 @@ export default {
       const url = new URL(request.url);
       const path = url.pathname.replace(/^\/api/, '').replace(/\/$/, '') || '/';
       if (path === '/health' && request.method === 'GET') return json({ ok: true }, 200, origin);
-      if (path === '/clubs' && request.method === 'GET') {
-        const clubs = await env.DB.prepare("SELECT * FROM clubs WHERE status = 'active' ORDER BY name").all();
-        return json({ clubs: clubs.results.map(publicClub) }, 200, origin);
+      if (path === '/clubs/search' && request.method === 'GET') {
+        if (!await withinRateLimit(request, env.SEARCH_RATE_LIMITER, 'club-search')) return rateLimited(origin);
+        const query = normalizeClubSearch(url.searchParams.get('q'));
+        if (query.length < 3) return json({ clubs: [] }, 200, origin);
+        const clubs = await env.DB.prepare("SELECT id, slug, name, short_name, logo_url FROM clubs WHERE status = 'active' ORDER BY name").all();
+        const matches = clubs.results
+          .map(club => ({ club, name: normalizeClubSearch(club.name), shortName: normalizeClubSearch(club.short_name) }))
+          .filter(item => item.name.includes(query) || item.shortName.includes(query))
+          .sort((left, right) => {
+            const leftStarts = left.name.startsWith(query) || left.shortName.startsWith(query);
+            const rightStarts = right.name.startsWith(query) || right.shortName.startsWith(query);
+            return Number(rightStarts) - Number(leftStarts) || left.club.name.localeCompare(right.club.name);
+          })
+          .slice(0, 5)
+          .map(item => publicClub(item.club));
+        return json({ clubs: matches }, 200, origin);
+      }
+      if (path === '/clubs/resolve' && request.method === 'GET') {
+        if (!await withinRateLimit(request, env.SEARCH_RATE_LIMITER, 'club-resolve')) return rateLimited(origin);
+        const slug = clubSlug(url.searchParams.get('slug'));
+        const club = slug ? await env.DB.prepare("SELECT id, slug, name, short_name, logo_url FROM clubs WHERE status = 'active' AND slug = ?").bind(slug).first() : null;
+        return json({ club: club ? publicClub(club) : null }, 200, origin);
       }
       if (path === '/onboarding/start' && request.method === 'POST') {
         if (!await withinRateLimit(request, env.RESET_RATE_LIMITER, 'club-onboarding-start')) return rateLimited(origin);

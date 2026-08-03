@@ -6,13 +6,13 @@ import './InfoPage.css';
 const adminGuide = [
   ['Create and brand your workspace', 'Verify the primary administrator email, then add your organization name, crest and gallery categories.'],
   ['Build the member directory', 'Add each member’s first name, last name, member number and club-registered email. The directory is the gate to account creation.'],
-  ['Invite members', 'Share your Club PhotoHub link. Members select the organization, match their roster details, verify the email on file and create their own password.'],
+  ['Invite members', 'Share your Club PhotoHub link. Members search for the organization, match their roster details, verify the email on file and create their own password.'],
   ['Moderate the gallery', 'Review activity, remove inappropriate photos, keep roster emails current and deactivate access when a membership ends.'],
   ['Protect your account', 'Use a unique administrator password, keep administrator access limited, and never share verification codes.']
 ];
 
 const memberGuide = [
-  ['Find your organization', 'Open the member hub and select the organization you belong to.'],
+  ['Find your organization', 'Open the member hub and search anywhere within your organization name. Your selection is remembered on that device.'],
   ['Verify your membership', 'Enter your last name and member number. First-time users also confirm the email already registered by the organization.'],
   ['Create your account', 'Enter the six-digit email code and choose a password of at least ten characters.'],
   ['Share a moment', 'Choose Upload Photo, select one or more images, add a category and caption, then publish.'],

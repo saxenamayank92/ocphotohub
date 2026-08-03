@@ -35,3 +35,11 @@ namespace_id = "1002"
   [ratelimits.simple]
   limit = 4
   period = 60
+
+[[ratelimits]]
+name = "SEARCH_RATE_LIMITER"
+namespace_id = "1003"
+
+  [ratelimits.simple]
+  limit = 30
+  period = 60

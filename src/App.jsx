@@ -15,7 +15,7 @@ import {
   deleteCloudMember, deleteCloudPhoto, updateCloudPhoto, loadCloudData, resetCloudData,
   saveCloudPassword, toggleCloudHeart, uploadCloudPhoto, cloudRegister,
   requestCloudPasswordReset, completeCloudPasswordReset, checkCloudMember,
-  listCloudClubs, requestRegistrationCode, updateCloudMember, startClubOnboarding,
+  searchCloudClubs, resolveCloudClub, requestRegistrationCode, updateCloudMember, startClubOnboarding,
   completeClubOnboarding, updateCurrentClub, requestAdminPasswordReset,
   completeAdminPasswordReset, deleteCloudAccount, deleteCloudOrganization, registerCloudPushToken, resolveApiUrl
 } from './api';
@@ -27,11 +27,6 @@ const PhotoUpload = lazy(() => import('./components/PhotoUpload'));
 const AdminPortal = lazy(() => import('./components/AdminPortal'));
 
 export default function App() {
-  const isNativeApp = Capacitor.isNativePlatform()
-    || window.location.protocol === 'capacitor:'
-    || window.location.protocol === 'ionic:'
-    || window.location.hostname === 'localhost'
-    || window.location.hostname === '127.0.0.1';
   // Only a top-level club slug should lock member access to one club. `/app`
   // is the shared entry point, not a club called "app".
   const pathSlugCandidate = window.location.pathname.match(/^\/([a-z0-9][a-z0-9-]{0,59})\/?$/i)?.[1]?.toLowerCase() || null;
@@ -52,7 +47,7 @@ export default function App() {
   const [photos, setPhotos] = useState(demoMode ? demoPhotos : []);
   const [toasts, setToasts] = useState([]);
   const [cloudActive, setCloudActive] = useState(false);
-  const [clubs, setClubs] = useState(isNativeApp ? [] : [clubBrand]);
+  const [clubs, setClubs] = useState(cloudApiEnabled ? [] : [clubBrand]);
   const [currentClub, setCurrentClub] = useState(demoMode ? demoClub : null);
   const [startupError, setStartupError] = useState('');
   const [cameraFiles, setCameraFiles] = useState(null);
@@ -126,13 +121,15 @@ export default function App() {
 
   const loadCloud = async () => {
       try {
-        const clubData = await listCloudClubs();
-        if (directClubId && !clubData.clubs?.some(club => club.id === directClubId || club.slug === directClubId)) {
+        const [directClubData, session] = await Promise.all([
+          directClubId ? resolveCloudClub(directClubId) : Promise.resolve({ club: null }),
+          cloudSession()
+        ]);
+        if (directClubId && !directClubData.club) {
           if (!cancelled) setStartupError('This club link is unavailable. Please check the address with your club.');
           return;
         }
-        if (!cancelled) setClubs(clubData.clubs || []);
-        const session = await cloudSession();
+        if (!cancelled) setClubs(directClubData.club ? [directClubData.club] : []);
         const sessionMatchesDirectClub = !directClubId
           || !session.authenticated
           || session.club?.id === directClubId
@@ -426,7 +423,7 @@ export default function App() {
 
   if (!currentUser) {
     if (showClubOnboarding) return <ClubOnboarding onStart={startClubOnboarding} onComplete={handleCompleteClubOnboarding} onCancel={() => { setShowClubOnboarding(false); window.history.replaceState({}, '', '/app'); }} />;
-    return <Login clubs={clubs} directClubId={directClubId} members={members} onLoginSuccess={handleLoginSuccess} onCloudLogin={handleCloudLogin} onCloudCheckMember={checkCloudMember} onCloudRequestRegistrationCode={requestRegistrationCode} onCloudRegister={handleCloudRegister} onRequestPasswordReset={requestCloudPasswordReset} onCompletePasswordReset={completeCloudPasswordReset} onRequestAdminPasswordReset={requestAdminPasswordReset} onCompleteAdminPasswordReset={completeAdminPasswordReset} onRegisterPassword={handleRegisterPassword} onCreateClub={() => { setShowClubOnboarding(true); window.history.replaceState({}, '', '/app?onboard=club'); }} firebaseEnabled={cloudApiEnabled || import.meta.env.DEV} />;
+    return <Login clubs={clubs} directClubId={directClubId} members={members} onSearchClubs={searchCloudClubs} onLoginSuccess={handleLoginSuccess} onCloudLogin={handleCloudLogin} onCloudCheckMember={checkCloudMember} onCloudRequestRegistrationCode={requestRegistrationCode} onCloudRegister={handleCloudRegister} onRequestPasswordReset={requestCloudPasswordReset} onCompletePasswordReset={completeCloudPasswordReset} onRequestAdminPasswordReset={requestAdminPasswordReset} onCompleteAdminPasswordReset={completeAdminPasswordReset} onRegisterPassword={handleRegisterPassword} onCreateClub={() => { setShowClubOnboarding(true); window.history.replaceState({}, '', '/app?onboard=club'); }} firebaseEnabled={cloudApiEnabled || import.meta.env.DEV} />;
   }
 
   return (
