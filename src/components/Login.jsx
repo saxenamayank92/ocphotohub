@@ -196,6 +196,10 @@ export default function Login({
           <img src={platformBrand.mark} alt="" className="mobile-app-logo" />
           <h1 className="mobile-app-title">{platformBrand.name}</h1>
           <p className="mobile-app-tagline">Private moments. Shared with members.</p>
+          <div className="mobile-club-context" aria-label={selectedClub?.name ? `Private gallery for ${selectedClub.name}` : 'Private club gallery'}>
+            <img src={selectedClub?.logoUrl || platformBrand.mark} alt="" />
+            <span>{selectedClub?.name || 'Your private club gallery'}</span>
+          </div>
         </div>
 
         {/* Integrated Mobile Single-Page Login Box */}

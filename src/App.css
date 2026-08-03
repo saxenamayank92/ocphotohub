@@ -3746,6 +3746,37 @@
     margin: 0;
   }
 
+  .mobile-native-login .mobile-club-context {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    max-width: 100%;
+    margin: 16px auto 0;
+    padding: 8px 12px 8px 8px;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 999px;
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.1);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+  }
+
+  .mobile-native-login .mobile-club-context img {
+    width: 28px;
+    height: 28px;
+    flex: 0 0 28px;
+    border-radius: 8px;
+    object-fit: contain;
+    background: #ffffff;
+  }
+
+  .mobile-native-login .mobile-club-context span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   .mobile-native-login .mobile-login-card-inner {
     background: #ffffff;
     border-radius: 20px;

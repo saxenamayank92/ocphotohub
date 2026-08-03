@@ -37,7 +37,7 @@ export default function MemberProfile({ user, club, photos = [], onLogout }) {
             <Building2 size={18} color="var(--club-navy)" />
             <div>
               <span style={{ fontSize: '11px', color: 'var(--club-gray-dark)', display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '700' }}>Your Club</span>
-              <strong style={{ fontSize: '14px', color: 'var(--club-navy)' }}>{club?.name || 'Oakville Club'}</strong>
+              <strong style={{ fontSize: '14px', color: 'var(--club-navy)' }}>{club?.name || platformBrand.name}</strong>
             </div>
           </div>
           <span style={{ fontSize: '11px', background: '#E2E8F0', color: '#475569', padding: '4px 8px', borderRadius: '12px', fontWeight: '700' }}>

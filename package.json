@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "worker:dev": "wrangler dev worker/src/index.js",
     "worker:deploy": "wrangler deploy --config worker/wrangler.toml",
-    "cap:sync": "npm run build && npx cap sync",
+    "cap:sync": "npm run build && npx cap sync && node scripts/ensure-ios-firebase.mjs",
     "cap:open:ios": "npx cap open ios",
     "cap:open:android": "npx cap open android"
   },
