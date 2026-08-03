@@ -10,7 +10,7 @@ const adminGuide = [
   ['Assign the right access level', 'Keep ordinary members as Club Members. Promote only trusted employees to Staff Admin, and reserve Club Owner access for the people responsible for the workspace and billing.'],
   ['Publish the first club photo', 'Choose Upload Photos, select one or more images, confirm the event category, add a clear caption and check the queue count before choosing Publish All.'],
   ['Invite members securely', 'Share the club’s direct PhotoHub link. Members may also use the shared sign-in page and search using any three or more characters found anywhere in the club name.'],
-  ['Moderate and monitor the hub', 'Use Moderate Photos to review or remove gallery content, Member & Staff Directory to correct or remove roster records, and Cloud Storage to monitor current usage.'],
+  ['Moderate and monitor the hub', 'Use Moderate Photos to review or remove gallery content, Member & Staff Directory to correct or remove roster records, and the storage summary to monitor current usage.'],
   ['Protect the owner account', 'Use a unique administrator password, keep owner access limited, never share verification codes and sign out when using a shared computer.']
 ];
 
@@ -71,13 +71,13 @@ const faqs = [
   },
   {
     category: 'privacy',
-    question: 'Where is our organization data and photo media stored?',
-    answer: 'Club PhotoHub runs on enterprise Cloudflare infrastructure (D1 database and R2 object storage). Photos are private to your club members and never indexed by search engines or sold to third parties.'
+    question: 'How are our club information and photos protected?',
+    answer: 'Your club information and photos are stored securely and are available only to approved club members. They do not appear in public searches, and we never sell them to third parties.'
   },
   {
     category: 'general',
     question: 'Will there be dedicated mobile apps for iOS and Android?',
-    answer: 'Yes. The web platform is mobile-first, and native iOS (App Store) and Android (Google Play) applications are actively built using Capacitor.'
+    answer: 'Yes. Club PhotoHub already works well on phones, tablets and computers. Dedicated iPhone and Android apps are also being developed.'
   },
   {
     category: 'pricing',
@@ -224,11 +224,11 @@ export function PrivacyPage() {
         <h2>1. Who controls your information</h2>
         <p>Club PhotoHub is operated by xTide Apps and provides a private photo-sharing service to organizations. The organization that operates your workspace controls its member directory and decides who may access its gallery. xTide Apps processes this information to deliver Club PhotoHub.</p>
         <h2>2. Information we collect</h2>
-        <p>We process organization details, administrator names and email addresses, member names, member numbers, roster email addresses, encrypted password credentials, uploaded photos, captions, categories, likes, security logs and basic technical information needed to operate and protect the service.</p>
+        <p>We process club details, administrator names and email addresses, member names, member numbers, roster email addresses, account sign-in information, uploaded photos, captions, categories, likes and basic information needed to operate and protect the service.</p>
         <h2>3. How we use information</h2>
         <p>We use information to verify membership, create and secure accounts, display organization galleries, deliver emails, provide support, prevent abuse, maintain the service and comply with legal obligations. We do not sell member personal information or use member photos for advertising.</p>
         <h2>4. Service providers and storage</h2>
-        <p>Club PhotoHub uses Cloudflare services for application hosting, database and object storage, and MailerSend for transactional emails. These providers process data on our instructions and under their own security and privacy commitments. Data may be processed outside your province or country.</p>
+        <p>Club PhotoHub works with trusted service providers to operate the service and send account emails. They handle information only as needed to provide those services and must follow their own security and privacy commitments. Information may be processed outside your province or country.</p>
         <h2>5. Retention and deletion</h2>
         <p>We retain information while an organization account is active and as reasonably needed for security, support and legal obligations. Members may initiate account deletion from account settings. Deletion includes personal account data and user-generated photos unless retention is legally required. Organization owners may request workspace export or deletion.</p>
         <h2>6. Security</h2>

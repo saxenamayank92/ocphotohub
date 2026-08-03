@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   Users, Image as ImageIcon, BarChart3, Heart,
-  Building2, Trash2, RefreshCw, Upload, FileSpreadsheet, Key, Database, X, FileText, UserPlus, Edit2, Search, HardDrive, Shield, CheckCircle2, ShieldAlert, Crown, Lock
+  Building2, Trash2, RefreshCw, Upload, FileSpreadsheet, Key, X, FileText, UserPlus, Edit2, Search, HardDrive, Shield, CheckCircle2, ShieldAlert, Crown, Lock
 } from 'lucide-react';
 import { resolveApiUrl } from '../api';
 
@@ -406,9 +406,9 @@ export default function AdminPortal({
   };
 
   const handleResetDatabaseClick = async () => {
-    if (window.confirm('Are you sure you want to reset the database? All custom photos and uploaded roster members will be cleared.')) {
+    if (window.confirm('Are you sure you want to reset the hub? All uploaded photos and roster members will be removed.')) {
       await onResetDatabase();
-      addToast('Hub database reset to seed data.', 'info');
+      addToast('Hub content has been reset.', 'info');
     }
   };
 
@@ -485,13 +485,13 @@ export default function AdminPortal({
             <ImageIcon size={16} /> Moderate Photos
           </button>
           <button className={`admin-menu-btn ${activeSubTab === 'cloud' ? 'active' : ''}`} onClick={() => setActiveSubTab('cloud')}>
-            <Database size={16} /> Cloud Storage
+            <HardDrive size={16} /> Storage Usage
           </button>
         </div>
 
         <div style={{ marginTop: 'auto', paddingTop: '20px' }}>
           <button className="btn-danger" style={{ width: '100%', justifyContent: 'center', backgroundColor: '#8B5CF6' }} onClick={handleResetDatabaseClick}>
-            <RefreshCw size={14} /> Reset Hub Data
+            <RefreshCw size={14} /> Reset Hub Content
           </button>
         </div>
       </div>

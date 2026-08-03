@@ -225,10 +225,10 @@ export default function LandingPage() {
             <h2>The organization decides who belongs.</h2>
             <p>Controlled membership replaces public discovery and follower-building.</p>
             <ul>
-              <li><ShieldCheck size={18} /> Isolated workspace for each organization</li>
-              <li><ShieldCheck size={18} /> Roster email verification before first account creation</li>
-              <li><ShieldCheck size={18} /> Private photo delivery and protected sessions</li>
-              <li><ShieldCheck size={18} /> Canadian data residence & zero public indexing</li>
+              <li><ShieldCheck size={18} /> A private photo hub for each club</li>
+              <li><ShieldCheck size={18} /> New members confirm the email held by their club</li>
+              <li><ShieldCheck size={18} /> Photos are shared only with approved members</li>
+              <li><ShieldCheck size={18} /> Club information stays in Canada and out of public searches</li>
             </ul>
           </div>
           <div className="marketing-phone-card">
@@ -236,7 +236,7 @@ export default function LandingPage() {
             <img className="marketing-real-phone-photo" src="./demo/lakeside-social.jpg" alt="Your Club members sharing a lakeside social" loading="lazy" decoding="async" />
             <div className="marketing-phone-caption">
               <strong>Every club moment, in your pocket</strong>
-              <span>Capacitor-ready architecture for future iOS and Android releases.</span>
+              <span>Dedicated iPhone and Android apps are also being developed.</span>
             </div>
           </div>
         </section>
