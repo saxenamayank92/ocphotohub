@@ -60,6 +60,10 @@
       "destination": "/index.html"
     },
     {
+      "source": "/pricing",
+      "destination": "/index.html"
+    },
+    {
       "source": "/:clubSlug([a-zA-Z0-9-]+)",
       "destination": "/index.html"
     }

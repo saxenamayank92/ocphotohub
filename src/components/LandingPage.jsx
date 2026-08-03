@@ -55,11 +55,18 @@ export default function LandingPage() {
           <div className="marketing-eyebrow"><ShieldCheck size={15} /> Private photo sharing for real communities</div>
           <h1>Your members. Your moments. Your PhotoHub.</h1>
           <p>Give every organization a private, beautifully branded place to collect and enjoy the photos that make its community special, without public social media or messy shared folders.</p>
-          <div className="marketing-hero-actions"><a className="marketing-primary-cta" href="/app?onboard=club">Create your organization workspace <ArrowRight size={18} /></a><a className="marketing-secondary-cta" href="/app?demo=1">Explore the live demo</a></div>
+          <div className="marketing-hero-actions"><a className="marketing-primary-cta" href="/app?onboard=club">Create workspace <ArrowRight size={18} /></a><a className="marketing-secondary-cta" href="/app?demo=1">Explore live demo</a></div>
           <div className="marketing-trust-row"><span><Check size={15} /> No credit card</span><span><Check size={15} /> 25 GB included</span><span><Check size={15} /> CAD pricing</span></div>
+          <div className="store-badges" aria-label="Mobile apps coming soon">
+            <span className="store-badges-label">Coming soon</span>
+            <div className="store-badges-row">
+              <span className="store-badge"><img src="./app-store-mark.svg" alt="" /><strong>App Store</strong></span>
+              <span className="store-badge"><img src="./google-play-mark.svg" alt="" /><strong>Google Play</strong></span>
+            </div>
+          </div>
         </div>
         <div className="hero-device-stack" aria-label="Club PhotoHub Your Club demo preview">
-          <div className="hero-desktop"><div className="marketing-window-bar"><span /><span /><span /><div>Your Club · Member Gallery</div></div><img className="hero-product-screenshot" src="./demo/product-feed.png" alt="Club PhotoHub Your Club member gallery demo screen" /></div>
+          <div className="hero-desktop"><div className="marketing-window-bar"><span /><span /><span /><div>Your Club · Member Gallery</div></div><div className="hero-desktop-label"><span>LIVE DEMO</span><strong>Private member gallery</strong></div><img className="hero-product-screenshot" src="./demo/product-feed.png" alt="Club PhotoHub Your Club member gallery demo screen" /></div>
           <div className="hero-phone" aria-label="Club PhotoHub mobile gallery mockup">
             <div className="hero-phone-status"><span>9:41</span><span>● ● ▮</span></div>
             <div className="hero-phone-header"><img src={platformBrand.mark} alt="" /><strong>Your Club</strong><Menu size={15} /></div>
@@ -107,7 +114,7 @@ export default function LandingPage() {
 
       <section className="pricing-section" id="pricing">
         <div className="pricing-copy"><span>Simple launch pricing</span><h2>One plan. Every core feature.</h2><p>Try the complete product for 30 days. No credit card and no cut-down trial.</p></div>
-        <div className="pricing-card"><div><span>Club PhotoHub</span><p><strong>$60</strong> CAD / month</p><small>or $600 CAD billed annually, save $120</small></div><ul><li><Check size={16} /> Unlimited members during launch</li><li><Check size={16} /> 25 GB fair-use photo storage</li><li><Check size={16} /> Branded organization workspace</li><li><Check size={16} /> Member verification and moderation</li><li><Check size={16} /> Admin and member help centre</li></ul><a href="/app?onboard=club">Start your 30-day trial <ArrowRight size={17} /></a><small>No credit card required</small></div>
+          <div className="pricing-card"><div><span>Club PhotoHub</span><p><strong>$60</strong> CAD / month</p><small>or $600 CAD billed annually, save $120</small></div><ul><li><Check size={16} /> Unlimited members during launch</li><li><Check size={16} /> 25 GB fair-use photo storage</li><li><Check size={16} /> Branded organization workspace</li><li><Check size={16} /> Member verification and moderation</li><li><Check size={16} /> Admin and member help centre</li></ul><a href="/pricing">See plans and storage options <ArrowRight size={17} /></a><small>30-day trial. No credit card required.</small></div>
       </section>
 
       <section className="marketing-final-cta"><div><span>Start your organization trial</span><h2>Give every moment a place to belong.</h2><p>Create your workspace in minutes, or explore Your Club before you decide.</p></div><div className="final-actions"><a href="/app?onboard=club">Create workspace <ArrowRight size={18} /></a><a href="/app?demo=1">View demo</a></div></section>

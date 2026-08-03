@@ -8,6 +8,10 @@
 .hero-device-stack { position: relative; min-width: 0; padding: 15px 0 40px 46px; }
 .hero-desktop { overflow: hidden; border: 1px solid rgba(23,34,56,.14); border-radius: 22px; background: white; box-shadow: 0 34px 80px rgba(20,35,53,.2); transform: rotate(1deg); }
 .hero-product-screenshot { display: block; width: 100%; height: auto; }
+.hero-desktop { position: relative; }
+.hero-desktop-label { position: absolute; top: 57px; left: 18px; z-index: 2; display: flex; align-items: center; gap: 8px; padding: 7px 10px; border: 1px solid rgba(255,255,255,.55); border-radius: 999px; color: #fff; background: rgba(23,34,56,.8); box-shadow: 0 8px 18px rgba(23,34,56,.18); backdrop-filter: blur(8px); }
+.hero-desktop-label span { color: #f6d88d; font-size: 8px; font-weight: 850; letter-spacing: .1em; }
+.hero-desktop-label strong { font-size: 10px; }
 .landing-demo-post { overflow: hidden; background: white; }
 .landing-demo-post header { display: flex; align-items: center; gap: 11px; padding: 15px 17px; }
 .landing-demo-post header > span { display: grid; width: 37px; height: 37px; place-items: center; border-radius: 50%; color: white; background: var(--club-green); font-size: 10px; font-weight: 800; }
@@ -202,7 +206,8 @@
 }
 
 .marketing-hero-actions {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1.18fr) minmax(0, .82fr);
   align-items: center;
   gap: 14px;
   margin-top: 34px;
@@ -220,6 +225,7 @@
   font-size: 14px;
   font-weight: 700;
   text-decoration: none;
+  white-space: nowrap;
 }
 
 .marketing-primary-cta {
@@ -248,6 +254,12 @@
 
 .marketing-trust-row span { display: inline-flex; align-items: center; gap: 5px; }
 .marketing-trust-row svg { color: var(--brand-teal); }
+.store-badges { display: grid; gap: 11px; margin-top: 24px; }
+.store-badges-label { color: var(--club-gold-dark); font-size: 11px; font-weight: 850; letter-spacing: .18em; text-transform: uppercase; }
+.store-badges-row { display: flex; flex-wrap: wrap; gap: 10px; }
+.store-badge { display: inline-flex; align-items: center; gap: 10px; min-width: 150px; padding: 7px 0; color: var(--club-green-dark); background: transparent; }
+.store-badge img { display: block; width: 34px; height: 34px; flex: 0 0 34px; object-fit: contain; }
+.store-badge strong { font-size: 14px; font-weight: 750; }
 
 .marketing-product-stage {
   overflow: hidden;
@@ -627,7 +639,7 @@
   .marketing-eyebrow { margin-bottom: 19px; font-size: 10px; }
   .marketing-hero h1 { font-size: clamp(45px, 14vw, 60px); }
   .marketing-hero-copy > p { margin-top: 22px; font-size: 15px; }
-  .marketing-hero-actions { align-items: stretch; flex-direction: column; }
+  .marketing-hero-actions { grid-template-columns: 1fr; align-items: stretch; }
   .marketing-primary-cta, .marketing-secondary-cta { width: 100%; }
   .marketing-trust-row { gap: 11px 15px; }
   .marketing-product-stage { border-radius: 14px; }
