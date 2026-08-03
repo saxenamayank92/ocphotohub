@@ -549,6 +549,7 @@ export default function PhotoUpload({ user, initialFiles, onInitialFilesConsumed
           type="file"
           className="file-input"
           accept="image/*,.heic,.heif"
+          onClick={(event) => event.stopPropagation()}
           onChange={handleFileChange}
           multiple
         />

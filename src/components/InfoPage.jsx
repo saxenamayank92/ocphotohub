@@ -4,19 +4,25 @@ import { platformBrand } from '../brand';
 import './InfoPage.css';
 
 const adminGuide = [
-  ['Create and brand your workspace', 'Verify the primary administrator email, then add your organization name, crest and gallery categories.'],
-  ['Build the member directory', 'Add each member’s first name, last name, member number and club-registered email. The directory is the gate to account creation.'],
-  ['Invite members', 'Share your Club PhotoHub link. Members search for the organization, match their roster details, verify the email on file and create their own password.'],
-  ['Moderate the gallery', 'Review activity, remove inappropriate photos, keep roster emails current and deactivate access when a membership ends.'],
-  ['Protect your account', 'Use a unique administrator password, keep administrator access limited, and never share verification codes.']
+  ['Create the private workspace', 'Choose Create workspace, enter the club details and primary administrator, then use the six-digit email code to begin the 30-day trial. No credit card is required.'],
+  ['Confirm the club branding', 'In Admin Portal, open Club Setup. Review the full club name and short name, upload a PNG, JPG or WebP crest under 256 KB, then choose Save Club Settings.'],
+  ['Build the member directory', 'Open Member & Staff Directory and choose Add Member / Staff. Enter the member number, roster email, last name and first name. For a larger roster, use the CSV or Excel import tools.'],
+  ['Assign the right access level', 'Keep ordinary members as Club Members. Promote only trusted employees to Staff Admin, and reserve Club Owner access for the people responsible for the workspace and billing.'],
+  ['Publish the first club photo', 'Choose Upload Photos, select one or more images, confirm the event category, add a clear caption and check the queue count before choosing Publish All.'],
+  ['Invite members securely', 'Share the club’s direct PhotoHub link. Members may also use the shared sign-in page and search using any three or more characters found anywhere in the club name.'],
+  ['Moderate and monitor the hub', 'Use Moderate Photos to review or remove gallery content, Member & Staff Directory to correct or remove roster records, and Cloud Storage to monitor current usage.'],
+  ['Protect the owner account', 'Use a unique administrator password, keep owner access limited, never share verification codes and sign out when using a shared computer.']
 ];
 
 const memberGuide = [
-  ['Find your organization', 'Open the member hub and search anywhere within your organization name. Your selection is remembered on that device.'],
-  ['Verify your membership', 'Enter your last name and member number. First-time users also confirm the email already registered by the organization.'],
-  ['Create your account', 'Enter the six-digit email code and choose a password of at least ten characters.'],
-  ['Share a moment', 'Choose Upload Photo, select one or more images, add a category and caption, then publish.'],
-  ['Browse and save', 'Scroll the feed, like photos, pinch or double-tap to zoom, and use the download icon to save an image.']
+  ['Find your private club', 'Open the direct link supplied by your club. From the shared sign-in page, type at least three characters found anywhere in the club name and select the matching result. No complete club list is displayed.'],
+  ['Match the roster record', 'Enter the member number and last name exactly as held by the club. These details must match the selected club’s private directory.'],
+  ['Verify the roster email', 'For first-time access, enter the email address already stored by the club and request the six-digit code. Codes expire after ten minutes.'],
+  ['Create the member account', 'Enter the code, choose a password of at least ten characters and confirm it. Your successful sign-in is remembered securely until you sign out.'],
+  ['Browse the gallery', 'Use search, categories, Grid, Feed or Story Mode to find a moment. Open a photo for its full view and caption.'],
+  ['Like and download photos', 'Choose Like photo to save your reaction. Use Download photo to save the protected image to your device.'],
+  ['Share a club moment', 'Choose Upload Photo, select one or more supported images, review the queue count, add a category and caption, then choose Publish All.'],
+  ['Keep access private', 'Do not forward verification codes or share your password. Sign out from Account settings when using a shared device, and ask the club administrator to correct any roster details.']
 ];
 
 const faqCategories = [
@@ -61,7 +67,7 @@ const faqs = [
   {
     category: 'admin',
     question: 'Can we customize the gallery with our club name and crest?',
-    answer: 'Yes. Organizations can customize their workspace name, upload their official logo or crest, and define custom gallery categories tailored to their events.'
+    answer: 'Yes. Organizations can customize their workspace name and upload their official logo or crest. Photos can be organized using the event categories available in the upload workflow.'
   },
   {
     category: 'privacy',
