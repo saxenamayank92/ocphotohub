@@ -108,7 +108,7 @@ export default function LandingPage() {
               <Sparkles size={14} className="badge-sparkle-icon" />
               <div>
                 <strong>14 New Photos Today</strong>
-                <span>Oakville Yacht & Country Club</span>
+                <span>Heritage Oaks Country Club</span>
               </div>
             </div>
 
@@ -119,7 +119,7 @@ export default function LandingPage() {
                 </div>
                 <div className="browser-address-bar">
                   <LockKeyhole size={11} className="lock-icon" />
-                  <span>clubphotohub.com/oakville-club/feed</span>
+                  <span>clubphotohub.com/heritage-oaks/feed</span>
                 </div>
                 <div className="hero-desktop-live-tag">
                   <span className="live-pulse" />

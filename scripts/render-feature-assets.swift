@@ -89,7 +89,7 @@ func productFeed() throws {
     // Brand & Club Info
     gold.setFill(); NSBezierPath(ovalIn: NSRect(x: 50, y: 1025, width: 40, height: 40)).fill()
     text("★", rect: NSRect(x: 50, y: 1032, width: 40, height: 30), size: 20, color: navy, weight: .bold, alignment: .center)
-    text("OAKVILLE COUNTRY CLUB", rect: NSRect(x: 102, y: 1045, width: 450, height: 28), size: 18, color: .white, weight: .bold)
+    text("HERITAGE OAKS COUNTRY CLUB", rect: NSRect(x: 102, y: 1045, width: 480, height: 28), size: 18, color: .white, weight: .bold)
     text("PRIVATE MEMBER GALLERY · 248 ACTIVE MEMBERS", rect: NSRect(x: 102, y: 1025, width: 450, height: 20), size: 10, color: gold, weight: .bold)
     
     // Navigation Tabs
@@ -148,7 +148,7 @@ func productFeed() throws {
     navy.setFill(); NSBezierPath(ovalIn: NSRect(x: 80, y: 805, width: 54, height: 54)).fill()
     text("AM", rect: NSRect(x: 80, y: 820, width: 54, height: 26), size: 15, color: .white, weight: .bold, alignment: .center)
     text("Alex Morgan", rect: NSRect(x: 150, y: 832, width: 350, height: 26), size: 18, color: navy, weight: .bold)
-    text("Oakville Country Club · 15 minutes ago", rect: NSRect(x: 150, y: 810, width: 350, height: 20), size: 12, color: NSColor(calibratedWhite: 0.45, alpha: 1))
+    text("Heritage Oaks Country Club · 15 minutes ago", rect: NSRect(x: 150, y: 810, width: 350, height: 20), size: 12, color: NSColor(calibratedWhite: 0.45, alpha: 1))
     
     // Category Tag Pill
     gold.setStroke()
