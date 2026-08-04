@@ -187,29 +187,33 @@ export default function LandingPage() {
 
         {/* LIVE DEMO SHOWCASE */}
         <section className="product-showcase">
-          <div className="product-showcase-copy">
-            <span>Meet Your Club</span>
-            <h2>A real demo, filled with moments, not placeholders.</h2>
-            <p>Explore the same private feed your members will use. Browse categories, open photos, pinch to zoom, like a moment and try the mobile layout.</p>
-            <a href="/app?demo=1">Open the interactive demo <ArrowRight size={17} /></a>
-          </div>
-          <div className="showcase-feed">
-            <DemoPost image="./demo/tennis-social.jpg" initials="TC" name="Taylor Chen" category="TENNIS" likes="34" caption="A close match and the best kind of Saturday afternoon." />
-            <DemoPost image="./demo/garden-dinner.jpg" initials="CT" name="Club Team" category="DINING" likes="46" caption="The annual garden dinner brought everyone together." />
+          <div className="product-showcase-container">
+            <div className="product-showcase-copy">
+              <span>Meet Your Club</span>
+              <h2>A real demo, filled with moments, not placeholders.</h2>
+              <p>Explore the same private feed your members will use. Browse categories, open photos, pinch to zoom, like a moment and try the mobile layout.</p>
+              <a href="/app?demo=1">Open the interactive demo <ArrowRight size={17} /></a>
+            </div>
+            <div className="showcase-feed">
+              <DemoPost image="./demo/tennis-social.jpg" initials="TC" name="Taylor Chen" category="TENNIS" likes="34" caption="A close match and the best kind of Saturday afternoon." />
+              <DemoPost image="./demo/garden-dinner.jpg" initials="CT" name="Club Team" category="DINING" likes="46" caption="The annual garden dinner brought everyone together." />
+            </div>
           </div>
         </section>
 
         {/* HOW IT WORKS */}
         <section className="marketing-how" id="how-it-works">
-          <div className="marketing-how-intro">
-            <span>From signup to active gallery</span>
-            <h2>Set up once. Members take it from there.</h2>
-            <p>A guided onboarding flow with an organization-owned membership gate.</p>
-          </div>
-          <div className="marketing-steps">
-            <article><strong>01</strong><h3>Create the workspace</h3><p>Choose your organization type, verify the primary administrator and start a separate 30-day trial.</p></article>
-            <article><strong>02</strong><h3>Add the directory</h3><p>Enter member names, numbers and registered emails so only recognized people can create accounts.</p></article>
-            <article><strong>03</strong><h3>Share the moments</h3><p>Members verify themselves, choose their password and begin uploading, browsing, liking and downloading.</p></article>
+          <div className="marketing-how-container">
+            <div className="marketing-how-intro">
+              <span>From signup to active gallery</span>
+              <h2>Set up once. Members take it from there.</h2>
+              <p>A guided onboarding flow with an organization-owned membership gate.</p>
+            </div>
+            <div className="marketing-steps">
+              <article><strong>01</strong><h3>Create the workspace</h3><p>Choose your organization type, verify the primary administrator and start a separate 30-day trial.</p></article>
+              <article><strong>02</strong><h3>Add the directory</h3><p>Enter member names, numbers and registered emails so only recognized people can create accounts.</p></article>
+              <article><strong>03</strong><h3>Share the moments</h3><p>Members verify themselves, choose their password and begin uploading, browsing, liking and downloading.</p></article>
+            </div>
           </div>
         </section>
 
@@ -270,26 +274,28 @@ export default function LandingPage() {
 
         {/* PRICING PREVIEW */}
         <section className="pricing-section" id="pricing">
-          <div className="pricing-copy">
-            <span>Simple launch pricing</span>
-            <h2>One plan. Every core feature.</h2>
-            <p>Try the complete product for 30 days. No credit card and no cut-down trial.</p>
-          </div>
-          <div className="pricing-card">
-            <div>
-              <span>Club PhotoHub</span>
-              <p><strong>$60</strong> / month</p>
-              <small>or $600 billed annually, save $120</small>
+          <div className="pricing-container">
+            <div className="pricing-copy">
+              <span>Simple launch pricing</span>
+              <h2>One plan. Every core feature.</h2>
+              <p>Try the complete product for 30 days. No credit card and no cut-down trial.</p>
             </div>
-            <ul>
-              <li><Check size={16} /> Unlimited members during launch</li>
-              <li><Check size={16} /> 25 GB fair-use photo storage (~12,500 photos)</li>
-              <li><Check size={16} /> Branded organization workspace</li>
-              <li><Check size={16} /> Member verification and moderation</li>
-              <li><Check size={16} /> Use promo code <code className="promo-code inline">FOUNDING20</code> for 20% off</li>
-            </ul>
-            <a href="/pricing">See plans and storage options <ArrowRight size={17} /></a>
-            <small>30-day trial. No credit card required.</small>
+            <div className="pricing-card">
+              <div>
+                <span>Club PhotoHub</span>
+                <p><strong>$60</strong> / month</p>
+                <small>or $600 billed annually, save $120</small>
+              </div>
+              <ul>
+                <li><Check size={16} /> Unlimited members during launch</li>
+                <li><Check size={16} /> 25 GB fair-use photo storage (~12,500 photos)</li>
+                <li><Check size={16} /> Branded organization workspace</li>
+                <li><Check size={16} /> Member verification and moderation</li>
+                <li><Check size={16} /> Use promo code <code className="promo-code inline">FOUNDING20</code> for 20% off</li>
+              </ul>
+              <a href="/pricing">See plans and storage options <ArrowRight size={17} /></a>
+              <small>30-day trial. No credit card required.</small>
+            </div>
           </div>
         </section>
 
@@ -308,20 +314,22 @@ export default function LandingPage() {
       </main>
 
       <footer className="marketing-footer">
-        <div className="marketing-brand">
-          <img src={platformBrand.mark} alt="" width="28" height="28" />
-          <span>{platformBrand.name}</span>
+        <div className="marketing-footer-container">
+          <div className="marketing-brand">
+            <img src={platformBrand.mark} alt="" width="28" height="28" />
+            <span>{platformBrand.name}</span>
+          </div>
+          <div className="footer-links">
+            <a href="/features">Features</a>
+            <a href="/pricing">Pricing</a>
+            <a href="/help/admin">Admin guide</a>
+            <a href="/help/members">Member guide</a>
+            <a href="/faq">FAQ</a>
+            <a href="/privacy">Privacy</a>
+            <a href="/terms">Terms</a>
+          </div>
+          <span>© {new Date().getFullYear()} xTide Apps</span>
         </div>
-        <div className="footer-links">
-          <a href="/features">Features</a>
-          <a href="/pricing">Pricing</a>
-          <a href="/help/admin">Admin guide</a>
-          <a href="/help/members">Member guide</a>
-          <a href="/faq">FAQ</a>
-          <a href="/privacy">Privacy</a>
-          <a href="/terms">Terms</a>
-        </div>
-        <span>© {new Date().getFullYear()} xTide Apps</span>
       </footer>
     </div>
   );
