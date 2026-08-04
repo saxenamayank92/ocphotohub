@@ -205,9 +205,11 @@ try {
   const { default: Root } = await vite.ssrLoadModule('/src/Root.jsx');
 
   const appShell = template
-    .replace(/<title>.*?<\/title>/s, '<title>Member Sign In | Club PhotoHub</title>')
+    .replace(/<title>.*?<\/title>/s, '<title>Lead Tracker | Club PhotoHub</title>')
     .replace('</head>', '    <meta name="robots" content="noindex, nofollow" />\n  </head>');
   await writeFile(path.join(outputRoot, 'app-shell.html'), appShell);
+  await mkdir(path.join(outputRoot, 'admin', 'leads'), { recursive: true });
+  await writeFile(path.join(outputRoot, 'admin', 'leads', 'index.html'), appShell);
 
   for (const route of routes) {
     const markup = renderToString(React.createElement(Root, { url: `${siteUrl}${route.path}` }));

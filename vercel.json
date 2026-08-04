@@ -58,8 +58,8 @@
       "destination": "/app-shell.html"
     },
     {
-      "source": "/admin/leads",
-      "destination": "/app-shell.html"
+      "source": "/admin/:path*",
+      "destination": "/admin/leads/index.html"
     },
     {
       "source": "/features",
