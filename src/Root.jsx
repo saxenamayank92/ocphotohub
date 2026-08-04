@@ -1,5 +1,6 @@
 import React, { lazy, Suspense } from 'react';
 import { Capacitor } from '@capacitor/core';
+import { Analytics } from '@vercel/analytics/react';
 import LandingPage from './components/LandingPage.jsx';
 import { AdminGuide, FAQPage, FeaturesPage, MemberGuide, PrivacyPage, TermsPage } from './components/InfoPage.jsx';
 import PricingPage from './components/PricingPage.jsx';
@@ -26,9 +27,12 @@ export default function Root({ url }) {
     || currentUrl.searchParams.get('demo') === '1';
 
   if (isMemberApp) return (
-    <Suspense fallback={<div className="member-route-loading">Opening your private gallery…</div>}>
-      <MemberApp />
-    </Suspense>
+    <>
+      <Suspense fallback={<div className="member-route-loading">Opening your private gallery…</div>}>
+        <MemberApp />
+      </Suspense>
+      <Analytics />
+    </>
   );
 
   const pages = {
@@ -41,5 +45,10 @@ export default function Root({ url }) {
     '/pricing': PricingPage
   };
   const Page = pages[currentUrl.pathname];
-  return Page ? <Page /> : <LandingPage />;
+  return (
+    <>
+      {Page ? <Page /> : <LandingPage />}
+      <Analytics />
+    </>
+  );
 }
