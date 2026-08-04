@@ -1,5 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot, hydrateRoot } from 'react-dom/client'
+import { inject } from '@vercel/analytics'
 import './index.css'
 import Root from './Root.jsx'
 
@@ -11,6 +12,8 @@ if (rootElement.hasChildNodes()) {
 } else {
   createRoot(rootElement).render(app)
 }
+
+inject()
 
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
   window.addEventListener('load', () => {
