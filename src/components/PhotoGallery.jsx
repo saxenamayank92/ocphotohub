@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { Capacitor } from '@capacitor/core';
 import { Directory, Filesystem } from '@capacitor/filesystem';
 import {
-  Heart, Trash2, X, Image as ImageIcon,
+  Heart, Trash2, X, ChevronLeft, Image as ImageIcon,
   Download, Search, LayoutGrid, ListFilter, Play
 } from 'lucide-react';
 import { photoDownloadName } from '../brand';
@@ -60,6 +60,56 @@ export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhot
   const [isPanning, setIsPanning] = useState(false);
 
   const panStartRef = useRef({ x: 0, y: 0 });
+  const touchStartDistRef = useRef(null);
+  const initialTouchScaleRef = useRef(1);
+
+  const getTouchDistance = (e) => {
+    if (e.touches.length < 2) return 0;
+    const dx = e.touches[0].clientX - e.touches[1].clientX;
+    const dy = e.touches[0].clientY - e.touches[1].clientY;
+    return Math.hypot(dx, dy);
+  };
+
+  const handleTouchStart = (e) => {
+    if (e.touches.length === 2) {
+      touchStartDistRef.current = getTouchDistance(e);
+      initialTouchScaleRef.current = zoomScale;
+    } else if (e.touches.length === 1 && zoomScale > 1) {
+      setIsPanning(true);
+      panStartRef.current = {
+        x: e.touches[0].clientX - panOffset.x,
+        y: e.touches[0].clientY - panOffset.y
+      };
+    }
+  };
+
+  const handleTouchMove = (e) => {
+    if (e.touches.length === 2 && touchStartDistRef.current) {
+      if (e.cancelable) e.preventDefault();
+      const currentDist = getTouchDistance(e);
+      if (currentDist > 0) {
+        const ratio = currentDist / touchStartDistRef.current;
+        const newScale = Math.min(Math.max(initialTouchScaleRef.current * ratio, 1), 3.5);
+        setZoomScale(newScale);
+        if (newScale === 1) setPanOffset({ x: 0, y: 0 });
+      }
+    } else if (e.touches.length === 1 && isPanning && zoomScale > 1) {
+      if (e.cancelable) e.preventDefault();
+      setPanOffset({
+        x: e.touches[0].clientX - panStartRef.current.x,
+        y: e.touches[0].clientY - panStartRef.current.y
+      });
+    }
+  };
+
+  const handleTouchEnd = (e) => {
+    if (e.touches.length < 2) {
+      touchStartDistRef.current = null;
+    }
+    if (e.touches.length === 0) {
+      setIsPanning(false);
+    }
+  };
 
   const categories = ['All', 'General', 'Tennis', 'Golf', 'Dining', 'Clubhouse', 'Events'];
 
@@ -428,6 +478,15 @@ export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhot
       {activeLightboxPhoto && createPortal(
         <div className="lightbox-backdrop" onClick={handleCloseLightbox}>
           <div className="instagram-lightbox" onClick={e => e.stopPropagation()}>
+            <div className="lightbox-mobile-topbar">
+              <button type="button" className="lightbox-back-btn" onClick={handleCloseLightbox}>
+                <ChevronLeft size={22} />
+                <span>Back to gallery</span>
+              </button>
+              <button type="button" className="lightbox-close-icon-btn" onClick={handleCloseLightbox} aria-label="Close modal">
+                <X size={22} />
+              </button>
+            </div>
             <button className="lightbox-close" onClick={handleCloseLightbox} title="Close photo view (Esc)"><X size={20} /></button>
             <div className="instagram-feed-scroll" ref={modalFeedRef}>
               {sortedPhotos.map((photo, index) => {
@@ -451,7 +510,10 @@ export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhot
                       onMouseDown={index === activeLightboxIndex ? handleMouseDown : undefined} 
                       onMouseMove={index === activeLightboxIndex ? handleMouseMove : undefined} 
                       onMouseUp={index === activeLightboxIndex ? handleMouseUp : undefined} 
-                      onMouseLeave={index === activeLightboxIndex ? handleMouseUp : undefined} 
+                      onMouseLeave={index === activeLightboxIndex ? handleMouseUp : undefined}
+                      onTouchStart={index === activeLightboxIndex ? handleTouchStart : undefined}
+                      onTouchMove={index === activeLightboxIndex ? handleTouchMove : undefined}
+                      onTouchEnd={index === activeLightboxIndex ? handleTouchEnd : undefined}
                       style={{ touchAction: index === activeLightboxIndex && zoomScale > 1 ? 'none' : 'pan-y' }}
                     >
                       <img 

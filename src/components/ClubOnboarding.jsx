@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { AlertCircle, ArrowLeft, Building2, Check, KeyRound, Mail, ShieldCheck, User } from 'lucide-react';
 import { platformBrand } from '../brand';
+import { getVisitorId } from '../analytics';
 
 const workspaceSlug = value => value.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60);
 
@@ -35,7 +36,7 @@ export default function ClubOnboarding({ onStart, onComplete, onCancel }) {
     if (!/^\S+@\S+\.\S+$/.test(email)) return setError('Enter a valid administrator email.');
     setWorking(true);
     try {
-      const result = await onStart({ clubName, workspaceSlug: workspaceUrl || workspaceSlug(clubName), shortName: shortName || clubName, organizationType, logoUrl, firstName, lastName, email });
+      const result = await onStart({ clubName, workspaceSlug: workspaceUrl || workspaceSlug(clubName), shortName: shortName || clubName, organizationType, logoUrl, firstName, lastName, email, visitorId: getVisitorId() });
       setSignupId(result.signupId); setMessage(result.message); setStep(2);
     } catch (requestError) { setError(requestError.message || 'We could not start club onboarding.'); }
     finally { setWorking(false); }

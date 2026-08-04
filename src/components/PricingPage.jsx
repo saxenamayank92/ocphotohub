@@ -1,15 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ArrowRight, Check, HardDrive, ShieldCheck, Sparkles, Tag } from 'lucide-react';
 import { platformBrand } from '../brand';
+import { createBillingCheckout, getBillingStatus } from '../api';
 import './PricingPage.css';
-
-const monthlyLink = import.meta.env.VITE_STRIPE_MONTHLY_LINK || '';
-const annualLink = import.meta.env.VITE_STRIPE_ANNUAL_LINK || '';
-const storageLinks = {
-  25: import.meta.env.VITE_STRIPE_STORAGE_25_MONTHLY_LINK || '',
-  50: import.meta.env.VITE_STRIPE_STORAGE_50_MONTHLY_LINK || '',
-  100: import.meta.env.VITE_STRIPE_STORAGE_100_MONTHLY_LINK || ''
-};
 
 const storageOptions = [
   { gb: 25, price: '$10', copy: '50 GB total storage (~25,000 photos)' },
@@ -17,17 +10,46 @@ const storageOptions = [
   { gb: 100, price: '$30', copy: '125 GB total storage (~62,500 photos)' }
 ];
 
-function CheckoutButton({ href, children, secondary = false }) {
+function CheckoutButton({ children, secondary = false, disabled = false, onClick }) {
   return (
-    <a className={`pricing-checkout-button ${secondary ? 'secondary' : ''}`} href={href || '#pricing-links'}>
+    <button type="button" className={`pricing-checkout-button ${secondary ? 'secondary' : ''}`} disabled={disabled} onClick={onClick}>
       {children} <ArrowRight size={16} />
-    </a>
+    </button>
   );
 }
 
+const formatDate = value => value ? new Intl.DateTimeFormat(undefined, { month: 'long', day: 'numeric', year: 'numeric' }).format(new Date(value)) : '';
+
 export default function PricingPage() {
   const [billingInterval, setBillingInterval] = useState('monthly');
+  const [billing, setBilling] = useState({ loading: true, authenticated: false, owner: false, planStatus: '' });
+  const [checkoutPending, setCheckoutPending] = useState('');
+  const [billingError, setBillingError] = useState('');
   const isAnnual = billingInterval === 'annual';
+  const activePlan = billing.planStatus === 'active';
+  const activeTrial = billing.planStatus === 'trialing' && Date.parse(billing.trialEndsAt) > Date.now();
+
+  useEffect(() => {
+    getBillingStatus()
+      .then(result => setBilling({ loading: false, ...result }))
+      .catch(() => setBilling({ loading: false, authenticated: false, owner: false, planStatus: '' }));
+  }, []);
+
+  const beginCheckout = async details => {
+    if (!billing.authenticated) {
+      window.location.assign('/app');
+      return;
+    }
+    setBillingError('');
+    setCheckoutPending(details.type === 'storage' ? `storage-${details.gb}` : 'plan');
+    try {
+      const result = await createBillingCheckout(details);
+      window.location.assign(result.url);
+    } catch (error) {
+      setBillingError(error.message);
+      setCheckoutPending('');
+    }
+  };
 
   return (
     <div className="pricing-page">
@@ -80,9 +102,15 @@ export default function PricingPage() {
                 '20% Founding Club discount with FOUNDING20'
               ].map(item => <li key={item}><Check size={16} /> {item}</li>)}
             </ul>
-            <a className="pricing-checkout-button" href="/app?onboard=club">Start 30-day free trial <ArrowRight size={16} /></a>
-            <small>No credit card required. Choose a paid plan when the trial ends.</small>
-            {(monthlyLink || annualLink) && <CheckoutButton href={isAnnual ? annualLink : monthlyLink} secondary>{isAnnual ? 'Activate annual plan' : 'Activate monthly plan'}</CheckoutButton>}
+            {!billing.authenticated && <a className="pricing-checkout-button" href="/app?onboard=club">Start 30-day free trial <ArrowRight size={16} /></a>}
+            {activeTrial && <div className="pricing-account-status"><strong>Your free trial is active.</strong><span>It ends automatically on {formatDate(billing.trialEndsAt)}.</span></div>}
+            {activePlan && <div className="pricing-account-status active"><strong>Your base plan is active.</strong><span>Storage add-ons can now be attached to this organization.</span></div>}
+            {!billing.authenticated && <small>No credit card required. Choose a paid plan when the trial ends.</small>}
+            <CheckoutButton secondary disabled={billing.loading || checkoutPending === 'plan' || activePlan || (billing.authenticated && !billing.owner)} onClick={() => beginCheckout({ type: 'plan', interval: billingInterval })}>
+              {activePlan ? 'Current plan active' : checkoutPending === 'plan' ? 'Opening secure checkout…' : `Start ${isAnnual ? 'annual' : 'monthly'} plan`}
+            </CheckoutButton>
+            {billing.authenticated && !billing.owner && <small>Only an organization owner can start or change a plan.</small>}
+            {billingError && <p className="pricing-billing-error" role="alert">{billingError}</p>}
           </article>
 
           <article className="pricing-plan-card pricing-storage-card">
@@ -94,11 +122,21 @@ export default function PricingPage() {
                 <div className="storage-option" key={option.gb}>
                   <div><strong>+{option.gb} GB</strong><span>{option.copy}</span></div>
                   <div className="storage-option-price"><strong>{option.price}</strong><span>/ month</span><small>monthly add-on</small></div>
-                  <CheckoutButton href={storageLinks[option.gb]} secondary>Add storage</CheckoutButton>
+                  <CheckoutButton
+                    secondary
+                    disabled={billing.loading || !billing.owner || !activePlan || Boolean(checkoutPending) || billing.hasStorageSubscription}
+                    onClick={() => beginCheckout({ type: 'storage', gb: option.gb })}
+                  >
+                    {billing.storageAddonGb === option.gb ? 'Current add-on' : checkoutPending === `storage-${option.gb}` ? 'Opening checkout…' : 'Add storage'}
+                  </CheckoutButton>
                 </div>
               ))}
             </div>
-            <small>Storage upgrades are organization-owner controls. Existing photos remain available if a trial ends.</small>
+            <small>{billing.hasStorageSubscription
+              ? `Your +${billing.storageAddonGb} GB add-on is active and linked to this organization. Contact support to change or cancel it.`
+              : activePlan
+                ? 'Storage checkout is linked to this signed-in organization.'
+                : 'Start a base plan before purchasing a storage add-on. Storage cannot be purchased by itself.'}</small>
           </article>
         </section>
 

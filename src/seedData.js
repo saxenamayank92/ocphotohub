@@ -9,8 +9,8 @@ export const seedMembers = [
 export const demoClub = {
   id: 'your-club-demo',
   slug: 'your-club-demo',
-  name: 'Your Club',
-  shortName: 'Your Club',
+  name: 'Demo Club',
+  shortName: 'Demo Club',
   logoUrl: '',
   organizationType: 'Private Club',
   planStatus: 'demo'

@@ -1,0 +1,11 @@
+.lead-owner-login form { text-align: left; margin-top: 22px; }
+.lead-owner-login label { display: block; margin: 14px 0 6px; color: #172238; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
+.lead-owner-login form > div { display: flex; align-items: center; gap: 9px; border: 1px solid #dce2e0; border-radius: 9px; padding: 0 13px; }
+.lead-owner-login form > div svg { flex: none; color: #697874; }
+.lead-owner-login input { width: 100%; border: 0; outline: 0; padding: 13px 0; background: transparent; font: inherit; }
+.lead-owner-login button { width: 100%; margin-top: 18px; border: 0; border-radius: 9px; padding: 13px; background: #172238; color: white; font-weight: 800; cursor: pointer; }
+.lead-owner-login button:disabled { opacity: .65; }
+.lead-owner-login .lead-home-link { margin-top: 18px; background: transparent; color: #397874; padding: 0; }
+.lead-login-error { margin: 12px 0; padding: 10px; border-radius: 8px; background: #fff1f1; color: #962828; font-size: 13px; }
+.lead-login-message { margin: 12px 0; padding: 10px; border-radius: 8px; background: #e7f2ed; color: #1e6b3f; font-size: 13px; }
+.lead-owner-login .lead-code-back { margin-top: 12px; background: transparent; color: #397874; padding: 4px; }

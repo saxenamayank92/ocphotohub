@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   ArrowRight, Check, CheckCircle2, Download, Heart, Images, LockKeyhole,
-  Menu, Palette, ShieldCheck, Smartphone, Tag, UploadCloud, UserRound, Users, X
+  Menu, Palette, ShieldCheck, Smartphone, Sparkles, Tag, UploadCloud, UserRound, Users, X
 } from 'lucide-react';
 import { platformBrand } from '../brand';
 import VerticalShowcase from './VerticalShowcase';
@@ -103,24 +103,51 @@ export default function LandingPage() {
           </div>
 
           <div className="hero-device-stack" aria-label="Club PhotoHub Your Club demo preview">
+            {/* Floating Glassmorphism Badges */}
+            <div className="hero-floating-badge top-left">
+              <Sparkles size={14} className="badge-sparkle-icon" />
+              <div>
+                <strong>14 New Photos Today</strong>
+                <span>Oakville Yacht & Country Club</span>
+              </div>
+            </div>
+
             <div className="hero-desktop">
               <div className="marketing-window-bar">
-                <span /><span /><span /><div>Your Club · Member Gallery</div>
+                <div className="window-dots">
+                  <span className="dot red" /><span className="dot yellow" /><span className="dot green" />
+                </div>
+                <div className="browser-address-bar">
+                  <LockKeyhole size={11} className="lock-icon" />
+                  <span>clubphotohub.com/oakville-club/feed</span>
+                </div>
+                <div className="hero-desktop-live-tag">
+                  <span className="live-pulse" />
+                  <strong>LIVE GALLERY</strong>
+                </div>
               </div>
-              <div className="hero-desktop-label"><span>LIVE DEMO</span><strong>Private member gallery</strong></div>
-              <img className="hero-product-screenshot" src="./demo/product-feed.png" alt="Club PhotoHub Your Club member gallery demo screen" fetchPriority="high" decoding="async" />
+              <img className="hero-product-screenshot" src="./demo/product-feed.png" alt="Club PhotoHub member gallery demo screen" fetchPriority="high" decoding="async" />
             </div>
+
             <div className="hero-phone" aria-label="Club PhotoHub mobile gallery mockup">
+              <div className="hero-phone-notch" />
               <div className="hero-phone-status"><span>9:41</span><span>● ● ▮</span></div>
               <div className="hero-phone-header"><img src={platformBrand.mark} alt="" width="20" height="20" /><strong>Your Club</strong><Menu size={15} /></div>
               <div className="hero-phone-tabs"><span className="active">Member Gallery</span><span>Upload</span></div>
               <div className="hero-phone-chips"><span className="active">All</span><span>Golf</span><span>Dining</span></div>
               <div className="hero-phone-post-header"><span><UserRound size={11} /></span><div><strong>Jordan Lee</strong><small>This week · GOLF</small></div></div>
               <img src="./demo/golf-morning.jpg" alt="Golf morning in the Your Club mobile gallery" loading="lazy" decoding="async" />
-              <div className="hero-phone-actions"><Heart size={15} /><strong>24</strong><Download size={15} /><span /></div>
+              <div className="hero-phone-actions"><Heart size={15} fill="var(--club-gold)" color="var(--club-gold)" /><strong>34</strong><Download size={15} /><span /></div>
               <p><strong>Jordan Lee</strong> Championship weekend begins.</p>
             </div>
-            <div className="marketing-private-badge"><LockKeyhole size={15} /> Verified members only</div>
+
+            <div className="hero-floating-badge bottom-right">
+              <ShieldCheck size={15} className="badge-shield-icon" />
+              <div>
+                <strong>Roster-Verified Access</strong>
+                <span>100% Private & Organization Owned</span>
+              </div>
+            </div>
           </div>
         </section>
 

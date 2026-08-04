@@ -1490,22 +1490,72 @@
   }
 }
 
+.lightbox-mobile-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  background: var(--club-green-dark, #0d1728);
+  padding: calc(max(12px, env(safe-area-inset-top))) 16px 12px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+@media (min-width: 769px) {
+  .lightbox-mobile-topbar {
+    display: none;
+  }
+}
+
+.lightbox-back-btn,
+.lightbox-close-icon-btn {
+  background: rgba(255, 255, 255, 0.12);
+  border: none;
+  color: #ffffff;
+  padding: 8px 14px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  min-height: 44px;
+}
+
+.lightbox-back-btn:active,
+.lightbox-close-icon-btn:active {
+  background: rgba(255, 255, 255, 0.25);
+}
+
 .lightbox-close {
   position: absolute;
-  top: 16px;
-  right: 16px;
-  width: 40px;
-  height: 40px;
+  top: calc(max(16px, env(safe-area-inset-top) + 8px));
+  right: calc(max(16px, env(safe-area-inset-right) + 8px));
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  min-height: 48px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.95);
   border: none;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--club-green-dark);
-  box-shadow: var(--shadow-sm);
-  z-index: 10;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  z-index: 10000;
+}
+
+@media (max-width: 768px) {
+  .lightbox-close {
+    display: none; /* Mobile uses sticky topbar with back button */
+  }
 }
 
 .lightbox-close:hover {
@@ -1522,7 +1572,7 @@
   max-height: 48vh;
   position: relative;
   flex: 1;
-  touch-action: none;
+  touch-action: pan-x pan-y pinch-zoom;
 }
 
 @media (min-width: 768px) {
@@ -3748,125 +3798,200 @@
 }
 
 /* --- MOBILE NATIVE SINGLE-PAGE LOGIN EXPERIENCE --- */
-@media (max-width: 768px) {
+.login-screen.mobile-native-login {
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  background: linear-gradient(180deg, #172238 0%, #0F172A 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding-top: max(44px, env(safe-area-inset-top));
+  padding-bottom: max(20px, env(safe-area-inset-bottom));
+  padding-left: 20px;
+  padding-right: 20px;
+  box-sizing: border-box !important;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+}
+
+.mobile-native-login .mobile-app-brand-hero {
+  text-align: center;
+  padding-top: 12px;
+}
+
+.mobile-native-login .mobile-app-logo {
+  width: 68px;
+  height: 68px;
+  border-radius: 18px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.4), 0 0 0 2px rgba(197, 160, 89, 0.5);
+  margin-bottom: 12px;
+}
+
+.mobile-native-login .mobile-app-title {
+  font-size: 24px;
+  font-weight: 800;
+  color: #ffffff !important;
+  margin: 0 0 4px;
+  letter-spacing: -0.5px;
+  font-family: var(--font-serif);
+}
+
+.mobile-native-login .mobile-app-tagline {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.75) !important;
+  margin: 0;
+}
+
+.mobile-native-login .mobile-club-context {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  max-width: 100%;
+  margin: 16px auto 0;
+  padding: 8px 12px 8px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.mobile-native-login .mobile-club-context img {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  border-radius: 8px;
+  object-fit: contain;
+  background: #ffffff;
+}
+
+.mobile-native-login .mobile-club-context span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mobile-native-login .mobile-login-card-inner {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 24px 20px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.mobile-native-login .input-field {
+  background: #F8FAFC !important;
+  border: 1.5px solid #CBD5E1 !important;
+  color: #0F172A !important;
+  font-size: 15px;
+  font-weight: 600;
+  height: 46px;
+  border-radius: 10px;
+}
+
+.mobile-native-login .input-field::placeholder {
+  color: #94A3B8 !important;
+}
+
+.mobile-native-login label {
+  color: #334155 !important;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.mobile-native-login .mobile-footer-note {
+  text-align: center;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6) !important;
+  padding-bottom: 4px;
+  font-weight: 500;
+}
+
+.mobile-native-login .native-demo-cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 46px;
+  margin-top: 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  color: #1f4f4a;
+  background: #f8fafc;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.mobile-native-login .native-demo-cta:active { transform: scale(.99); }
+
+/* Native iPads take the same reliable app entry path as iPhones, but need a
+   tablet composition rather than unstyled phone markup. */
+@media (min-width: 769px) {
   .login-screen.mobile-native-login {
-    height: 100vh;
-    height: 100dvh;
-    overflow: hidden;
-    background: linear-gradient(180deg, #172238 0%, #0F172A 100%);
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    padding-top: max(44px, env(safe-area-inset-top));
-    padding-bottom: max(20px, env(safe-area-inset-bottom));
-    padding-left: 20px;
-    padding-right: 20px;
-    box-sizing: border-box !important;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 9999;
+    padding: max(56px, env(safe-area-inset-top)) clamp(48px, 10vw, 120px) max(32px, env(safe-area-inset-bottom));
   }
 
   .mobile-native-login .mobile-app-brand-hero {
-    text-align: center;
-    padding-top: 12px;
+    max-width: 560px;
+    margin: 0 auto;
+    padding-top: 0;
   }
 
   .mobile-native-login .mobile-app-logo {
-    width: 68px;
-    height: 68px;
-    border-radius: 18px;
-    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.4), 0 0 0 2px rgba(197, 160, 89, 0.5);
-    margin-bottom: 12px;
+    width: 88px;
+    height: 88px;
+    border-radius: 24px;
+    margin-bottom: 16px;
   }
 
-  .mobile-native-login .mobile-app-title {
-    font-size: 24px;
-    font-weight: 800;
-    color: #ffffff !important;
-    margin: 0 0 4px;
-    letter-spacing: -0.5px;
-    font-family: var(--font-serif);
-  }
-
-  .mobile-native-login .mobile-app-tagline {
-    font-size: 13px;
-    color: rgba(255, 255, 255, 0.75) !important;
-    margin: 0;
-  }
-
-  .mobile-native-login .mobile-club-context {
-    display: inline-flex;
-    align-items: center;
-    gap: 9px;
-    max-width: 100%;
-    margin: 16px auto 0;
-    padding: 8px 12px 8px 8px;
-    border: 1px solid rgba(255, 255, 255, 0.22);
-    border-radius: 999px;
-    color: #ffffff;
-    background: rgba(255, 255, 255, 0.1);
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 0.01em;
-  }
-
-  .mobile-native-login .mobile-club-context img {
-    width: 28px;
-    height: 28px;
-    flex: 0 0 28px;
-    border-radius: 8px;
-    object-fit: contain;
-    background: #ffffff;
-  }
-
-  .mobile-native-login .mobile-club-context span {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
+  .mobile-native-login .mobile-app-title { font-size: 34px; }
+  .mobile-native-login .mobile-app-tagline { font-size: 16px; }
+  .mobile-native-login .mobile-club-context { margin-top: 20px; font-size: 14px; }
 
   .mobile-native-login .mobile-login-card-inner {
-    background: #ffffff;
-    border-radius: 20px;
-    padding: 24px 20px;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
-    width: 100%;
-    box-sizing: border-box;
+    width: min(520px, 100%);
+    margin: 28px auto;
+    padding: 30px 32px;
+    border-radius: 24px;
   }
 
-  .mobile-native-login .input-field {
-    background: #F8FAFC !important;
-    border: 1.5px solid #CBD5E1 !important;
-    color: #0F172A !important;
-    font-size: 15px;
-    font-weight: 600;
-    height: 46px;
-    border-radius: 10px;
+  .mobile-native-login .input-field { height: 52px; font-size: 16px; }
+  .mobile-native-login .native-demo-cta { min-height: 50px; font-size: 15px; }
+  .mobile-native-login .mobile-footer-note { font-size: 13px; }
+}
+
+@media (min-width: 900px) and (orientation: landscape) {
+  .login-screen.mobile-native-login {
+    display: grid;
+    grid-template-columns: minmax(280px, 1fr) minmax(400px, 500px);
+    grid-template-rows: 1fr auto;
+    column-gap: clamp(56px, 9vw, 150px);
+    align-items: center;
   }
 
-  .mobile-native-login .input-field::placeholder {
-    color: #94A3B8 !important;
+  .mobile-native-login .mobile-app-brand-hero {
+    grid-column: 1;
+    grid-row: 1;
+    margin: 0;
+    text-align: left;
   }
 
-  .mobile-native-login label {
-    color: #334155 !important;
-    font-size: 11px;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-
-  .mobile-native-login .mobile-footer-note {
-    text-align: center;
-    font-size: 12px;
-    color: rgba(255, 255, 255, 0.6) !important;
-    padding-bottom: 4px;
-    font-weight: 500;
-  }
+  .mobile-native-login .mobile-club-context { margin-left: 0; }
+  .mobile-native-login .mobile-login-card-inner { grid-column: 2; grid-row: 1; margin: 0; }
+  .mobile-native-login .mobile-footer-note { grid-column: 1 / -1; grid-row: 2; }
 }
 
 /* The native entry screen is intentionally a single, calm login surface.

@@ -37,6 +37,15 @@
           "value": "noindex, nofollow"
         }
       ]
+    },
+    {
+      "source": "/admin/:path*",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
     }
   ],
   "rewrites": [
@@ -46,6 +55,10 @@
     },
     {
       "source": "/app/:path*",
+      "destination": "/app-shell.html"
+    },
+    {
+      "source": "/admin/leads",
       "destination": "/app-shell.html"
     },
     {

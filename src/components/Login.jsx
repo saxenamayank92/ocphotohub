@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AlertCircle, Building2, KeyRound, Lock, Mail, Search, ShieldCheck, User } from 'lucide-react';
+import { AlertCircle, Building2, Images, KeyRound, Lock, Mail, Search, ShieldCheck, User } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import { platformBrand } from '../brand';
 
@@ -72,7 +72,7 @@ export default function Login({
   clubs = [], members, onLoginSuccess, onCloudLogin, onCloudCheckMember,
   onCloudRequestRegistrationCode, onCloudRegister, onRequestPasswordReset,
   onCompletePasswordReset, onRequestAdminPasswordReset, onCompleteAdminPasswordReset,
-  onRegisterPassword, onCreateClub, onSearchClubs, firebaseEnabled, directClubId = null
+  onRegisterPassword, onCreateClub, onOpenDemo, onSearchClubs, firebaseEnabled, directClubId = null
 }) {
   const loginScreenClass = Capacitor.isNativePlatform() ? 'login-screen native-login-screen' : 'login-screen';
   const [rememberedClub, setRememberedClub] = useState(() => {
@@ -84,7 +84,7 @@ export default function Login({
   const [clubSearchResults, setClubSearchResults] = useState([]);
   const [clubSearchLoading, setClubSearchLoading] = useState(false);
   const [clubSearchError, setClubSearchError] = useState('');
-  const [isAdminMode, setIsAdminMode] = useState(false);
+  const [isAdminMode, setIsAdminMode] = useState(() => new URLSearchParams(window.location.search).get('admin') === '1');
   const [lastName, setLastName] = useState('');
   const [memberNumber, setMemberNumber] = useState('');
   const [password, setPassword] = useState('');
@@ -116,7 +116,16 @@ export default function Login({
     }
   }, [directClubId, clubs, clubId]);
 
-  const availableClubs = [...clubs, ...clubSearchResults, ...(rememberedClub ? [rememberedClub] : [])]
+  const demoSampleClub = {
+    id: 'your-club-demo',
+    slug: 'your-club-demo',
+    name: 'Demo Club',
+    shortName: 'Demo Club',
+    organizationType: 'Private Club',
+    planStatus: 'demo'
+  };
+
+  const availableClubs = [...clubs, demoSampleClub, ...clubSearchResults, ...(rememberedClub ? [rememberedClub] : [])]
     .filter((club, index, all) => all.findIndex(candidate => candidate.id === club.id) === index);
   const selectedClub = (directClubId ? findClubByRoute(availableClubs, directClubId) : null)
     || availableClubs.find(club => club.id === clubId)
@@ -160,6 +169,10 @@ export default function Login({
   };
 
   const handleClubSelect = id => {
+    if (id === 'your-club-demo' && onOpenDemo) {
+      onOpenDemo();
+      return;
+    }
     const club = availableClubs.find(item => item.id === id);
     if (!club) return;
     const savedClub = { id: club.id, slug: club.slug, name: club.name, shortName: club.shortName };
@@ -192,7 +205,11 @@ export default function Login({
 
   const handleMemberSubmit = async event => {
     event.preventDefault(); clearMessages();
-    const effectiveClubId = clubId || (clubs.length === 1 ? clubs[0]?.id : directClubId);
+    const effectiveClubId = clubId || (clubs.length === 1 ? clubs[0]?.id : directClubId) || 'your-club-demo';
+    if (effectiveClubId === 'your-club-demo' && onOpenDemo) {
+      onOpenDemo();
+      return;
+    }
     if (!effectiveClubId || !lastName || !memberNumber) return setError('Search for and select your club, then enter your last name and member number.');
     if (firebaseEnabled) {
       if (!showPassword) {
@@ -333,11 +350,12 @@ export default function Login({
               <button type="button" className="btn-text" onClick={resetMemberFlow}>Back to sign in</button>
             </form>
           )}
+          {!isRegistering && !directClubId && onOpenDemo && <button type="button" className="native-demo-cta" onClick={onOpenDemo}><Images size={17} /> Explore a sample club</button>}
         </div>
 
         {/* Non-scrollable Single Page Footer */}
         <div className="mobile-footer-note">
-          Workspace setup & admin portal available from desktop.
+          Member sign in · Explore the sample club to see the full app.
         </div>
       </div>
     );

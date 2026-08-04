@@ -14,13 +14,14 @@ const isNativeApp = Capacitor.isNativePlatform()
   || (typeof window !== 'undefined' && ['capacitor:', 'ionic:'].includes(window.location.protocol));
 const apiBase = configuredBase || (isNativeApp || isLocalhost ? nativeApiBase : '/api');
 
-let csrfToken = (typeof localStorage !== 'undefined' && localStorage.getItem('oakville_csrf_token')) || '';
+const browserStorage = typeof localStorage !== 'undefined' && typeof localStorage.getItem === 'function' ? localStorage : null;
+let csrfToken = browserStorage?.getItem('oakville_csrf_token') || '';
 
 const setCsrfToken = (token) => {
   csrfToken = token || '';
-  if (typeof localStorage !== 'undefined') {
-    if (token) localStorage.setItem('oakville_csrf_token', token);
-    else localStorage.removeItem('oakville_csrf_token');
+  if (browserStorage) {
+    if (token) browserStorage.setItem('oakville_csrf_token', token);
+    else browserStorage.removeItem('oakville_csrf_token');
   }
 };
 
@@ -45,7 +46,7 @@ export const resolveApiUrl = value => {
     else resolved = `${baseUrl}/${value.replace(/^\//, '')}`;
   }
 
-  const token = csrfToken || (typeof localStorage !== 'undefined' && localStorage.getItem('oakville_csrf_token'));
+  const token = csrfToken || browserStorage?.getItem('oakville_csrf_token');
   if (token && resolved.includes('/photos/') && !resolved.includes('token=')) {
     const separator = resolved.includes('?') ? '&' : '?';
     resolved = `${resolved}${separator}token=${encodeURIComponent(token)}`;
@@ -125,6 +126,14 @@ export const cloudLogin = async credentials => {
   return result;
 };
 
+export const requestPlatformLogin = credentials => request('/auth/platform-login/start', { method: 'POST', body: JSON.stringify(credentials) });
+export const completePlatformLogin = async credentials => {
+  const result = await request('/auth/platform-login/complete', { method: 'POST', body: JSON.stringify(credentials) });
+  setCsrfToken(result.csrfToken);
+  return result;
+};
+export const getPlatformSession = () => request('/auth/platform-me');
+
 export const checkCloudMember = details => request('/auth/member-check', { method: 'POST', body: JSON.stringify(details) });
 export const requestRegistrationCode = details => request('/auth/registration-code', { method: 'POST', body: JSON.stringify(details) });
 export const startClubOnboarding = details => request('/onboarding/start', { method: 'POST', body: JSON.stringify(details) });
@@ -151,6 +160,20 @@ export const cloudSession = async () => {
   setCsrfToken(result.csrfToken);
   return result;
 };
+
+export const getBillingStatus = () => request('/billing/status');
+export const recordLeadEvent = details => request('/analytics/track', { method: 'POST', body: JSON.stringify(details) });
+export const getLeadDashboard = () => request('/platform/leads');
+export const createOutreachLead = details => request('/platform/leads', { method: 'POST', body: JSON.stringify(details) });
+export const deleteOutreachLead = id => request(`/platform/leads/${encodeURIComponent(id)}`, { method: 'DELETE' });
+export const updateOutreachLead = (id, updates) => request(`/platform/leads/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(updates) });
+export const sendOutreachEmail = details => request('/platform/leads/send-outreach', { method: 'POST', body: JSON.stringify(details) });
+
+export const createBillingCheckout = details => request('/billing/checkout', {
+  method: 'POST',
+  headers: { 'X-CSRF-Token': csrfToken },
+  body: JSON.stringify(details)
+});
 
 export const cloudLogout = () => request('/auth/logout', { method: 'POST', headers: { 'X-CSRF-Token': csrfToken } }).finally(() => { setCsrfToken(''); });
 

@@ -10,6 +10,9 @@ CREATE TABLE IF NOT EXISTS clubs (
   trial_started_at TEXT NOT NULL DEFAULT '',
   trial_ends_at TEXT NOT NULL DEFAULT '',
   storage_limit_bytes INTEGER NOT NULL DEFAULT 26843545600,
+  stripe_plan_subscription_id TEXT NOT NULL DEFAULT '',
+  stripe_storage_subscription_id TEXT NOT NULL DEFAULT '',
+  storage_addon_gb INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL
 );
 
@@ -115,7 +118,52 @@ CREATE TABLE IF NOT EXISTS club_signup_challenges (
   code_hash TEXT NOT NULL,
   expires_at INTEGER NOT NULL,
   attempts INTEGER NOT NULL DEFAULT 0,
-  created_at INTEGER NOT NULL
+  created_at INTEGER NOT NULL,
+  visitor_id TEXT NOT NULL DEFAULT ''
+);
+
+CREATE TABLE IF NOT EXISTS lead_events (
+  id TEXT PRIMARY KEY,
+  visitor_id TEXT NOT NULL,
+  event_type TEXT NOT NULL,
+  path TEXT NOT NULL DEFAULT '',
+  referrer TEXT NOT NULL DEFAULT '',
+  club_id TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS sales_leads (
+  id TEXT PRIMARY KEY,
+  visitor_id TEXT NOT NULL DEFAULT '',
+  lead_code TEXT NOT NULL DEFAULT '',
+  club_name TEXT NOT NULL,
+  organization_type TEXT NOT NULL,
+  contact_first_name TEXT NOT NULL,
+  contact_last_name TEXT NOT NULL,
+  contact_email TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'outreach_sent',
+  workspace_club_id TEXT NOT NULL DEFAULT '',
+  clicks_count INTEGER NOT NULL DEFAULT 0,
+  last_clicked_at TEXT NOT NULL DEFAULT '',
+  notes TEXT NOT NULL DEFAULT '',
+  first_seen_at TEXT NOT NULL,
+  last_seen_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS platform_login_codes (
+  email TEXT PRIMARY KEY,
+  code_hash TEXT NOT NULL,
+  expires_at INTEGER NOT NULL,
+  attempts INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS platform_sessions (
+  token_hash TEXT PRIMARY KEY,
+  email TEXT NOT NULL,
+  csrf_hash TEXT NOT NULL,
+  expires_at INTEGER NOT NULL,
+  created_at TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS admin_password_resets (
@@ -147,6 +195,12 @@ CREATE TABLE IF NOT EXISTS trial_reminders_sent (
   FOREIGN KEY (club_id) REFERENCES clubs(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS stripe_events (
+  id TEXT PRIMARY KEY,
+  event_type TEXT NOT NULL,
+  processed_at TEXT NOT NULL
+);
+
 CREATE INDEX IF NOT EXISTS members_club_email_idx ON members (club_id, email);
 CREATE INDEX IF NOT EXISTS photos_club_created_idx ON photos (club_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS sessions_expires_at_idx ON sessions (expires_at);
@@ -156,3 +210,8 @@ CREATE INDEX IF NOT EXISTS club_signup_expires_idx ON club_signup_challenges (ex
 CREATE INDEX IF NOT EXISTS admin_password_resets_admin_idx ON admin_password_resets (club_id, admin_id);
 CREATE INDEX IF NOT EXISTS device_push_tokens_member_idx ON device_push_tokens (club_id, member_number);
 CREATE INDEX IF NOT EXISTS trial_reminders_sent_club_idx ON trial_reminders_sent (club_id, sent_at);
+CREATE INDEX IF NOT EXISTS lead_events_type_created_idx ON lead_events (event_type, created_at DESC);
+CREATE INDEX IF NOT EXISTS lead_events_visitor_idx ON lead_events (visitor_id, created_at DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS sales_leads_email_club_idx ON sales_leads (contact_email, club_name);
+CREATE INDEX IF NOT EXISTS sales_leads_last_seen_idx ON sales_leads (last_seen_at DESC);
+CREATE INDEX IF NOT EXISTS platform_sessions_expires_idx ON platform_sessions (expires_at);

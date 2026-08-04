@@ -33,11 +33,10 @@ export default function App() {
   const directPathSlug = pathSlugCandidate === 'app' ? null : pathSlugCandidate;
   const directClubId = directPathSlug;
   const queryParams = new URLSearchParams(window.location.search);
-  // Local browser previews should support the public demo too. Capacitor
-  // shells are still excluded by their native protocol/platform check.
-  const demoMode = !Capacitor.isNativePlatform()
-    && !['capacitor:', 'ionic:'].includes(window.location.protocol)
-    && queryParams.get('demo') === '1';
+  // The bundled sample club is also available in the native shell. This gives
+  // prospective clubs and App Review a complete, credential-free walkthrough
+  // without changing real club sign-in or data access.
+  const demoMode = queryParams.get('demo') === '1';
   const initialDemoAdmin = demoMode && queryParams.get('demoView') === 'admin';
   const [demoAdminView, setDemoAdminView] = useState(initialDemoAdmin);
   const [currentUser, setCurrentUser] = useState(initialDemoAdmin ? demoAdminUser : (demoMode ? demoUser : null));
@@ -203,6 +202,11 @@ export default function App() {
     setActiveTab(isMobileViewport ? 'gallery' : (isUserAdmin ? 'admin' : 'gallery'));
     sessionStorage.setItem('oakville_user', JSON.stringify(user));
     sessionStorage.setItem('oakville_is_admin', String(isUserAdmin));
+    const returnTo = new URLSearchParams(window.location.search).get('returnTo');
+    if (isUserAdmin && returnTo === '/admin/leads') {
+      window.location.assign(returnTo);
+      return;
+    }
     addToast(`Signed in as ${user?.role === 'owner' ? 'Club Owner' : isUserAdmin ? 'Staff Admin' : `${user.firstName} ${user.lastName}`}`, 'success');
   };
 
@@ -423,7 +427,7 @@ export default function App() {
 
   if (!currentUser) {
     if (showClubOnboarding) return <ClubOnboarding onStart={startClubOnboarding} onComplete={handleCompleteClubOnboarding} onCancel={() => { setShowClubOnboarding(false); window.history.replaceState({}, '', '/app'); }} />;
-    return <Login clubs={clubs} directClubId={directClubId} members={members} onSearchClubs={searchCloudClubs} onLoginSuccess={handleLoginSuccess} onCloudLogin={handleCloudLogin} onCloudCheckMember={checkCloudMember} onCloudRequestRegistrationCode={requestRegistrationCode} onCloudRegister={handleCloudRegister} onRequestPasswordReset={requestCloudPasswordReset} onCompletePasswordReset={completeCloudPasswordReset} onRequestAdminPasswordReset={requestAdminPasswordReset} onCompleteAdminPasswordReset={completeAdminPasswordReset} onRegisterPassword={handleRegisterPassword} onCreateClub={() => { setShowClubOnboarding(true); window.history.replaceState({}, '', '/app?onboard=club'); }} firebaseEnabled={cloudApiEnabled || import.meta.env.DEV} />;
+    return <Login clubs={clubs} directClubId={directClubId} members={members} onSearchClubs={searchCloudClubs} onLoginSuccess={handleLoginSuccess} onCloudLogin={handleCloudLogin} onCloudCheckMember={checkCloudMember} onCloudRequestRegistrationCode={requestRegistrationCode} onCloudRegister={handleCloudRegister} onRequestPasswordReset={requestCloudPasswordReset} onCompletePasswordReset={completeCloudPasswordReset} onRequestAdminPasswordReset={requestAdminPasswordReset} onCompleteAdminPasswordReset={completeAdminPasswordReset} onRegisterPassword={handleRegisterPassword} onCreateClub={() => { setShowClubOnboarding(true); window.history.replaceState({}, '', '/app?onboard=club'); }} onOpenDemo={() => { const demoUrl = new URL(window.location.href); demoUrl.searchParams.set('demo', '1'); demoUrl.searchParams.delete('demoView'); if (typeof window !== 'undefined' && window.history?.pushState) { window.history.pushState({}, '', `${demoUrl.pathname}${demoUrl.search}`); } setCurrentUser(demoUser); setCurrentClub(demoClub); setIsAdmin(false); setActiveTab('gallery'); setMembers(demoMembers); setPhotos(demoPhotos); }} firebaseEnabled={cloudApiEnabled || import.meta.env.DEV} />;
   }
 
   return (
@@ -431,7 +435,7 @@ export default function App() {
       <Header user={currentUser} club={currentClub || clubBrand} isAdmin={isAdmin} activeTab={activeTab} setActiveTab={setActiveTab} onLogout={handleLogout} />
       {demoMode && <div className="demo-mode-banner">
         <div className="demo-banner-copy">
-          <span><ShieldCheck size={15} /> Exploring the read-only Your Club demo</span>
+          <span><ShieldCheck size={15} /> Exploring the read-only Demo Club</span>
           <a href="/app?onboard=club">Create your workspace</a>
         </div>
         <div className="demo-view-switcher" role="tablist" aria-label="Demo view">

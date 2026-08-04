@@ -1,10 +1,33 @@
-import React, { lazy, Suspense } from 'react';
+import React, { lazy, Suspense, useEffect } from 'react';
 import { Capacitor } from '@capacitor/core';
 import LandingPage from './components/LandingPage.jsx';
 import { AdminGuide, FAQPage, FeaturesPage, MemberGuide, PrivacyPage, TermsPage } from './components/InfoPage.jsx';
 import PricingPage from './components/PricingPage.jsx';
+import { track, trackPageOnce } from './analytics';
 
 const MemberApp = lazy(() => import('./App.jsx'));
+const LeadDashboard = lazy(() => import('./components/LeadDashboard.jsx'));
+
+function LeadTracker({ path, search }) {
+  useEffect(() => {
+    if (path === '/admin/leads') return undefined;
+    if (search.includes('lead=') || search.includes('ref=')) {
+      trackPageOnce('email_link_clicked');
+    }
+    if (search.includes('demo=1')) trackPageOnce('demo_opened');
+    else trackPageOnce(path === '/pricing' ? 'pricing_view' : 'site_view');
+    const onClick = event => {
+      const link = event.target.closest?.('a[href]');
+      if (!link) return;
+      const href = link.getAttribute('href') || '';
+      if (href.includes('demo=1')) track('demo_opened');
+      if (href.includes('onboard=club')) track('create_workspace_click');
+    };
+    document.addEventListener('click', onClick);
+    return () => document.removeEventListener('click', onClick);
+  }, [path, search]);
+  return null;
+}
 
 export default function Root({ url }) {
   const currentUrl = new URL(url || window.location.href, 'https://clubphotohub.com');
@@ -25,11 +48,17 @@ export default function Root({ url }) {
     || currentUrl.searchParams.has('reset')
     || currentUrl.searchParams.get('demo') === '1';
 
-  if (isMemberApp) return (
+  if (currentUrl.pathname === '/admin/leads') return <>
+    <LeadTracker path={currentUrl.pathname} search={currentUrl.search} />
+    <Suspense fallback={<div className="member-route-loading">Opening lead dashboard…</div>}><LeadDashboard /></Suspense>
+  </>;
+
+  if (isMemberApp) return (<>
+    {(currentUrl.searchParams.has('demo') || currentUrl.searchParams.has('onboard')) && <LeadTracker path={currentUrl.pathname} search={currentUrl.search} />}
     <Suspense fallback={<div className="member-route-loading">Opening your private gallery…</div>}>
       <MemberApp />
     </Suspense>
-  );
+  </>);
 
   const pages = {
     '/features': FeaturesPage,
@@ -41,5 +70,5 @@ export default function Root({ url }) {
     '/pricing': PricingPage
   };
   const Page = pages[currentUrl.pathname];
-  return Page ? <Page /> : <LandingPage />;
+  return <><LeadTracker path={currentUrl.pathname} search={currentUrl.search} />{Page ? <Page /> : <LandingPage />}</>;
 }

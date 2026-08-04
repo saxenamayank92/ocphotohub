@@ -5,6 +5,8 @@ const ALLOWED_PHOTO_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const MAX_LOGO_DATA_URL_BYTES = 256 * 1024;
 const PHOTO_CATEGORIES = new Set(['General', 'Tennis', 'Golf', 'Dining', 'Clubhouse', 'Events']);
 const encoder = new TextEncoder();
+const BASE_STORAGE_BYTES = 25 * 1024 * 1024 * 1024;
+const LEAD_EVENT_TYPES = new Set(['site_view', 'pricing_view', 'demo_opened', 'create_workspace_click', 'onboarding_started', 'workspace_created', 'email_link_clicked']);
 
 const b64 = bytes => btoa(String.fromCharCode(...new Uint8Array(bytes))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 const randomToken = (size = 32) => b64(crypto.getRandomValues(new Uint8Array(size)));
@@ -15,6 +17,14 @@ const normalizeMemberNumber = value => String(value || '').trim().toUpperCase();
 const sameMemberNumber = (left, right) => normalizeMemberNumber(left) === normalizeMemberNumber(right);
 const validEmail = email => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalize(email));
 const safeEqual = async (left, right) => hash(left).then(a => hash(right).then(b => a === b));
+const safeTextEqual = (left, right) => {
+  const a = encoder.encode(String(left || ''));
+  const b = encoder.encode(String(right || ''));
+  if (a.length !== b.length) return false;
+  let difference = 0;
+  for (let index = 0; index < a.length; index += 1) difference |= a[index] ^ b[index];
+  return difference === 0;
+};
 const publicClub = club => ({ id: club.id, slug: club.slug, name: club.name, shortName: club.short_name, logoUrl: club.logo_url });
 const accountClub = club => ({
   id: club.id,
@@ -173,6 +183,68 @@ async function withinRateLimit(request, limiter, action) {
 const cookies = request => Object.fromEntries((request.headers.get('Cookie') || '').split(';').map(part => part.trim().split('=').map(decodeURIComponent)).filter(pair => pair.length === 2));
 const cookie = (name, value, maxAge, httpOnly) => `${name}=${encodeURIComponent(value)}; Path=/; Max-Age=${maxAge}; Secure; SameSite=None${httpOnly ? '; HttpOnly' : ''}`;
 
+const stripeSignature = async (secret, payload) => {
+  const key = await crypto.subtle.importKey('raw', encoder.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const signature = new Uint8Array(await crypto.subtle.sign('HMAC', key, encoder.encode(payload)));
+  return Array.from(signature, byte => byte.toString(16).padStart(2, '0')).join('');
+};
+
+async function verifiedStripeEvent(request, env) {
+  if (!env.STRIPE_WEBHOOK_SECRET) return null;
+  const rawBody = await request.text();
+  const parts = Object.fromEntries((request.headers.get('Stripe-Signature') || '').split(',').map(part => part.split('=', 2)));
+  const timestamp = Number(parts.t || 0);
+  if (!timestamp || Math.abs(Date.now() / 1000 - timestamp) > 300 || !parts.v1) return null;
+  const expected = await stripeSignature(env.STRIPE_WEBHOOK_SECRET, `${timestamp}.${rawBody}`);
+  if (!safeTextEqual(expected, parts.v1)) return null;
+  return JSON.parse(rawBody);
+}
+
+const checkoutUrl = (base, clubId, email) => {
+  const url = new URL(base);
+  url.searchParams.set('client_reference_id', clubId);
+  if (email) url.searchParams.set('prefilled_email', email);
+  return url.toString();
+};
+
+const billingOwner = session => session?.role === 'admin' && (session.adminRole === 'owner' || session.memberRole === 'owner');
+
+async function handleStripeWebhook(request, env, origin) {
+  const event = await verifiedStripeEvent(request, env);
+  if (!event?.id || !event.type) return json({ error: 'Invalid Stripe signature.' }, 400, origin);
+  if (await env.DB.prepare('SELECT 1 FROM stripe_events WHERE id = ?').bind(event.id).first()) return json({ received: true }, 200, origin);
+
+  const object = event.data?.object || {};
+  if (event.type === 'checkout.session.completed') {
+    const clubId = cleanText(object.client_reference_id, 80);
+    const club = clubId ? await getClub(env, clubId) : null;
+    if (!club) return json({ error: 'Checkout is missing a valid organization reference.' }, 400, origin);
+    const paymentLink = String(object.payment_link || '');
+    const subscriptionId = cleanText(object.subscription, 120);
+    if ([env.STRIPE_MONTHLY_LINK_ID, env.STRIPE_ANNUAL_LINK_ID].includes(paymentLink)) {
+      await env.DB.prepare("UPDATE clubs SET plan_status = 'active', stripe_plan_subscription_id = ? WHERE id = ?").bind(subscriptionId, clubId).run();
+    } else {
+      const addOnGb = paymentLink === env.STRIPE_STORAGE_25_LINK_ID ? 25 : paymentLink === env.STRIPE_STORAGE_50_LINK_ID ? 50 : paymentLink === env.STRIPE_STORAGE_100_LINK_ID ? 100 : 0;
+      if (!addOnGb) return json({ error: 'Unknown Stripe payment link.' }, 400, origin);
+      const latest = await env.DB.prepare('SELECT plan_status FROM clubs WHERE id = ?').bind(clubId).first();
+      if (latest?.plan_status !== 'active') return json({ error: 'Storage requires an active base plan.' }, 409, origin);
+      await env.DB.prepare('UPDATE clubs SET storage_addon_gb = ?, storage_limit_bytes = ?, stripe_storage_subscription_id = ? WHERE id = ?')
+        .bind(addOnGb, BASE_STORAGE_BYTES + (addOnGb * 1024 * 1024 * 1024), subscriptionId, clubId).run();
+    }
+  }
+
+  if (event.type === 'customer.subscription.deleted') {
+    const subscriptionId = cleanText(object.id, 120);
+    await env.DB.batch([
+      env.DB.prepare("UPDATE clubs SET plan_status = 'expired', stripe_plan_subscription_id = '' WHERE stripe_plan_subscription_id = ?").bind(subscriptionId),
+      env.DB.prepare("UPDATE clubs SET storage_addon_gb = 0, storage_limit_bytes = ?, stripe_storage_subscription_id = '' WHERE stripe_storage_subscription_id = ?").bind(BASE_STORAGE_BYTES, subscriptionId)
+    ]);
+  }
+
+  await env.DB.prepare('INSERT INTO stripe_events (id, event_type, processed_at) VALUES (?, ?, ?)').bind(event.id, event.type, new Date().toISOString()).run();
+  return json({ received: true }, 200, origin);
+}
+
 async function getClub(env, clubId) {
   return env.DB.prepare('SELECT * FROM clubs WHERE id = ? AND status = \'active\'').bind(String(clubId || '').trim()).first();
 }
@@ -247,26 +319,176 @@ const trustedExternalPhoto = (value, env) => {
   }
 };
 
-async function sendMail(env, { to, subject, text, html }) {
+async function sendMail(env, { to, subject, text, html, fromName = 'Club PhotoHub', replyTo }) {
   if (!env.MAILERSEND_API_TOKEN || !env.MAIL_FROM) throw new Error('Email delivery is not configured.');
   const response = await fetch('https://api.mailersend.com/v1/email', {
     method: 'POST',
     headers: { Authorization: `Bearer ${env.MAILERSEND_API_TOKEN}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ from: { email: env.MAIL_FROM, name: 'Club PhotoHub' }, to: [{ email: to }], subject, text, html })
+    body: JSON.stringify({
+      from: { email: env.MAIL_FROM, name: fromName },
+      to: [{ email: to }],
+      ...(replyTo ? { reply_to: { email: replyTo, name: env.FOUNDER_NAME || 'Mayank Saxena' } } : {}),
+      subject, text, html
+    })
   });
   if (!response.ok) throw new Error(`MailerSend rejected the message (${response.status}).`);
 }
 
 const emailEscape = value => escapeHtml(String(value ?? ''));
-const clubPhotoHubEmail = ({ eyebrow = 'Secure member access', title, intro, code, details, actionLabel, actionUrl }) => {
+const clubPhotoHubEmail = ({ eyebrow = 'Secure member access', title, intro, code, details, actionLabel, actionUrl, secondaryActionLabel, secondaryActionUrl, signature, securityNote = true }) => {
   const codeMarkup = code
     ? `<div style="margin:28px 0 24px;padding:18px 22px;background:#f7f3eb;border:1px solid #d8c39a;border-radius:14px;color:#17133f;font-family:Arial,sans-serif;font-size:34px;font-weight:700;letter-spacing:9px;text-align:center">${emailEscape(code)}</div>`
     : '';
   const actionMarkup = actionUrl
     ? `<div style="margin:28px 0"><a href="${emailEscape(actionUrl)}" style="display:inline-block;background:#29216b;color:#ffffff;text-decoration:none;padding:14px 24px;border-radius:9px;font-family:Arial,sans-serif;font-size:16px;font-weight:700">${emailEscape(actionLabel || 'Continue')}</a></div>`
     : '';
-  return `<!doctype html><html><body style="margin:0;background:#f5f2ed;color:#24213f;font-family:Arial,Helvetica,sans-serif"><div style="padding:32px 16px"><div style="max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #e0e4df;border-top:8px solid #c8a354;border-radius:22px;overflow:hidden;box-shadow:0 10px 28px rgba(23,19,63,.08)"><div style="padding:28px 32px 24px;background:#29216b;color:#ffffff"><div style="display:inline-block;width:44px;height:44px;line-height:44px;border-radius:50%;background:#c8a354;color:#29216b;font-family:Georgia,serif;font-size:18px;font-weight:700;text-align:center">CP</div><div style="margin-top:18px;color:#e9d9b3;font-family:Arial,sans-serif;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase">Club PhotoHub</div><div style="margin-top:8px;font-family:Georgia,'Times New Roman',serif;font-size:28px;line-height:1.2">${emailEscape(title)}</div></div><div style="padding:32px"><div style="color:#a27a2b;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase">${emailEscape(eyebrow)}</div><p style="margin:16px 0 0;font-size:17px;line-height:1.6">${emailEscape(intro)}</p>${codeMarkup}${details ? `<p style="margin:0;color:#6f7e76;font-size:14px;line-height:1.6">${emailEscape(details)}</p>` : ''}${actionMarkup}<p style="margin:28px 0 0;color:#6f7e76;font-size:13px;line-height:1.6">If you did not request this email, you can safely ignore it. For help, contact <a href="mailto:support@xtide.io" style="color:#29216b">support@xtide.io</a>.</p></div><div style="padding:18px 32px;background:#faf9f6;border-top:1px solid #e6e8e4;color:#7c8b83;font-size:12px;line-height:1.5">Private photo sharing for clubs and member organizations.<br><span style="color:#a27a2b">xTide Apps</span></div></div></div></body></html>`;
+  const secondaryActionMarkup = secondaryActionUrl
+    ? `<p style="margin:0 0 24px"><a href="${emailEscape(secondaryActionUrl)}" style="color:#285c59;font-family:Arial,sans-serif;font-size:15px;font-weight:700;text-decoration:underline">${emailEscape(secondaryActionLabel || 'Read the guide')}</a></p>`
+    : '';
+  const signatureMarkup = signature ? `<p style="margin:28px 0 0;color:#172238;font-size:15px;line-height:1.6">${emailEscape(signature).replace(/\n/g, '<br>')}</p>` : '';
+  const noteMarkup = securityNote ? '<p style="margin:28px 0 0;color:#697874;font-size:13px;line-height:1.6">If you did not request this email, you can safely ignore it. For help, contact <a href="mailto:support@xtide.io" style="color:#285c59">support@xtide.io</a>.</p>' : '';
+  return `<!doctype html><html><body style="margin:0;background:#f7f5f0;color:#1c2531;font-family:Arial,Helvetica,sans-serif"><div style="padding:32px 16px"><div style="max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #dce2e0;border-top:7px solid #c8a76b;border-radius:20px;overflow:hidden;box-shadow:0 10px 28px rgba(13,23,40,.09)"><div style="padding:26px 32px 24px;background:#172238;color:#ffffff"><img src="https://clubphotohub.com/club-photo-hub-icon-192.png" width="48" height="48" alt="Club PhotoHub" style="display:block;width:48px;height:48px;border:0;border-radius:12px"><div style="margin-top:16px;color:#e2c892;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase">Club PhotoHub</div><div style="margin-top:8px;font-family:Georgia,'Times New Roman',serif;font-size:30px;line-height:1.2">${emailEscape(title)}</div></div><div style="padding:32px"><div style="color:#a78345;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase">${emailEscape(eyebrow)}</div><p style="margin:16px 0 0;font-size:17px;line-height:1.65">${emailEscape(intro)}</p>${codeMarkup}${details ? `<p style="margin:18px 0 0;color:#697874;font-size:14px;line-height:1.65">${emailEscape(details)}</p>` : ''}${actionMarkup}${secondaryActionMarkup}${signatureMarkup}${noteMarkup}</div><div style="padding:18px 32px;background:#faf9f6;border-top:1px solid #e6e8e4;color:#697874;font-size:12px;line-height:1.5">A private place for the moments that bring your club together.<br><span style="color:#a78345">Club PhotoHub by xTide Apps</span></div></div></div></body></html>`;
 };
+
+const outreachEmailTemplate = ({ clubName, firstName = '', organizationType = 'Private Club', leadCode, demoUrl }) => {
+  const recipientName = firstName ? emailEscape(firstName) : 'General Manager';
+  const escapedClub = emailEscape(clubName);
+
+  let activities = 'golf, tennis, swimming, fitness and social groups';
+  const orgLower = (organizationType || '').toLowerCase();
+  if (orgLower.includes('yacht')) {
+    activities = 'sailing, boating, waterfront dining and member social events';
+  } else if (orgLower.includes('curling')) {
+    activities = 'leagues, bonspiels, club dining and member events';
+  } else if (orgLower.includes('tennis') || orgLower.includes('racquet')) {
+    activities = 'tennis, racquets, fitness, dining and club events';
+  } else if (orgLower.includes('golf')) {
+    activities = 'golf tournaments, clubhouse dining and member social calendar';
+  }
+
+  const trackUrl = demoUrl || `https://clubphotohub.com/?demo=1&lead=${encodeURIComponent(leadCode || clubName.toLowerCase().replace(/[^a-z0-9]/g, '-'))}`;
+
+  return `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>A private photo hub for ${escapedClub} members</title>
+</head>
+<body style="margin:0;padding:0;background:#f7f5f0;color:#1c2531;font-family:Arial,Helvetica,sans-serif;-webkit-font-smoothing:antialiased;">
+  <div style="padding:32px 16px;background:#f7f5f0;">
+    <div style="max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #dce2e0;border-top:7px solid #c8a76b;border-radius:20px;overflow:hidden;box-shadow:0 10px 28px rgba(13,23,40,0.09);">
+      
+      <!-- Dark Navy Header -->
+      <div style="padding:28px 32px 24px;background:#172238;color:#ffffff;">
+        <img src="https://clubphotohub.com/club-photo-hub-icon-192.png" width="44" height="44" alt="Club PhotoHub Logo" style="display:block;width:44px;height:44px;border:0;border-radius:10px;margin-bottom:14px;">
+        <div style="color:#e2c892;font-size:11px;font-weight:800;letter-spacing:2px;text-transform:uppercase;">CLUB PHOTOHUB</div>
+        <div style="margin-top:8px;font-family:Georgia,'Times New Roman',serif;font-size:26px;line-height:1.25;color:#ffffff;font-weight:normal;">A private photo hub for ${escapedClub} members</div>
+      </div>
+
+      <!-- Main Email Body -->
+      <div style="padding:32px;line-height:1.65;font-size:15px;color:#2c3e50;">
+        <p style="margin:0 0 18px;font-size:16px;">Hi ${recipientName},</p>
+
+        <p style="margin:0 0 18px;">${escapedClub}' mix of ${activities} creates a wide range of member moments that would be valuable to preserve and share privately.</p>
+
+        <p style="margin:0 0 18px;">After working in private clubs, I saw how important these photos are to members and how difficult it is to give them one simple, private place to enjoy them. That is why I started Club PhotoHub.</p>
+
+        <p style="margin:0 0 14px;font-weight:700;color:#172238;">Club PhotoHub gives ${escapedClub} its own branded, roster-verified photo gallery:</p>
+
+        <ul style="margin:0 0 24px;padding-left:20px;line-height:1.7;">
+          <li style="margin-bottom:8px;"><strong>Private member access:</strong> Members confirm their identity using the email and member number held by their club.</li>
+          <li style="margin-bottom:8px;"><strong>Club branded:</strong> The gallery uses the club's logo, colours, and event categories.</li>
+          <li style="margin-bottom:8px;"><strong>Easy on any device:</strong> Members can browse, upload, caption, like, and download photos from a phone, tablet, or computer.</li>
+          <li style="margin-bottom:8px;"><strong>Simple for staff:</strong> We help set up the workspace and member roster, while club administrators control access and moderation.</li>
+        </ul>
+
+        <p style="margin:0 0 22px;">The launch plan is <strong>$60 per month</strong> or <strong>$600 annually</strong> and includes 25 GB of photo storage. Every club can try the complete platform free for 30 days without a credit card.</p>
+
+        <!-- Founding Partner Offer Callout Box -->
+        <div style="margin:0 0 26px;padding:18px 22px;background:#fdf8ee;border:1px solid #f3e3c3;border-radius:12px;">
+          <div style="font-weight:800;color:#8a6828;font-size:13px;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Founding partner offer</div>
+          <div style="color:#4a3b18;font-size:14px;line-height:1.5;">20% off the base plan for the first 12 months, whether subscribed monthly or annually, using code <strong>FOUNDING20</strong></div>
+        </div>
+
+        <!-- CTA Button -->
+        <div style="margin:28px 0 30px;">
+          <a href="${emailEscape(trackUrl)}" target="_blank" style="display:inline-block;background:#172238;color:#ffffff;text-decoration:none;padding:14px 28px;border-radius:9px;font-family:Arial,sans-serif;font-size:15px;font-weight:700;letter-spacing:0.3px;">Explore Club PhotoHub</a>
+        </div>
+
+        <p style="margin:0 0 20px;">Would you be open to a brief 10-minute preview?</p>
+
+        <p style="margin:0 0 4px;">Best regards,</p>
+
+        <div style="margin-top:16px;padding-top:14px;border-top:1px solid #eef1ef;">
+          <strong style="display:block;font-size:16px;color:#172238;">Mayank Saxena</strong>
+          <span style="display:block;color:#64748b;font-size:14px;">Founder, Club PhotoHub</span>
+          <a href="mailto:mayank.saxena@xtide.io" style="color:#397874;font-size:14px;text-decoration:none;">mayank.saxena@xtide.io</a><br>
+          <a href="https://clubphotohub.com" style="color:#397874;font-size:14px;text-decoration:none;">clubphotohub.com</a>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div style="padding:18px 32px;background:#faf9f6;border-top:1px solid #e6e8e4;color:#697874;font-size:12px;line-height:1.5;">
+        A private place for the moments that bring your club together.<br>
+        <span style="color:#a78345;">Club PhotoHub by xTide Apps</span>
+      </div>
+
+    </div>
+  </div>
+</body>
+</html>`;
+};
+
+async function sendOutreachLeadEmail(request, env, origin) {
+  const session = await platformAuth(request, env);
+  if (!session) return json({ error: 'Sign in to send outreach emails.' }, 401, origin);
+  const body = await request.json();
+  const { leadId, clubName, firstName, email, organizationType, leadCode } = body;
+
+  if (!email || !validEmail(email)) {
+    return json({ error: 'Please enter a valid recipient email address.' }, 400, origin);
+  }
+  if (!clubName) {
+    return json({ error: 'Club name is required.' }, 400, origin);
+  }
+
+  const code = leadCode || clubName.toLowerCase().replace(/[^a-z0-9]/g, '-').slice(0, 30);
+  const demoUrl = `https://clubphotohub.com/?demo=1&lead=${encodeURIComponent(code)}`;
+  const subject = `A private photo hub for ${clubName} members`;
+  const html = outreachEmailTemplate({ clubName, firstName, organizationType, leadCode: code, demoUrl });
+  const text = `Hi ${firstName || 'General Manager'},\n\n${clubName}'s mix of member events creates moments valuable to preserve privately.\n\nClub PhotoHub gives ${clubName} its own branded, roster-verified photo gallery.\n\nExplore Club PhotoHub: ${demoUrl}\n\nBest regards,\nMayank Saxena\nFounder, Club PhotoHub\nmayank.saxena@xtide.io`;
+
+  const founderName = env.FOUNDER_NAME || 'Mayank Saxena';
+  const founderEmail = env.FOUNDER_EMAIL || 'mayank.saxena@xtide.io';
+
+  try {
+    await sendMail(env, {
+      to: email,
+      fromName: `${founderName}, Club PhotoHub`,
+      replyTo: founderEmail,
+      subject,
+      text,
+      html
+    });
+
+    const now = new Date().toISOString();
+    if (leadId) {
+      await env.DB.prepare("UPDATE sales_leads SET status = 'outreach_sent', last_seen_at = ? WHERE id = ?").bind(now, leadId).run();
+    } else {
+      const id = `lead_${randomToken(12)}`;
+      await env.DB.prepare(`INSERT INTO sales_leads (id, visitor_id, lead_code, club_name, organization_type, contact_first_name, contact_last_name, contact_email, status, clicks_count, last_clicked_at, notes, first_seen_at, last_seen_at)
+        VALUES (?, '', ?, ?, ?, ?, '', ?, 'outreach_sent', 0, '', 'Emailed via AI Outreach Agent', ?, ?)
+        ON CONFLICT(contact_email, club_name) DO UPDATE SET status = 'outreach_sent', last_seen_at = excluded.last_seen_at`)
+        .bind(id, code, clubName, organizationType || 'Private Club', firstName || '', email, now, now).run();
+    }
+
+    return json({ success: true, message: `Outreach email sent successfully to ${email}` }, 200, origin);
+  } catch (error) {
+    console.error('Outreach email send error:', error);
+    return json({ error: error.message || 'Could not send outreach email. Verify MailerSend configuration.' }, 500, origin);
+  }
+}
 
 const trialReminderDays = [7, 3, 1];
 
@@ -390,6 +612,181 @@ async function login(request, env, origin) {
   return json({ user, club: accountClub(club), role, csrfToken: session.csrf }, 200, origin, { 'Set-Cookie': [cookie('pt_session', session.token, SESSION_MAX_AGE, true), cookie('pt_csrf', session.csrf, SESSION_MAX_AGE, false)] });
 }
 
+async function requestPlatformLogin(request, env, origin) {
+  const body = await request.json();
+  const email = normalize(body.email);
+  if (!validEmail(email) || !isPlatformAdmin(env, email)) return json({ error: 'This email is not approved for platform access.' }, 403, origin);
+  const code = verificationCode();
+  await env.DB.prepare('INSERT OR REPLACE INTO platform_login_codes (email, code_hash, expires_at, attempts, created_at) VALUES (?, ?, ?, 0, ?)')
+    .bind(email, await hash(code), Date.now() + REGISTRATION_CODE_MAX_AGE, new Date().toISOString()).run();
+  try {
+    await sendMail(env, { to: email, subject: 'Your Club PhotoHub owner access code', text: `Your Club PhotoHub platform owner code is ${code}. It expires in 10 minutes.`, html: clubPhotoHubEmail({ eyebrow: 'Platform owner access', title: 'Open your lead dashboard', intro: 'Use this code to securely access the private Club PhotoHub lead dashboard.', code, details: 'This code expires in 10 minutes and can only be used once.' }) });
+  } catch {
+    await env.DB.prepare('DELETE FROM platform_login_codes WHERE email = ?').bind(email).run();
+    return json({ error: 'We could not send the access code. Please try again shortly.' }, 502, origin);
+  }
+  return json({ message: 'A 6-digit access code was sent to your email.' }, 200, origin);
+}
+
+async function completePlatformLogin(request, env, origin) {
+  const body = await request.json();
+  const email = normalize(body.email);
+  const challenge = await env.DB.prepare('SELECT * FROM platform_login_codes WHERE email = ?').bind(email).first();
+  if (!challenge || challenge.expires_at <= Date.now() || challenge.attempts >= 5 || !/^\d{6}$/.test(String(body.code || ''))) return json({ error: 'The access code is invalid or expired.' }, 400, origin);
+  await env.DB.prepare('UPDATE platform_login_codes SET attempts = attempts + 1 WHERE email = ?').bind(email).run();
+  if (!(await safeEqual(await hash(String(body.code)), challenge.code_hash))) return json({ error: 'The access code is invalid or expired.' }, 400, origin);
+  const token = randomToken();
+  const csrf = randomToken(24);
+  await env.DB.batch([
+    env.DB.prepare('DELETE FROM platform_login_codes WHERE email = ?').bind(email),
+    env.DB.prepare('INSERT INTO platform_sessions (token_hash, email, csrf_hash, expires_at, created_at) VALUES (?, ?, ?, ?, ?)').bind(await hash(token), email, await hash(csrf), Date.now() + SESSION_MAX_AGE * 1000, new Date().toISOString())
+  ]);
+  return json({ authenticated: true, email, csrfToken: csrf }, 200, origin, { 'Set-Cookie': [cookie('pt_platform_session', token, SESSION_MAX_AGE, true), cookie('pt_csrf', csrf, SESSION_MAX_AGE, false)] });
+}
+
+async function platformAuth(request, env) {
+  const token = cookies(request).pt_platform_session;
+  if (!token) return null;
+  const session = await env.DB.prepare('SELECT * FROM platform_sessions WHERE token_hash = ? AND expires_at > ?').bind(await hash(token), Date.now()).first();
+  return session && isPlatformAdmin(env, session.email) ? session : null;
+}
+
+const validVisitorId = value => /^[A-Za-z0-9_-]{12,80}$/.test(String(value || ''));
+const isPlatformAdmin = (env, email) => String(env.PLATFORM_ADMIN_EMAILS || env.ADMIN_EMAIL || '')
+  .split(',').map(normalize).filter(Boolean).includes(normalize(email));
+
+async function recordLeadEvent(env, { visitorId, eventType, path = '', referrer = '', clubId = '', leadId = '' }) {
+  if (!validVisitorId(visitorId) || !LEAD_EVENT_TYPES.has(eventType)) return false;
+  const now = new Date().toISOString();
+  await env.DB.prepare('INSERT INTO lead_events (id, visitor_id, event_type, path, referrer, club_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)')
+    .bind(randomToken(16), visitorId, eventType, cleanText(path, 160), cleanText(referrer, 300), cleanText(clubId, 80), now).run();
+
+  const codeToMatch = cleanText(leadId || '', 80);
+  if (codeToMatch) {
+    const lead = await env.DB.prepare('SELECT id, status, visitor_id FROM sales_leads WHERE lead_code = ? OR id = ? OR (contact_email != \'\' AND lower(contact_email) = lower(?))')
+      .bind(codeToMatch, codeToMatch, codeToMatch).first();
+    if (lead) {
+      let nextStatus = lead.status;
+      if (lead.status === 'outreach_sent' || !lead.status) {
+        nextStatus = eventType === 'demo_opened' ? 'demo_opened' : 'link_clicked';
+      } else if (lead.status === 'link_clicked' && eventType === 'demo_opened') {
+        nextStatus = 'demo_opened';
+      }
+      await env.DB.prepare(`UPDATE sales_leads SET 
+        visitor_id = CASE WHEN visitor_id = '' THEN ? ELSE visitor_id END,
+        clicks_count = clicks_count + 1,
+        last_clicked_at = ?,
+        last_seen_at = ?,
+        status = ?
+        WHERE id = ?`)
+        .bind(visitorId, now, now, nextStatus, lead.id).run();
+    }
+  } else if (visitorId) {
+    const lead = await env.DB.prepare('SELECT id, status FROM sales_leads WHERE visitor_id = ?').bind(visitorId).first();
+    if (lead) {
+      let nextStatus = lead.status;
+      if ((lead.status === 'outreach_sent' || lead.status === 'link_clicked') && eventType === 'demo_opened') {
+        nextStatus = 'demo_opened';
+      }
+      await env.DB.prepare('UPDATE sales_leads SET last_seen_at = ?, status = ? WHERE id = ?')
+        .bind(now, nextStatus, lead.id).run();
+    }
+  }
+  return true;
+}
+
+async function trackLeadEvent(request, env, origin) {
+  const body = await request.json();
+  if (!await recordLeadEvent(env, body)) return json({ error: 'Invalid analytics event.' }, 400, origin);
+  return noContent(204, origin);
+}
+
+async function leadDashboard(request, env, origin) {
+  const session = await platformAuth(request, env);
+  if (!session) return json({ error: 'Sign in to view lead activity.' }, 401, origin);
+  const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  const [metricsResult, dailyResult, leadsResult, workspaceResult, recentEventsResult] = await Promise.all([
+    env.DB.prepare(`SELECT event_type AS eventType, COUNT(*) AS events, COUNT(DISTINCT visitor_id) AS visitors
+      FROM lead_events WHERE created_at >= ? GROUP BY event_type`).bind(since).all(),
+    env.DB.prepare(`SELECT substr(created_at, 1, 10) AS day, event_type AS eventType, COUNT(*) AS count
+      FROM lead_events WHERE created_at >= ? GROUP BY day, event_type ORDER BY day`).bind(since).all(),
+    env.DB.prepare(`SELECT id, visitor_id AS visitorId, lead_code AS leadCode, club_name AS clubName, organization_type AS organizationType,
+      contact_first_name AS firstName, contact_last_name AS lastName, contact_email AS email, status,
+      workspace_club_id AS workspaceClubId, clicks_count AS clicksCount, last_clicked_at AS lastClickedAt, notes,
+      first_seen_at AS firstSeenAt, last_seen_at AS lastSeenAt
+      FROM sales_leads ORDER BY last_seen_at DESC LIMIT 200`).all(),
+    env.DB.prepare("SELECT COUNT(*) AS count FROM sales_leads WHERE status = 'workspace_created' AND first_seen_at >= ?").bind(since).first(),
+    env.DB.prepare(`SELECT id, visitor_id AS visitorId, event_type AS eventType, path, referrer, club_id AS clubId, created_at AS createdAt
+      FROM lead_events ORDER BY created_at DESC LIMIT 500`).all()
+  ]);
+  const metrics = (metricsResult.results || []).map(item => ({ ...item, events: Number(item.events), visitors: Number(item.visitors) }));
+  const workspaceCount = Number(workspaceResult?.count || 0);
+  const workspaceMetric = metrics.find(item => item.eventType === 'workspace_created');
+  if (workspaceMetric) Object.assign(workspaceMetric, { events: workspaceCount, visitors: workspaceCount });
+  else metrics.push({ eventType: 'workspace_created', events: workspaceCount, visitors: workspaceCount });
+  return json({
+    periodDays: 30,
+    metrics,
+    daily: (dailyResult.results || []).map(item => ({ ...item, count: Number(item.count) })),
+    leads: (leadsResult.results || []).map(l => ({ ...l, clicksCount: Number(l.clicksCount || 0) })),
+    recentEvents: recentEventsResult.results || []
+  }, 200, origin);
+}
+
+async function addOutreachLead(request, env, origin) {
+  const session = await platformAuth(request, env);
+  if (!session) return json({ error: 'Sign in to manage outreach leads.' }, 401, origin);
+  const body = await request.json();
+  const clubName = cleanText(body.clubName, 100);
+  const organizationType = cleanText(body.organizationType || 'Private Club', 50);
+  const firstName = cleanText(body.firstName || '', 50);
+  const lastName = cleanText(body.lastName || '', 50);
+  const email = normalize(body.email || '');
+  const notes = cleanText(body.notes || '', 500);
+
+  if (!clubName || clubName.length < 2) {
+    return json({ error: 'Please enter a valid club or organization name.' }, 400, origin);
+  }
+
+  let leadCode = cleanText(body.leadCode || '', 60).toLowerCase().replace(/[^a-z0-9_-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+  if (!leadCode) {
+    leadCode = clubName.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '').slice(0, 30);
+  }
+  if (!leadCode) leadCode = randomToken(8).toLowerCase();
+
+  const id = `lead_${randomToken(12)}`;
+  const now = new Date().toISOString();
+
+  try {
+    await env.DB.prepare(`INSERT INTO sales_leads (id, visitor_id, lead_code, club_name, organization_type, contact_first_name, contact_last_name, contact_email, status, clicks_count, last_clicked_at, notes, first_seen_at, last_seen_at)
+      VALUES (?, '', ?, ?, ?, ?, ?, ?, 'outreach_sent', 0, '', ?, ?, ?)`)
+      .bind(id, leadCode, clubName, organizationType, firstName, lastName, email, notes, now, now).run();
+    return json({
+      success: true,
+      lead: { id, visitorId: '', leadCode, clubName, organizationType, firstName, lastName, email, status: 'outreach_sent', clicksCount: 0, lastClickedAt: '', notes, firstSeenAt: now, lastSeenAt: now }
+    }, 201, origin);
+  } catch (error) {
+    console.error('Error inserting sales lead:', error);
+    return json({ error: 'Could not save lead. A lead with that name or code may already exist.' }, 400, origin);
+  }
+}
+
+async function deleteOutreachLead(request, env, origin, leadId) {
+  const session = await platformAuth(request, env);
+  if (!session) return json({ error: 'Sign in to manage outreach leads.' }, 401, origin);
+  await env.DB.prepare('DELETE FROM sales_leads WHERE id = ?').bind(leadId).run();
+  return json({ success: true, deletedId: leadId }, 200, origin);
+}
+
+async function updateOutreachLead(request, env, origin, leadId) {
+  const session = await platformAuth(request, env);
+  if (!session) return json({ error: 'Sign in to manage outreach leads.' }, 401, origin);
+  const body = await request.json();
+  const notes = cleanText(body.notes || '', 500);
+  await env.DB.prepare('UPDATE sales_leads SET notes = ? WHERE id = ?').bind(notes, leadId).run();
+  return json({ success: true }, 200, origin);
+}
+
 async function startClubOnboarding(request, env, origin) {
   const body = await request.json();
   const clubName = cleanText(body.clubName, 80);
@@ -399,6 +796,7 @@ async function startClubOnboarding(request, env, origin) {
   const firstName = cleanText(body.firstName, 50);
   const lastName = cleanText(body.lastName, 50);
   const email = normalize(body.email);
+  const visitorId = validVisitorId(body.visitorId) ? String(body.visitorId) : '';
   const logoUrl = secureLogoUrl(body.logoUrl);
   if (clubName.length < 2 || shortName.length < 2 || !organizationType || !slug || reservedClubSlugs.has(slug) || !firstName || !lastName || !validEmail(email) || logoUrl === null) {
     return json({ error: 'Enter the organization name and type, administrator name, and a valid work email. Logo URLs must use HTTPS.' }, 400, origin);
@@ -408,8 +806,18 @@ async function startClubOnboarding(request, env, origin) {
   const signupId = randomToken(24);
   const code = verificationCode();
   await env.DB.prepare('DELETE FROM club_signup_challenges WHERE expires_at <= ? OR admin_email = ?').bind(Date.now(), email).run();
-  await env.DB.prepare('INSERT INTO club_signup_challenges (id, club_slug, club_name, club_short_name, club_logo_url, organization_type, admin_email, admin_first_name, admin_last_name, code_hash, expires_at, attempts, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)')
-    .bind(signupId, slug, clubName, shortName, logoUrl, organizationType, email, firstName, lastName, await hash(code), Date.now() + REGISTRATION_CODE_MAX_AGE, Date.now()).run();
+  const now = new Date().toISOString();
+  await env.DB.batch([
+    env.DB.prepare('INSERT INTO club_signup_challenges (id, club_slug, club_name, club_short_name, club_logo_url, organization_type, admin_email, admin_first_name, admin_last_name, code_hash, expires_at, attempts, created_at, visitor_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)')
+      .bind(signupId, slug, clubName, shortName, logoUrl, organizationType, email, firstName, lastName, await hash(code), Date.now() + REGISTRATION_CODE_MAX_AGE, Date.now(), visitorId),
+    env.DB.prepare(`INSERT INTO sales_leads (id, visitor_id, club_name, organization_type, contact_first_name, contact_last_name, contact_email, status, first_seen_at, last_seen_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'verification_started', ?, ?)
+      ON CONFLICT(contact_email, club_name) DO UPDATE SET visitor_id = excluded.visitor_id,
+      organization_type = excluded.organization_type, contact_first_name = excluded.contact_first_name,
+      contact_last_name = excluded.contact_last_name, status = 'verification_started', last_seen_at = excluded.last_seen_at`)
+      .bind(randomToken(16), visitorId, clubName, organizationType, firstName, lastName, email, now, now)
+  ]);
+  if (visitorId) await recordLeadEvent(env, { visitorId, eventType: 'onboarding_started', path: '/app?onboard=club' });
   try {
     await sendMail(env, {
       to: email,
@@ -448,6 +856,35 @@ async function completeClubOnboarding(request, env, origin) {
   const club = await getClub(env, challenge.club_slug);
   const session = await createSession(env, club.id, `admin:${adminId}`, 'admin');
   const user = { memberNumber: `admin:${adminId}`, firstName: challenge.admin_first_name, lastName: challenge.admin_last_name, email: challenge.admin_email, role: 'owner' };
+  await env.DB.prepare("UPDATE sales_leads SET status = 'workspace_created', workspace_club_id = ?, last_seen_at = ? WHERE contact_email = ? AND club_name = ?")
+    .bind(club.id, now, normalize(challenge.admin_email), challenge.club_name).run();
+  if (challenge.visitor_id) await recordLeadEvent(env, { visitorId: challenge.visitor_id, eventType: 'workspace_created', path: `/${club.slug}`, clubId: club.id });
+  const founderName = env.FOUNDER_NAME || 'Mayank Saxena';
+  const founderEmail = env.FOUNDER_EMAIL || 'mayank.saxena@xtide.io';
+  const workspaceUrl = `${env.APP_ORIGIN || 'https://clubphotohub.com'}/${club.slug}`;
+  const adminGuideUrl = `${env.APP_ORIGIN || 'https://clubphotohub.com'}/help/admin`;
+  const trialEndLabel = new Intl.DateTimeFormat('en', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' }).format(new Date(trialEndsAt));
+  try {
+    await sendMail(env, {
+      to: challenge.admin_email,
+      fromName: `${founderName}, Club PhotoHub`,
+      replyTo: founderEmail,
+      subject: `Thank you for creating ${club.name}'s Club PhotoHub`,
+      text: `Hi ${challenge.admin_first_name},\n\nThank you for creating a Club PhotoHub workspace for ${club.name}. I built Club PhotoHub because private clubs deserve a simple, secure place where members can enjoy their shared moments without relying on public social media or scattered folders.\n\nYour 30-day trial is active through ${trialEndLabel}. To get started, add your club branding, import your member roster, and publish a first event gallery.\n\nYour step-by-step administrator guide: ${adminGuideUrl}\n\nOpen your workspace: ${workspaceUrl}\n\nIf you would like help setting up your branding, roster, or first gallery, reply directly to this email. I am happy to help.\n\n${founderName}\nFounder, Club PhotoHub` ,
+      html: clubPhotoHubEmail({
+        eyebrow: 'Your workspace is ready',
+        title: `Welcome, ${challenge.admin_first_name}`,
+        intro: `Thank you for creating a Club PhotoHub workspace for ${club.name}. I built Club PhotoHub because private clubs deserve a simple, secure place where members can enjoy their shared moments without relying on public social media or scattered folders.`,
+        details: `Your 30-day trial is active through ${trialEndLabel}. Start by adding your club branding, importing the member roster, and publishing a first event gallery. The administrator guide walks you through each step.`,
+        actionLabel: 'Open your workspace', actionUrl: workspaceUrl,
+        secondaryActionLabel: 'Read the administrator guide', secondaryActionUrl: adminGuideUrl,
+        signature: `If you would like help setting up your branding, roster, or first gallery, reply directly to this email. I am happy to help.\n\n${founderName}\nFounder, Club PhotoHub`,
+        securityNote: false
+      })
+    });
+  } catch (error) {
+    console.error('Founder welcome email failed', { clubId: club.id, message: error.message });
+  }
   return json({ user, club: accountClub(club), role: 'admin', csrfToken: session.csrf }, 201, origin, { 'Set-Cookie': [cookie('pt_session', session.token, SESSION_MAX_AGE, true), cookie('pt_csrf', session.csrf, SESSION_MAX_AGE, false)] });
 }
 
@@ -586,6 +1023,7 @@ export default {
       const url = new URL(request.url);
       const path = url.pathname.replace(/^\/api/, '').replace(/\/$/, '') || '/';
       if (path === '/health' && request.method === 'GET') return json({ ok: true }, 200, origin);
+      if (path === '/billing/webhook' && request.method === 'POST') return handleStripeWebhook(request, env, origin);
       if (path === '/clubs/search' && request.method === 'GET') {
         if (!await withinRateLimit(request, env.SEARCH_RATE_LIMITER, 'club-search')) return rateLimited(origin);
         const query = normalizeClubSearch(url.searchParams.get('q'));
@@ -609,6 +1047,10 @@ export default {
         const club = slug ? await env.DB.prepare("SELECT id, slug, name, short_name, logo_url FROM clubs WHERE status = 'active' AND slug = ?").bind(slug).first() : null;
         return json({ club: club ? publicClub(club) : null }, 200, origin);
       }
+      if (path === '/analytics/track' && request.method === 'POST') {
+        if (!await withinRateLimit(request, env.SEARCH_RATE_LIMITER, 'lead-event')) return rateLimited(origin);
+        return trackLeadEvent(request, env, origin);
+      }
       if (path === '/onboarding/start' && request.method === 'POST') {
         if (!await withinRateLimit(request, env.RESET_RATE_LIMITER, 'club-onboarding-start')) return rateLimited(origin);
         return startClubOnboarding(request, env, origin);
@@ -620,6 +1062,18 @@ export default {
       if (path === '/auth/login' && request.method === 'POST') {
         if (!await withinRateLimit(request, env.AUTH_RATE_LIMITER, 'login')) return rateLimited(origin);
         return login(request, env, origin);
+      }
+      if (path === '/auth/platform-login/start' && request.method === 'POST') {
+        if (!await withinRateLimit(request, env.RESET_RATE_LIMITER, 'platform-login-start')) return rateLimited(origin);
+        return requestPlatformLogin(request, env, origin);
+      }
+      if (path === '/auth/platform-login/complete' && request.method === 'POST') {
+        if (!await withinRateLimit(request, env.AUTH_RATE_LIMITER, 'platform-login-complete')) return rateLimited(origin);
+        return completePlatformLogin(request, env, origin);
+      }
+      if (path === '/auth/platform-me' && request.method === 'GET') {
+        const session = await platformAuth(request, env);
+        return json(session ? { authenticated: true, email: session.email } : { authenticated: false }, 200, origin);
       }
       if (path === '/auth/member-check' && request.method === 'POST') {
         if (!await withinRateLimit(request, env.AUTH_RATE_LIMITER, 'member-check')) return rateLimited(origin);
@@ -663,7 +1117,61 @@ export default {
         if (!session) return json({ authenticated: false }, 200, origin);
         const csrf = randomToken(24);
         await env.DB.prepare('UPDATE sessions SET csrf_hash = ? WHERE token_hash = ?').bind(await hash(csrf), session.token_hash).run();
-        return json({ authenticated: true, user: { memberNumber: session.member_number, firstName: session.firstName || 'Club', lastName: session.lastName || 'Management', email: session.adminEmail || undefined, role: session.adminRole || session.memberRole || (session.role === 'admin' ? 'admin' : session.role) }, club: sessionClub(session), role: session.role, csrfToken: csrf }, 200, origin, { 'Set-Cookie': cookie('pt_csrf', csrf, SESSION_MAX_AGE, false) });
+        return json({ authenticated: true, platformAdmin: isPlatformAdmin(env, session.adminEmail), user: { memberNumber: session.member_number, firstName: session.firstName || 'Club', lastName: session.lastName || 'Management', email: session.adminEmail || undefined, role: session.adminRole || session.memberRole || (session.role === 'admin' ? 'admin' : session.role) }, club: sessionClub(session), role: session.role, csrfToken: csrf }, 200, origin, { 'Set-Cookie': cookie('pt_csrf', csrf, SESSION_MAX_AGE, false) });
+      }
+      if (path === '/platform/leads/send-outreach' && request.method === 'POST') return sendOutreachLeadEmail(request, env, origin);
+      if (path === '/platform/leads' && request.method === 'GET') return leadDashboard(request, env, origin);
+      if (path === '/platform/leads' && request.method === 'POST') return addOutreachLead(request, env, origin);
+      if (path.startsWith('/platform/leads/') && request.method === 'DELETE') {
+        const leadId = path.replace('/platform/leads/', '');
+        return deleteOutreachLead(request, env, origin, leadId);
+      }
+      if (path.startsWith('/platform/leads/') && request.method === 'PATCH') {
+        const leadId = path.replace('/platform/leads/', '');
+        return updateOutreachLead(request, env, origin, leadId);
+      }
+      if (path === '/billing/status' && request.method === 'GET') {
+        const session = await auth(request, env);
+        if (!session) return json({ authenticated: false }, 200, origin);
+        const club = await getClub(env, session.club_id);
+        return json({
+          authenticated: true,
+          owner: billingOwner(session),
+          planStatus: club.plan_status || 'active',
+          trialStartedAt: club.trial_started_at || '',
+          trialEndsAt: club.trial_ends_at || '',
+          storageLimitBytes: Number(club.storage_limit_bytes || BASE_STORAGE_BYTES),
+          storageAddonGb: Number(club.storage_addon_gb || 0),
+          hasStorageSubscription: Boolean(club.stripe_storage_subscription_id)
+        }, 200, origin);
+      }
+      if (path === '/billing/checkout' && request.method === 'POST') {
+        const session = await requireAuth(request, env, 'admin');
+        if (!session || !billingOwner(session)) return json({ error: 'Only an organization owner can manage billing.' }, 403, origin);
+        const club = await getClub(env, session.club_id);
+        const body = await request.json().catch(() => ({}));
+        if (body.type === 'plan') {
+          if (club.plan_status === 'active' && club.stripe_plan_subscription_id) {
+            return json({ error: 'This organization already has an active base plan.', code: 'PLAN_ALREADY_ACTIVE' }, 409, origin);
+          }
+          const base = body.interval === 'annual' ? env.STRIPE_ANNUAL_LINK : env.STRIPE_MONTHLY_LINK;
+          if (!base) return json({ error: 'Plan checkout is not configured.' }, 503, origin);
+          return json({ url: checkoutUrl(base, club.id, session.adminEmail) }, 200, origin);
+        }
+        if (body.type === 'storage') {
+          if (club.plan_status !== 'active') return json({ error: 'Start a base plan before adding storage.', code: 'BASE_PLAN_REQUIRED' }, 409, origin);
+          const gb = Number(body.gb);
+          if (club.stripe_storage_subscription_id) {
+            const message = Number(club.storage_addon_gb || 0) === gb
+              ? 'This storage add-on is already active.'
+              : 'Contact support to change or cancel your current storage add-on.';
+            return json({ error: message, code: 'STORAGE_SUBSCRIPTION_EXISTS' }, 409, origin);
+          }
+          const base = gb === 25 ? env.STRIPE_STORAGE_25_LINK : gb === 50 ? env.STRIPE_STORAGE_50_LINK : gb === 100 ? env.STRIPE_STORAGE_100_LINK : '';
+          if (!base) return json({ error: 'Choose a valid storage add-on.' }, 400, origin);
+          return json({ url: checkoutUrl(base, club.id, session.adminEmail) }, 200, origin);
+        }
+        return json({ error: 'Choose a plan or storage add-on.' }, 400, origin);
       }
       if (path === '/bootstrap' && request.method === 'GET') {
         const data = await bootstrap(request, env);
