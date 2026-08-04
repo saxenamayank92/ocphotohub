@@ -36,16 +36,29 @@ function Mark({ value }) {
 function DemoPost({ image, initials, name, category, caption, likes }) {
   return (
     <article className="landing-demo-post">
-      <header>
-        <span>{initials}</span>
-        <div><strong>{name}</strong><small>Your Club · This week</small></div>
-        <em>{category}</em>
+      <header className="demo-post-header">
+        <span className="demo-post-avatar">{initials}</span>
+        <div className="demo-post-user-info">
+          <strong>{name}</strong>
+          <small>Heritage Oaks · This week</small>
+        </div>
+        <span className="demo-post-badge">{category}</span>
       </header>
-      <img src={image} alt={`${category} moment shared in the Your Club demo`} loading="lazy" decoding="async" />
-      <div className="landing-demo-actions">
-        <Heart size={21} /><strong>{likes}</strong><Download size={21} />
+      <div className="demo-post-img-wrapper">
+        <img src={image} alt={`${category} moment shared in the Heritage Oaks demo`} loading="lazy" decoding="async" />
       </div>
-      <p><strong>{name}</strong> {caption}</p>
+      <div className="landing-demo-actions">
+        <div className="demo-action-left">
+          <Heart size={18} fill="#e11d48" color="#e11d48" />
+          <strong>{likes} likes</strong>
+        </div>
+        <button className="demo-download-btn" type="button" title="Download High Res">
+          <Download size={16} />
+        </button>
+      </div>
+      <p className="demo-post-caption">
+        <strong>{name}</strong> {caption}
+      </p>
     </article>
   );
 }
