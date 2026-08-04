@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Club PhotoHub Store Listing</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <style>
+      :root { color: #10213f; background: #f7f3eb; font-family: Inter, sans-serif; }
+      * { box-sizing: border-box; }
+      body { margin: 0; width: 1290px; height: 2796px; overflow: hidden; }
+      .artboard { position: relative; width: 390px; height: 844px; overflow: hidden; transform: scale(3.3076923); transform-origin: top left; background: #f7f3eb; }
+      .artboard::before, .artboard::after { content: ''; position: absolute; border-radius: 50%; pointer-events: none; }
+      .artboard::before { width: 470px; height: 470px; top: -245px; right: -220px; background: radial-gradient(circle, rgba(201,160,82,.34), transparent 68%); }
+      .artboard::after { width: 430px; height: 290px; left: -210px; bottom: -170px; border: 1px solid rgba(13, 96, 89, .28); box-shadow: 0 0 0 22px rgba(13,96,89,.04), 0 0 0 52px rgba(13,96,89,.025); }
+      .topline { position: relative; z-index: 1; display: flex; align-items: center; gap: 9px; padding: 27px 25px 0; color: #0b5f59; font-size: 9px; letter-spacing: .12em; font-weight: 700; text-transform: uppercase; }
+      .topline img { width: 28px; height: 28px; border-radius: 7px; box-shadow: 0 5px 14px rgba(15,30,55,.15); }
+      .brand-name { color: #10213f; letter-spacing: -.035em; font-size: 14px; text-transform: none; }
+      .copy { position: relative; z-index: 1; padding: 40px 28px 0; }
+      .eyebrow { margin: 0 0 12px; color: #0b5f59; font-size: 9px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+      h1 { max-width: 325px; margin: 0; color: #10213f; font: 600 44px/.86 'Cormorant Garamond', Georgia, serif; letter-spacing: -.045em; }
+      h1 em { color: #b38741; font-style: normal; }
+      .body-copy { max-width: 286px; margin: 18px 0 0; color: #60716e; font-size: 13px; line-height: 1.48; }
+      .phone-wrap { position: absolute; z-index: 2; left: 48px; top: 270px; width: 294px; height: 515px; padding: 7px; overflow: hidden; border: 3px solid #10213f; border-radius: 38px; background: #10213f; box-shadow: 0 24px 44px rgba(16,33,63,.25), inset 0 0 0 1px rgba(255,255,255,.2); }
+      .phone-wrap::before { content: ''; position: absolute; z-index: 3; top: 9px; left: 50%; width: 86px; height: 20px; border-radius: 13px; background: #10213f; transform: translateX(-50%); }
+      .phone-wrap img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: top center; border-radius: 28px; }
+      .feature { position: absolute; z-index: 3; display: flex; align-items: center; gap: 7px; padding: 9px 12px; border: 1px solid rgba(16,33,63,.10); border-radius: 14px; background: rgba(255,255,255,.82); box-shadow: 0 8px 24px rgba(16,33,63,.09); color: #10213f; font-size: 10px; font-weight: 700; backdrop-filter: blur(10px); }
+      .feature span { display: grid; width: 19px; height: 19px; place-items: center; border-radius: 7px; background: #d8b35d; color: #10213f; font-size: 12px; }
+      .feature.one { top: 580px; left: 22px; }
+      .feature.two { top: 630px; right: 20px; }
+      .footer { position: absolute; z-index: 2; right: 27px; bottom: 28px; left: 27px; display: flex; align-items: center; justify-content: space-between; color: #0b5f59; font-size: 9px; font-weight: 700; letter-spacing: .04em; }
+      .footer::before { position: absolute; top: -12px; right: 0; left: 0; height: 1px; background: rgba(16,33,63,.12); content: ''; }
+      .page-upload .phone-wrap { top: 286px; height: 498px; }
+      .page-profile .phone-wrap { top: 278px; height: 506px; }
+      .page-detail h1 { max-width: 335px; }
+      .page-feed .phone-wrap { top: 274px; }
+      .page-gallery .phone-wrap { top: 280px; }
+      body.android { width: 1080px; height: 1920px; }
+      .artboard.android { height: 693.33px; transform: scale(2.7692308); }
+      .android .topline { padding-top: 21px; }
+      .android .copy { padding-top: 27px; }
+      .android h1 { font-size: 38px; }
+      .android .body-copy { margin-top: 13px; font-size: 11px; }
+      .android .phone-wrap, .android.page-upload .phone-wrap, .android.page-profile .phone-wrap, .android.page-feed .phone-wrap, .android.page-gallery .phone-wrap { top: 238px; left: 58px; width: 274px; height: 402px; border-radius: 34px; }
+      .android .phone-wrap img { border-radius: 24px; }
+      .android .phone-wrap::before { top: 8px; width: 78px; height: 18px; }
+      .android .feature { padding: 7px 9px; font-size: 8px; }
+      .android .feature.one { top: 544px; left: 18px; }
+      .android .feature.two { top: 586px; right: 17px; }
+      .android .footer { right: 20px; bottom: 19px; left: 20px; font-size: 8px; }
+    </style>
+  </head>
+  <body>
+    <main id="listing" class="artboard">
+      <div class="topline"><img src="/club-photo-hub-icon-512.png" alt="" /><span class="brand-name">Club PhotoHub</span></div>
+      <section class="copy"><p class="eyebrow" id="eyebrow"></p><h1 id="headline"></h1><p class="body-copy" id="bodyCopy"></p></section>
+      <div class="phone-wrap"><img id="screen" alt="Club PhotoHub app screen" /></div>
+      <div class="feature one" id="featureOne"></div><div class="feature two" id="featureTwo"></div>
+      <footer class="footer"><span>Private by design</span><span>clubphotohub.com</span></footer>
+    </main>
+    <script>
+      const screens = {
+        gallery: { eyebrow: 'Private photo sharing for clubs', headline: 'Your club.<br><em>Every moment.</em>', body: 'A beautifully simple place for members to relive, save, and share the moments that make your club special.', image: 'gallery.png', a: ['✦', 'All your events'], b: ['♡', 'Made for members'] },
+        feed: { eyebrow: 'The member experience', headline: 'All the moments.<br><em>One private place.</em>', body: 'From the first tee to the last toast, your club stays connected around the photos that matter.', image: 'feed.png', a: ['◌', 'A familiar feed'], b: ['↧', 'Save favourite photos'] },
+        detail: { eyebrow: 'Keep the memories close', headline: 'Celebrate what<br><em>members share.</em>', body: 'A focused, easy-to-enjoy photo experience designed for every generation in your club.', image: 'photo-detail.png', a: ['♡', 'Love a photo'], b: ['↧', 'Download it easily'] },
+        upload: { eyebrow: 'Effortless contribution', headline: 'Sharing should<br><em>feel effortless.</em>', body: 'Members can upload a moment, add a caption, and share it with the club in a few simple taps.', image: 'upload.png', a: ['↑', 'Upload in seconds'], b: ['✎', 'Add the story'] },
+        profile: { eyebrow: 'Made for real communities', headline: 'Built for<br><em>every member.</em>', body: 'A personal place to see your club, your contributions, and the memories you have helped create.', image: 'profile.png', a: ['◌', 'Your club, your space'], b: ['✦', 'Simple to use'] }
+      };
+      const key = new URLSearchParams(location.search).get('screen') || 'gallery';
+      const platform = new URLSearchParams(location.search).get('platform');
+      const data = screens[key] || screens.gallery;
+      document.getElementById('listing').classList.add(`page-${key}`);
+      if (platform === 'android') { document.body.classList.add('android'); document.getElementById('listing').classList.add('android'); }
+      document.getElementById('eyebrow').textContent = data.eyebrow;
+      document.getElementById('headline').innerHTML = data.headline;
+      document.getElementById('bodyCopy').textContent = data.body;
+      document.getElementById('screen').src = `/store-assets/${data.image}`;
+      document.getElementById('featureOne').innerHTML = `<span>${data.a[0]}</span>${data.a[1]}`;
+      document.getElementById('featureTwo').innerHTML = `<span>${data.b[0]}</span>${data.b[1]}`;
+    </script>
+  </body>
+</html>

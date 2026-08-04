@@ -26,6 +26,16 @@ func text(_ value: String, rect: NSRect, size: CGFloat, color: NSColor, weight: 
     value.draw(with: rect, options: [.usesLineFragmentOrigin, .usesFontLeading], attributes: attributes)
 }
 
+func rounded(_ rect: NSRect, _ radius: CGFloat, _ color: NSColor, stroke: NSColor? = nil, width: CGFloat = 1) {
+    let path = NSBezierPath(roundedRect: rect, xRadius: radius, yRadius: radius)
+    color.setFill(); path.fill()
+    if let stroke { stroke.setStroke(); path.lineWidth = width; path.stroke() }
+}
+
+func line(_ from: NSPoint, _ to: NSPoint, color: NSColor, width: CGFloat = 1) {
+    let path = NSBezierPath(); path.move(to: from); path.line(to: to); path.lineWidth = width; color.setStroke(); path.stroke()
+}
+
 func fillImage(_ path: String, rect: NSRect) {
     guard let image = NSImage(contentsOfFile: root.appendingPathComponent(path).path) else { return }
     let source = NSRect(origin: .zero, size: image.size)
@@ -64,26 +74,137 @@ func videoFrame(name: String, photo: String?, eyebrow: String, title: String, su
 }
 
 func productFeed() throws {
-    let size = NSSize(width: 1200, height: 900)
+    let size = NSSize(width: 1600, height: 1100)
     let image = NSImage(size: size)
     image.lockFocus()
-    cream.setFill(); NSBezierPath(rect: NSRect(origin: .zero, size: size)).fill()
-    NSColor.white.setFill(); NSBezierPath(rect: NSRect(x: 0, y: 790, width: 1200, height: 110)).fill()
-    text("CLUB PHOTOHUB", rect: NSRect(x: 68, y: 838, width: 380, height: 35), size: 20, color: navy, weight: .bold)
-    text("Your Club · Private gallery", rect: NSRect(x: 68, y: 806, width: 420, height: 30), size: 14, color: teal, weight: .medium)
-    text("Member Gallery", rect: NSRect(x: 480, y: 825, width: 245, height: 32), size: 17, color: navy, weight: .bold, alignment: .center)
-    text("Upload Photo", rect: NSRect(x: 750, y: 825, width: 210, height: 32), size: 17, color: NSColor(calibratedWhite: 0.45, alpha: 1), weight: .semibold, alignment: .center)
-    let card = NSRect(x: 245, y: 35, width: 710, height: 720)
-    NSColor.white.setFill(); NSBezierPath(roundedRect: card, xRadius: 24, yRadius: 24).fill()
-    navy.setFill(); NSBezierPath(ovalIn: NSRect(x: 278, y: 675, width: 52, height: 52)).fill()
-    text("AM", rect: NSRect(x: 278, y: 690, width: 52, height: 25), size: 13, color: .white, weight: .bold, alignment: .center)
-    text("Alex Morgan", rect: NSRect(x: 348, y: 698, width: 230, height: 25), size: 17, color: navy, weight: .bold)
-    text("Your Club · Today", rect: NSRect(x: 348, y: 678, width: 230, height: 22), size: 12, color: NSColor(calibratedWhite: 0.48, alpha: 1))
-    gold.setStroke(); let pill = NSBezierPath(roundedRect: NSRect(x: 830, y: 684, width: 92, height: 30), xRadius: 15, yRadius: 15); pill.lineWidth = 1.5; pill.stroke()
-    text("EVENTS", rect: NSRect(x: 830, y: 691, width: 92, height: 18), size: 10, color: NSColor(calibratedRed: 0.55, green: 0.40, blue: 0.15, alpha: 1), weight: .bold, alignment: .center)
-    fillImage("public/demo/lakeside-social.jpg", rect: NSRect(x: 245, y: 165, width: 710, height: 490))
-    text("♡  28       ⇩", rect: NSRect(x: 278, y: 118, width: 260, height: 34), size: 25, color: navy, weight: .semibold)
-    text("Alex Morgan  Golden hour on the terrace with friends.", rect: NSRect(x: 278, y: 67, width: 620, height: 38), size: 14, color: navy, weight: .medium)
+    
+    // Background canvas
+    NSColor(calibratedRed: 247/255, green: 245/255, blue: 240/255, alpha: 1).setFill()
+    NSBezierPath(rect: NSRect(origin: .zero, size: size)).fill()
+    
+    // Top App Bar Header (Navy)
+    let headerRect = NSRect(x: 0, y: 990, width: 1600, height: 110)
+    navy.setFill(); NSBezierPath(rect: headerRect).fill()
+    
+    // Brand & Club Info
+    gold.setFill(); NSBezierPath(ovalIn: NSRect(x: 50, y: 1025, width: 40, height: 40)).fill()
+    text("★", rect: NSRect(x: 50, y: 1032, width: 40, height: 30), size: 20, color: navy, weight: .bold, alignment: .center)
+    text("OAKVILLE COUNTRY CLUB", rect: NSRect(x: 102, y: 1045, width: 450, height: 28), size: 18, color: .white, weight: .bold)
+    text("PRIVATE MEMBER GALLERY · 248 ACTIVE MEMBERS", rect: NSRect(x: 102, y: 1025, width: 450, height: 20), size: 10, color: gold, weight: .bold)
+    
+    // Navigation Tabs
+    let tabs = [("Member Feed", true), ("Events & Galas", false), ("Roster Directory", false), ("Upload Photo", false)]
+    for (index, (tab, active)) in tabs.enumerated() {
+        let x = 580 + CGFloat(index) * 170
+        text(tab, rect: NSRect(x: x, y: 1033, width: 160, height: 25), size: 14, color: active ? .white : NSColor(calibratedWhite: 0.72, alpha: 1), weight: active ? .bold : .medium, alignment: .center)
+        if active {
+            gold.setFill()
+            NSBezierPath(roundedRect: NSRect(x: x + 20, y: 1018, width: 120, height: 3), xRadius: 1.5, yRadius: 1.5).fill()
+        }
+    }
+    
+    // Header User Profile Pill
+    rounded(NSRect(x: 1380, y: 1025, width: 170, height: 40), 20, NSColor(calibratedWhite: 1, alpha: 0.12), stroke: NSColor(calibratedWhite: 1, alpha: 0.25))
+    text("Alex Morgan ▾", rect: NSRect(x: 1395, y: 1035, width: 140, height: 20), size: 13, color: .white, weight: .semibold, alignment: .center)
+    
+    // Sub-header Filter & Category Bar
+    let filterBar = NSRect(x: 0, y: 920, width: 1600, height: 70)
+    NSColor.white.setFill(); NSBezierPath(rect: filterBar).fill()
+    line(NSPoint(x: 0, y: 920), NSPoint(x: 1600, y: 920), color: NSColor(calibratedWhite: 0.88, alpha: 1))
+    
+    let categories = [("All Moments", true, "124"), ("Summer Regatta", false, "42"), ("Championship Golf", false, "28"), ("Dining & Socials", false, "35"), ("Racquets & Tennis", false, "19")]
+    var currentX: CGFloat = 50
+    for (cat, active, count) in categories {
+        let textWidth: CGFloat = CGFloat(cat.count * 8 + 48)
+        let pillRect = NSRect(x: currentX, y: 935, width: textWidth, height: 38)
+        if active {
+            navy.setFill(); NSBezierPath(roundedRect: pillRect, xRadius: 19, yRadius: 19).fill()
+            text("\(cat) (\(count))", rect: NSRect(x: currentX, y: 945, width: textWidth, height: 20), size: 12, color: .white, weight: .bold, alignment: .center)
+        } else {
+            NSColor(calibratedWhite: 0.95, alpha: 1).setFill()
+            let path = NSBezierPath(roundedRect: pillRect, xRadius: 19, yRadius: 19)
+            path.fill()
+            NSColor(calibratedWhite: 0.84, alpha: 1).setStroke()
+            path.lineWidth = 1; path.stroke()
+            text("\(cat) (\(count))", rect: NSRect(x: currentX, y: 945, width: textWidth, height: 20), size: 12, color: navy, weight: .medium, alignment: .center)
+        }
+        currentX += textWidth + 12
+    }
+    
+    // Search Box (Right side of filter bar)
+    rounded(NSRect(x: 1280, y: 935, width: 270, height: 38), 19, NSColor(calibratedWhite: 0.96, alpha: 1), stroke: NSColor(calibratedWhite: 0.86, alpha: 1))
+    text("🔍 Search members or events...", rect: NSRect(x: 1300, y: 945, width: 230, height: 20), size: 12, color: NSColor(calibratedWhite: 0.5, alpha: 1))
+
+    // MAIN FEED CONTENT GRID (Left Column Main Card, Right Column Secondary Cards)
+    // --- MAIN CARD (Left) ---
+    let mainCard = NSRect(x: 50, y: 40, width: 920, height: 850)
+    NSColor.white.setFill()
+    let mainCardPath = NSBezierPath(roundedRect: mainCard, xRadius: 20, yRadius: 20)
+    mainCardPath.fill()
+    NSColor(calibratedWhite: 0.88, alpha: 1).setStroke()
+    mainCardPath.lineWidth = 1; mainCardPath.stroke()
+    
+    // Main Card Post Header
+    navy.setFill(); NSBezierPath(ovalIn: NSRect(x: 80, y: 805, width: 54, height: 54)).fill()
+    text("AM", rect: NSRect(x: 80, y: 820, width: 54, height: 26), size: 15, color: .white, weight: .bold, alignment: .center)
+    text("Alex Morgan", rect: NSRect(x: 150, y: 832, width: 350, height: 26), size: 18, color: navy, weight: .bold)
+    text("Oakville Country Club · 15 minutes ago", rect: NSRect(x: 150, y: 810, width: 350, height: 20), size: 12, color: NSColor(calibratedWhite: 0.45, alpha: 1))
+    
+    // Category Tag Pill
+    gold.setStroke()
+    let regattaTag = NSBezierPath(roundedRect: NSRect(x: 810, y: 815, width: 130, height: 34), xRadius: 17, yRadius: 17)
+    regattaTag.lineWidth = 1.5; regattaTag.stroke()
+    text("SUMMER REGATTA", rect: NSRect(x: 810, y: 824, width: 130, height: 18), size: 10, color: NSColor(calibratedRed: 0.55, green: 0.40, blue: 0.15, alpha: 1), weight: .bold, alignment: .center)
+    
+    // Main Photo
+    fillImage("public/demo/lakeside-social.jpg", rect: NSRect(x: 50, y: 220, width: 920, height: 565))
+    
+    // Main Card Actions & Caption
+    text("♡  48 Likes       ⇩  18 Downloads       💬  7 Comments", rect: NSRect(x: 80, y: 170, width: 600, height: 30), size: 16, color: navy, weight: .bold)
+    text("Golden hour cocktail reception on the marina terrace. Spectacular turnout for our annual summer regatta!", rect: NSRect(x: 80, y: 100, width: 860, height: 55), size: 16, color: navy, weight: .medium)
+    
+    // --- SECONDARY CARD 1 (Top Right) ---
+    let card2 = NSRect(x: 1000, y: 470, width: 550, height: 420)
+    NSColor.white.setFill()
+    let card2Path = NSBezierPath(roundedRect: card2, xRadius: 20, yRadius: 20)
+    card2Path.fill()
+    NSColor(calibratedWhite: 0.88, alpha: 1).setStroke()
+    card2Path.lineWidth = 1; card2Path.stroke()
+    
+    // Card 2 Header
+    teal.setFill(); NSBezierPath(ovalIn: NSRect(x: 1025, y: 825, width: 42, height: 42)).fill()
+    text("JL", rect: NSRect(x: 1025, y: 836, width: 42, height: 22), size: 13, color: .white, weight: .bold, alignment: .center)
+    text("Jordan Lee", rect: NSRect(x: 1080, y: 844, width: 260, height: 22), size: 15, color: navy, weight: .bold)
+    text("Golf Captain · 1 hour ago", rect: NSRect(x: 1080, y: 828, width: 260, height: 18), size: 11, color: NSColor(calibratedWhite: 0.45, alpha: 1))
+    
+    // Card 2 Photo
+    fillImage("public/demo/golf-morning.jpg", rect: NSRect(x: 1000, y: 580, width: 550, height: 235))
+    
+    // Card 2 Footer
+    text("♡  34 Likes       ⇩  9 Downloads", rect: NSRect(x: 1025, y: 535, width: 400, height: 24), size: 14, color: navy, weight: .bold)
+    text("Championship weekend begins! Perfect morning on the greens.", rect: NSRect(x: 1025, y: 495, width: 500, height: 35), size: 13, color: navy, weight: .medium)
+
+    // --- SECONDARY CARD 2 (Bottom Right) ---
+    let card3 = NSRect(x: 1000, y: 40, width: 550, height: 410)
+    NSColor.white.setFill()
+    let card3Path = NSBezierPath(roundedRect: card3, xRadius: 20, yRadius: 20)
+    card3Path.fill()
+    NSColor(calibratedWhite: 0.88, alpha: 1).setStroke()
+    card3Path.lineWidth = 1; card3Path.stroke()
+    
+    // Card 3 Header
+    navy.setFill(); NSBezierPath(ovalIn: NSRect(x: 1025, y: 390, width: 42, height: 42)).fill()
+    text("SC", rect: NSRect(x: 1025, y: 401, width: 42, height: 22), size: 13, color: .white, weight: .bold, alignment: .center)
+    text("Sophia Chen", rect: NSRect(x: 1080, y: 409, width: 260, height: 22), size: 15, color: navy, weight: .bold)
+    text("Social Chair · Yesterday", rect: NSRect(x: 1080, y: 393, width: 260, height: 18), size: 11, color: NSColor(calibratedWhite: 0.45, alpha: 1))
+    
+    // Card 3 Photo
+    fillImage("public/demo/tennis-social.jpg", rect: NSRect(x: 1000, y: 150, width: 550, height: 225))
+    
+    // Card 3 Footer
+    text("♡  29 Likes       ⇩  6 Downloads", rect: NSRect(x: 1025, y: 105, width: 400, height: 24), size: 14, color: navy, weight: .bold)
+    text("Mixed doubles tournament finals under the pavilion lights.", rect: NSRect(x: 1025, y: 65, width: 500, height: 35), size: 13, color: navy, weight: .medium)
+
     image.unlockFocus()
     try save(image, to: root.appendingPathComponent("public/demo/product-feed.png"))
     try save(image, to: root.appendingPathComponent("artifacts/screenshots/your-club-demo.png"))
