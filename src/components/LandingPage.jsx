@@ -98,8 +98,9 @@ export default function LandingPage() {
             <h1>Your club’s private home for member photos.</h1>
             <p>Give members and staff one beautifully branded place to collect, organize and enjoy club moments—without public social media, scattered email attachments or messy shared folders.</p>
             <div className="marketing-hero-actions">
-              <a className="marketing-primary-cta" href="/book-demo">Book a 15-minute club demo <ArrowRight size={18} /></a>
-              <a className="marketing-secondary-cta" href="/app?demo=1">Explore live gallery</a>
+              <a className="marketing-primary-cta" href="/book-demo">Book a 15-minute demo <ArrowRight size={18} /></a>
+              <a className="marketing-secondary-cta" href="/app?onboard=club">Create your club's account</a>
+              <a className="marketing-demo-link" href="/app?demo=1">Explore live gallery →</a>
             </div>
             <div className="marketing-trust-row">
               <span><Check size={15} /> Built by a private-club operator</span>
@@ -234,9 +235,6 @@ export default function LandingPage() {
         {/* FOUNDER STORY SECTION */}
         <section className="marketing-section founder-story-section">
           <div className="founder-story-card">
-            <div className="founder-avatar-box">
-              <div className="founder-avatar-placeholder">MS</div>
-            </div>
             <div className="founder-story-copy">
               <span>FOUNDER STORY</span>
               <h2>Built from inside the private-club industry.</h2>
@@ -328,11 +326,11 @@ export default function LandingPage() {
             </ul>
           </div>
           <div className="marketing-phone-card">
-            <div className="marketing-phone-top"><Smartphone size={18} /> Works on your phone today. iPhone and Android apps next.</div>
+            <div className="marketing-phone-top"><Smartphone size={18} /> Mobile-ready web app • No app install required</div>
             <img className="marketing-real-phone-photo" src="./demo/lakeside-social.jpg" alt="Your Club members sharing a lakeside social" loading="lazy" decoding="async" />
             <div className="marketing-phone-caption">
               <strong>Every club moment, in your pocket</strong>
-              <span>Dedicated iPhone and Android apps are also being developed.</span>
+              <span>Works seamlessly on iOS, Android, tablets, and desktop browsers.</span>
             </div>
           </div>
         </section>
@@ -367,13 +365,13 @@ export default function LandingPage() {
         {/* FINAL CTA */}
         <section className="marketing-final-cta">
           <div>
-            <span>Start your organization trial</span>
+            <span>Get started today</span>
             <h2>Give every moment a place to belong.</h2>
-            <p>Create your workspace in minutes, or explore Your Club before you decide.</p>
+            <p>Schedule a 15-minute walkthrough or launch your club's workspace directly.</p>
           </div>
           <div className="final-actions">
-            <a href="/app?onboard=club">Create workspace <ArrowRight size={18} /></a>
-            <a href="/app?demo=1">View demo</a>
+            <a className="marketing-primary-cta" href="/book-demo">Book a 15-minute demo <ArrowRight size={18} /></a>
+            <a className="marketing-secondary-cta" href="/app?onboard=club">Create your club's account</a>
           </div>
         </section>
       </main>

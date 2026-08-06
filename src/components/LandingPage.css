@@ -1417,20 +1417,13 @@
 }
 
 .founder-story-card {
-  display: grid;
-  grid-template-columns: 240px 1fr;
-  gap: 40px;
-  align-items: center;
-  padding: 42px;
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 48px;
   border: 1px solid #e1e7e4;
   border-radius: 24px;
   background: white;
   box-shadow: 0 20px 50px rgba(13, 23, 40, 0.06);
-}
-
-.founder-avatar-box {
-  display: flex;
-  justify-content: center;
 }
 
 .founder-avatar-placeholder {

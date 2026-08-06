@@ -109,7 +109,7 @@ export default function BookDemoPage() {
                 <CheckCircle2 size={48} className="success-icon" />
                 <h2>Demo Request Received!</h2>
                 <p>
-                  Thank you, <strong>{form.firstName}</strong>. Mayank Saxena will review <strong>{form.clubName}</strong>'s request and follow up directly at <strong>{form.workEmail}</strong> to confirm your calendar invitation.
+                  Thank you, <strong>{form.firstName}</strong>. Founder Mayank Saxena (<strong>mayank.saxena@xtide.io</strong>) will review <strong>{form.clubName}</strong>'s request and follow up directly at <strong>{form.workEmail}</strong> to confirm your calendar invitation.
                 </p>
                 <div className="success-next-steps">
                   <h3>What happens next?</h3>
