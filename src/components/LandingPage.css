@@ -964,10 +964,37 @@
 
 .marketing-hero-actions {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-start;
   gap: 12px;
   margin-top: 34px;
+}
+
+.marketing-primary-cta.hero-main-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 440px;
+  min-height: 52px;
+  font-size: 15px;
+  text-align: center;
+}
+
+.marketing-hero-secondary-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  width: 100%;
+  max-width: 440px;
+}
+
+.marketing-hero-secondary-row .marketing-secondary-cta,
+.marketing-hero-secondary-row .marketing-tertiary-cta {
+  flex: 1;
+  justify-content: center;
+  min-height: 48px;
 }
 
 .marketing-primary-cta,

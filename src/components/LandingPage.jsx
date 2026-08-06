@@ -98,9 +98,11 @@ export default function LandingPage() {
             <h1>Your club’s private home for member photos.</h1>
             <p>Give members and staff one beautifully branded place to collect, organize and enjoy club moments without public social media, scattered email attachments or messy shared folders.</p>
             <div className="marketing-hero-actions">
-              <a className="marketing-primary-cta" href="/book-demo">Book a 15-minute demo <ArrowRight size={18} /></a>
-              <a className="marketing-secondary-cta" href="/app?onboard=club">Create your club's account</a>
-              <a className="marketing-tertiary-cta" href="/app?demo=1">View a demo <ArrowRight size={16} /></a>
+              <a className="marketing-primary-cta hero-main-cta" href="/book-demo">Book a 15-minute demo <ArrowRight size={18} /></a>
+              <div className="marketing-hero-secondary-row">
+                <a className="marketing-secondary-cta" href="/app?onboard=club">Create your club's account</a>
+                <a className="marketing-tertiary-cta" href="/app?demo=1">View a demo <ArrowRight size={16} /></a>
+              </div>
             </div>
             <div className="marketing-trust-row">
               <span><Check size={15} /> Built by a private-club operator</span>
