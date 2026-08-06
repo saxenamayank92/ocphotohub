@@ -62,9 +62,30 @@ const routes = [
   {
     path: '/terms',
     title: 'Terms of Service | Club PhotoHub Workspace Terms',
-    description: 'The terms governing Club PhotoHub private photo-sharing workspaces, membership verification, trials, and administrative rights.',
+    description: 'Workspace creation terms, acceptable use, member accounts, ownership rights, and billing rules for Club PhotoHub.',
     image: `${siteUrl}/demo/product-feed.png`,
     schemaType: 'Legal'
+  },
+  {
+    path: '/book-demo',
+    title: 'Book a 15-Minute Demo | Club PhotoHub',
+    description: 'Schedule a personalized 15-minute walkthrough of Club PhotoHub tailored for private golf, yacht, country, and racquet club leadership.',
+    image: `${siteUrl}/demo/product-feed.png`,
+    schemaType: 'WebPage'
+  },
+  {
+    path: '/founding-clubs',
+    title: 'Founding Partner Program & Assisted 60-Day Pilot | Club PhotoHub',
+    description: 'Apply for an assisted 60-day pilot for qualified Canadian and U.S. private clubs. Includes custom branding, roster setup, and 20% founding discount.',
+    image: `${siteUrl}/demo/product-feed.png`,
+    schemaType: 'WebPage'
+  },
+  {
+    path: '/security',
+    title: 'Security, Privacy & Infrastructure | Club PhotoHub',
+    description: 'Verified security controls, Cloudflare Workers edge network, D1/R2 encryption, tenant isolation, and member data privacy specs.',
+    image: `${siteUrl}/demo/product-feed.png`,
+    schemaType: 'WebPage'
   }
 ];
 

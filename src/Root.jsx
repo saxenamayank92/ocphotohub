@@ -3,6 +3,9 @@ import { Capacitor } from '@capacitor/core';
 import LandingPage from './components/LandingPage.jsx';
 import { AdminGuide, FAQPage, FeaturesPage, MemberGuide, PrivacyPage, TermsPage } from './components/InfoPage.jsx';
 import PricingPage from './components/PricingPage.jsx';
+import BookDemoPage from './components/BookDemoPage.jsx';
+import FoundingClubsPage from './components/FoundingClubsPage.jsx';
+import SecurityPage from './components/SecurityPage.jsx';
 import { track, trackPageOnce } from './analytics';
 
 const MemberApp = lazy(() => import('./App.jsx'));
@@ -31,16 +34,13 @@ function LeadTracker({ path, search }) {
 
 export default function Root({ url }) {
   const currentUrl = new URL(url || window.location.href, 'https://clubphotohub.com');
-  // Capacitor normally reports the native platform, but the protocol/host
-  // fallback also covers a freshly installed WebView before plugins finish
-  // initializing. Native builds must never fall through to the marketing demo.
   const isBrowser = typeof window !== 'undefined';
   const isNativeApp = (isBrowser && Capacitor.isNativePlatform())
     || currentUrl.protocol === 'capacitor:'
     || currentUrl.protocol === 'ionic:'
     || (!import.meta.env.DEV && (currentUrl.hostname === 'localhost' || currentUrl.hostname === '127.0.0.1'));
   const directClubPath = /^\/[a-z0-9][a-z0-9-]{0,59}\/?$/i.test(currentUrl.pathname)
-    && !['/api', '/app', '/assets', '/faq', '/features', '/help', '/privacy', '/terms', '/pricing'].includes(currentUrl.pathname.toLowerCase());
+    && !['/api', '/app', '/assets', '/faq', '/features', '/help', '/privacy', '/terms', '/pricing', '/book-demo', '/founding-clubs', '/security'].includes(currentUrl.pathname.toLowerCase());
   const isMemberApp = isNativeApp
     || directClubPath
     || currentUrl.pathname === '/app'
@@ -67,7 +67,10 @@ export default function Root({ url }) {
     '/faq': FAQPage,
     '/privacy': PrivacyPage,
     '/terms': TermsPage,
-    '/pricing': PricingPage
+    '/pricing': PricingPage,
+    '/book-demo': BookDemoPage,
+    '/founding-clubs': FoundingClubsPage,
+    '/security': SecurityPage
   };
   const Page = pages[currentUrl.pathname];
   return <><LeadTracker path={currentUrl.pathname} search={currentUrl.search} />{Page ? <Page /> : <LandingPage />}</>;

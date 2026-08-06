@@ -82,10 +82,10 @@ export default function LandingPage() {
         </a>
         <nav className="marketing-nav-links" aria-label="Main navigation">
           <a href="#features">Features</a>
-          <a href="#solutions">Solutions</a>
-          <a href="#comparison">Compare</a>
-          <a href="#pricing">Pricing</a>
-          <a href="/faq">FAQ</a>
+          <a href="/book-demo">Book Demo</a>
+          <a href="/founding-clubs">Founding Pilot</a>
+          <a href="/pricing">Pricing</a>
+          <a href="/security">Security</a>
         </nav>
         <a className="marketing-nav-cta" href="/app">Member sign in <ArrowRight size={16} /></a>
       </header>
@@ -94,17 +94,18 @@ export default function LandingPage() {
         {/* HERO SECTION */}
         <section className="marketing-hero">
           <div className="marketing-hero-copy">
-            <div className="marketing-eyebrow"><ShieldCheck size={15} /> Private photo sharing for real communities</div>
-            <h1>Your members. Your moments. Your PhotoHub.</h1>
-            <p>Give every golf, yacht, country club or community a private, beautifully branded place to collect and enjoy member memories — without public social media or messy shared folders.</p>
+            <div className="marketing-eyebrow"><ShieldCheck size={15} /> PRIVATE PHOTO SHARING FOR MEMBER CLUBS</div>
+            <h1>Your club’s private home for member photos.</h1>
+            <p>Give members and staff one beautifully branded place to collect, organize and enjoy club moments—without public social media, scattered email attachments or messy shared folders.</p>
             <div className="marketing-hero-actions">
-              <a className="marketing-primary-cta" href="/app?onboard=club">Create workspace <ArrowRight size={18} /></a>
-              <a className="marketing-secondary-cta" href="/app?demo=1">Explore live demo</a>
+              <a className="marketing-primary-cta" href="/book-demo">Book a 15-minute club demo <ArrowRight size={18} /></a>
+              <a className="marketing-secondary-cta" href="/app?demo=1">Explore live gallery</a>
             </div>
             <div className="marketing-trust-row">
-              <span><Check size={15} /> No credit card</span>
-              <span><Check size={15} /> 25 GB included</span>
-              <span><Check size={15} /> Simple pricing</span>
+              <span><Check size={15} /> Built by a private-club operator</span>
+              <span><Check size={15} /> Roster-verified access</span>
+              <span><Check size={15} /> Club-owned workspace</span>
+              <span><Check size={15} /> No public member profiles</span>
             </div>
             <div className="store-badges" aria-label="Mobile apps coming soon">
               <span className="store-badges-label">Coming soon</span>
@@ -226,6 +227,57 @@ export default function LandingPage() {
               <article><strong>01</strong><h3>Create the workspace</h3><p>Choose your organization type, verify the primary administrator and start a separate 30-day trial.</p></article>
               <article><strong>02</strong><h3>Add the directory</h3><p>Enter member names, numbers and registered emails so only recognized people can create accounts.</p></article>
               <article><strong>03</strong><h3>Share the moments</h3><p>Members verify themselves, choose their password and begin uploading, browsing, liking and downloading.</p></article>
+            </div>
+          </div>
+        </section>
+
+        {/* FOUNDER STORY SECTION */}
+        <section className="marketing-section founder-story-section">
+          <div className="founder-story-card">
+            <div className="founder-avatar-box">
+              <div className="founder-avatar-placeholder">MS</div>
+            </div>
+            <div className="founder-story-copy">
+              <span>FOUNDER STORY</span>
+              <h2>Built from inside the private-club industry.</h2>
+              <p>
+                Club PhotoHub was created by <strong>Mayank Saxena</strong>, a Canadian private-club operator who saw valuable member and event photos repeatedly disappear into staff phones, email threads, shared folders, and public social platforms.
+              </p>
+              <p>
+                He built a focused alternative that feels familiar to members while giving the club complete data ownership, privacy, and administrative control. Operates under <strong>xTide Apps</strong>.
+              </p>
+              <div className="founder-contact-meta">
+                <span><strong>Mayank Saxena</strong> · Founder, Club PhotoHub</span>
+                <a href="mailto:mayank.saxena@xtide.io" className="founder-email-link">mayank.saxena@xtide.io</a>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* EXISTING SYSTEMS POSITIONING */}
+        <section className="marketing-section systems-positioning-section">
+          <div className="marketing-section-heading">
+            <span>Seamless Complement</span>
+            <h2>Works alongside the systems your club already uses.</h2>
+            <p>
+              Club PhotoHub is not intended to replace your club-management platform, member portal, or website. It provides a dedicated, member-verified photo experience that links cleanly from your existing digital channels.
+            </p>
+          </div>
+          <div className="systems-features-grid">
+            <div className="system-feature-item">
+              <ShieldCheck size={20} className="system-icon" />
+              <h3>No Core System Replacement</h3>
+              <p>Keep your existing accounting, tee-sheet, and roster software untouched.</p>
+            </div>
+            <div className="system-feature-item">
+              <LockKeyhole size={20} className="system-icon" />
+              <h3>Member Portal Linkage</h3>
+              <p>Link directly from your member portal or mobile app with seamless single sign-on or roster verification.</p>
+            </div>
+            <div className="system-feature-item">
+              <UploadCloud size={20} className="system-icon" />
+              <h3>Assisted Roster Import</h3>
+              <p>Easily import approved member roster CSVs without complex IT migrations.</p>
             </div>
           </div>
         </section>

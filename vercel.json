@@ -90,6 +90,18 @@
       "destination": "/pricing/index.html"
     },
     {
+      "source": "/book-demo",
+      "destination": "/book-demo/index.html"
+    },
+    {
+      "source": "/founding-clubs",
+      "destination": "/founding-clubs/index.html"
+    },
+    {
+      "source": "/security",
+      "destination": "/security/index.html"
+    },
+    {
       "source": "/:clubSlug([a-zA-Z0-9-]+)",
       "destination": "/app-shell.html"
     }

@@ -1478,6 +1478,52 @@ export default {
         ]);
         return noContent(204, origin);
       }
+      if (path === '/platform/demo-request' && request.method === 'POST') {
+        const body = await request.json();
+        const firstName = cleanText(body.firstName, 80);
+        const lastName = cleanText(body.lastName, 80);
+        const workEmail = normalize(body.workEmail);
+        const clubName = cleanText(body.clubName, 120);
+        const jobTitle = cleanText(body.jobTitle || 'General Manager', 80);
+        const country = cleanText(body.country || 'Canada', 40);
+        const provinceState = cleanText(body.provinceState || '', 40);
+        const clubType = cleanText(body.clubType || 'Golf & Country Club', 80);
+        const memberCount = cleanText(body.memberCount || '', 40);
+        const currentPhotoMethod = cleanText(body.currentPhotoMethod || '', 120);
+        const preferredTime = cleanText(body.preferredTime || '', 120);
+        const program = cleanText(body.program || 'Standard Demo', 80);
+        const consent = body.consent ? 1 : 0;
+
+        if (!workEmail || !validEmail(workEmail)) return json({ error: 'Valid work email is required.' }, 400, origin);
+        if (!clubName) return json({ error: 'Club or organization name is required.' }, 400, origin);
+
+        const requestId = randomToken(16);
+        const createdAt = new Date().toISOString();
+
+        await env.DB.prepare(
+          'INSERT INTO demo_requests (id, first_name, last_name, work_email, club_name, job_title, country, province_state, club_type, member_count, current_photo_method, preferred_time, program, consent, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        ).bind(requestId, firstName, lastName, workEmail, clubName, jobTitle, country, provinceState, clubType, memberCount, currentPhotoMethod, preferredTime, program, consent, createdAt).run();
+
+        // Optional notification to founder
+        if (env.MAILERSEND_API_TOKEN && env.FOUNDER_EMAIL) {
+          ctx?.waitUntil(fetch('https://api.mailersend.com/v1/email', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${env.MAILERSEND_API_TOKEN}`
+            },
+            body: JSON.stringify({
+              from: { email: 'notifications@clubphotohub.com', name: 'Club PhotoHub Growth' },
+              to: [{ email: env.FOUNDER_EMAIL, name: 'Mayank Saxena' }],
+              subject: `🔥 Demo Request: ${clubName} (${firstName} ${lastName})`,
+              text: `New Demo Request Received!\n\nClub: ${clubName}\nContact: ${firstName} ${lastName} (${jobTitle})\nEmail: ${workEmail}\nCountry/State: ${country} / ${provinceState}\nClub Type: ${clubType}\nMembers: ${memberCount}\nMethod: ${currentPhotoMethod}\nPreferred Slot: ${preferredTime}\nProgram: ${program}`
+            })
+          }).catch(err => console.error('Failed sending demo notification:', err.message)));
+        }
+
+        return json({ ok: true, id: requestId }, 201, origin);
+      }
+
       if (path === '/reset' && request.method === 'POST') {
         const session = await requireAuth(request, env, 'admin');
         if (!session) return json({ error: 'Forbidden.' }, 403, origin);
