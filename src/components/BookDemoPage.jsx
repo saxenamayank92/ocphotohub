@@ -109,14 +109,14 @@ export default function BookDemoPage() {
                 <CheckCircle2 size={48} className="success-icon" />
                 <h2>Demo Request Received!</h2>
                 <p>
-                  Thank you, <strong>{form.firstName}</strong>. Founder Mayank Saxena (<strong>mayank.saxena@xtide.io</strong>) will review <strong>{form.clubName}</strong>'s request and follow up directly at <strong>{form.workEmail}</strong> to confirm your calendar invitation.
+                  Thank you, <strong>{form.firstName}</strong>. We will review <strong>{form.clubName}</strong>'s request and get in touch at <strong>{form.workEmail}</strong> to confirm your calendar invitation.
                 </p>
                 <div className="success-next-steps">
                   <h3>What happens next?</h3>
                   <ol>
                     <li>You'll receive a confirmation email with calendar choices.</li>
                     <li>We'll prepare a custom preview tailored for {form.clubType}.</li>
-                    <li>No pushy sales reps, just a 15-minute walkthrough with the founder.</li>
+                    <li>No pushy sales reps, just a concise 15-minute walkthrough.</li>
                   </ol>
                 </div>
                 <a href="/app?demo=1" className="marketing-primary-cta" style={{ width: '100%', justifyContent: 'center', marginTop: 20 }}>
