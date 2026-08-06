@@ -25,7 +25,7 @@ const securityControls = [
     icon: Lock,
     title: 'Tenant Isolation & Privacy',
     items: [
-      'Complete workspace isolation — photos and rosters cannot cross club boundaries.',
+      'Complete workspace isolation: photos and rosters cannot cross club boundaries.',
       'No public member profiles or search engine indexing (`noindex, nofollow`).',
       'Roster-verified signup: Only recognized emails in your club directory can join.'
     ]

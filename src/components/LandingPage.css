@@ -963,19 +963,20 @@
 }
 
 .marketing-hero-actions {
-  display: grid;
-  grid-template-columns: minmax(0, 1.18fr) minmax(0, .82fr);
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   margin-top: 34px;
 }
 
 .marketing-primary-cta,
-.marketing-secondary-cta {
+.marketing-secondary-cta,
+.marketing-tertiary-cta {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 8px;
   min-height: 48px;
   padding: 0 20px;
   border-radius: 12px;
@@ -983,20 +984,43 @@
   font-weight: 700;
   text-decoration: none;
   white-space: nowrap;
+  transition: all 0.15s ease;
 }
 
 .marketing-primary-cta {
   color: white;
-  background: var(--club-green);
-  box-shadow: 0 12px 26px rgba(23, 34, 56, .2);
+  background: var(--club-green-dark);
+  box-shadow: 0 8px 20px rgba(23, 34, 56, 0.15);
 }
 
-.marketing-primary-cta:hover { transform: translateY(-2px); }
+.marketing-primary-cta:hover {
+  background: #0f1828;
+  transform: translateY(-2px);
+  box-shadow: 0 12px 26px rgba(23, 34, 56, 0.22);
+}
 
 .marketing-secondary-cta {
-  border: 1px solid rgba(23, 34, 56, .16);
+  border: 1px solid rgba(23, 34, 56, 0.2);
   color: var(--club-green-dark);
   background: white;
+  box-shadow: 0 4px 12px rgba(13, 23, 40, 0.03);
+}
+
+.marketing-secondary-cta:hover {
+  background: #f7faf8;
+  border-color: var(--club-green-dark);
+  transform: translateY(-2px);
+}
+
+.marketing-tertiary-cta {
+  border: 1px solid transparent;
+  color: var(--brand-teal-dark);
+  background: rgba(40, 92, 89, 0.08);
+}
+
+.marketing-tertiary-cta:hover {
+  background: rgba(40, 92, 89, 0.14);
+  color: var(--club-green-dark);
 }
 
 .marketing-trust-row {

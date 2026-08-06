@@ -137,7 +137,7 @@ export default function VerticalShowcase() {
 
             <blockquote className="vertical-quote">
               <p>“{activeVertical.quote}”</p>
-              <cite>— Verified Club Administrator</cite>
+              <cite>- Verified Club Administrator</cite>
             </blockquote>
           </div>
         </div>

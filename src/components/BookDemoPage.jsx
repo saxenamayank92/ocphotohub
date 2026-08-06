@@ -116,7 +116,7 @@ export default function BookDemoPage() {
                   <ol>
                     <li>You'll receive a confirmation email with calendar choices.</li>
                     <li>We'll prepare a custom preview tailored for {form.clubType}.</li>
-                    <li>No pushy sales reps — just a 15-minute walkthrough with the founder.</li>
+                    <li>No pushy sales reps, just a 15-minute walkthrough with the founder.</li>
                   </ol>
                 </div>
                 <a href="/app?demo=1" className="marketing-primary-cta" style={{ width: '100%', justifyContent: 'center', marginTop: 20 }}>

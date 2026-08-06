@@ -282,7 +282,7 @@ export function TermsPage() {
 export function FeaturesPage() {
   const items = [
     [Images, 'Mobile-first photo feed', 'A familiar scrolling experience with likes, downloads, captions, categories and touch zoom.'],
-    [ShieldCheck, 'Organization-owned access', 'Member number, name and roster email checks—not a public social profile.'],
+    [ShieldCheck, 'Organization-owned access', 'Member number, name and roster email checks, not a public social profile.'],
     [Users, 'Directory and moderation', 'Administrators control membership records, branding and inappropriate content.'],
     [UploadCloud, 'Fast group uploads', 'Members prepare multiple photos, captions and categories from phone or desktop.']
   ];

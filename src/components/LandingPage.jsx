@@ -96,11 +96,11 @@ export default function LandingPage() {
           <div className="marketing-hero-copy">
             <div className="marketing-eyebrow"><ShieldCheck size={15} /> PRIVATE PHOTO SHARING FOR MEMBER CLUBS</div>
             <h1>Your club’s private home for member photos.</h1>
-            <p>Give members and staff one beautifully branded place to collect, organize and enjoy club moments—without public social media, scattered email attachments or messy shared folders.</p>
+            <p>Give members and staff one beautifully branded place to collect, organize and enjoy club moments without public social media, scattered email attachments or messy shared folders.</p>
             <div className="marketing-hero-actions">
               <a className="marketing-primary-cta" href="/book-demo">Book a 15-minute demo <ArrowRight size={18} /></a>
               <a className="marketing-secondary-cta" href="/app?onboard=club">Create your club's account</a>
-              <a className="marketing-demo-link" href="/app?demo=1">Explore live gallery →</a>
+              <a className="marketing-tertiary-cta" href="/app?demo=1">View a demo <ArrowRight size={16} /></a>
             </div>
             <div className="marketing-trust-row">
               <span><Check size={15} /> Built by a private-club operator</span>
@@ -326,11 +326,11 @@ export default function LandingPage() {
             </ul>
           </div>
           <div className="marketing-phone-card">
-            <div className="marketing-phone-top"><Smartphone size={18} /> Mobile-ready web app • No app install required</div>
+            <div className="marketing-phone-top"><Smartphone size={18} /> Available on iOS and Android</div>
             <img className="marketing-real-phone-photo" src="./demo/lakeside-social.jpg" alt="Your Club members sharing a lakeside social" loading="lazy" decoding="async" />
             <div className="marketing-phone-caption">
               <strong>Every club moment, in your pocket</strong>
-              <span>Works seamlessly on iOS, Android, tablets, and desktop browsers.</span>
+              <span>Works seamlessly on iPhone, Android, tablets, and web browsers.</span>
             </div>
           </div>
         </section>
@@ -372,6 +372,7 @@ export default function LandingPage() {
           <div className="final-actions">
             <a className="marketing-primary-cta" href="/book-demo">Book a 15-minute demo <ArrowRight size={18} /></a>
             <a className="marketing-secondary-cta" href="/app?onboard=club">Create your club's account</a>
+            <a className="marketing-tertiary-cta" href="/app?demo=1">View a demo <ArrowRight size={16} /></a>
           </div>
         </section>
       </main>
