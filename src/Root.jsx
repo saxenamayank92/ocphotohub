@@ -32,6 +32,37 @@ function LeadTracker({ path, search }) {
   return null;
 }
 
+class AppErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error, errorInfo) {
+    console.error('AppErrorBoundary caught error:', error, errorInfo);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '80vh', padding: 24, textAlign: 'center', fontFamily: 'system-ui, sans-serif' }}>
+          <h2 style={{ fontSize: 22, color: '#0f1828', marginBottom: 8 }}>Unable to load gallery view</h2>
+          <p style={{ fontSize: 14, color: '#61706c', marginBottom: 20 }}>A temporary loading issue occurred. Tap below to reload the live demo.</p>
+          <button
+            type="button"
+            onClick={() => { window.location.reload(); }}
+            style={{ padding: '10px 20px', borderRadius: 99, background: '#0f1828', color: '#fff', border: 'none', fontWeight: 700, cursor: 'pointer' }}
+          >
+            Reload Live Demo
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export default function Root({ url }) {
   const currentUrl = new URL(url || window.location.href, 'https://clubphotohub.com');
   const isBrowser = typeof window !== 'undefined';
@@ -55,9 +86,11 @@ export default function Root({ url }) {
 
   if (isMemberApp) return (<>
     {(currentUrl.searchParams.has('demo') || currentUrl.searchParams.has('onboard')) && <LeadTracker path={currentUrl.pathname} search={currentUrl.search} />}
-    <Suspense fallback={<div className="member-route-loading">Opening your private gallery…</div>}>
-      <MemberApp />
-    </Suspense>
+    <AppErrorBoundary>
+      <Suspense fallback={<div className="member-route-loading">Opening your private gallery…</div>}>
+        <MemberApp />
+      </Suspense>
+    </AppErrorBoundary>
   </>);
 
   const pages = {
