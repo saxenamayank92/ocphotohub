@@ -1062,12 +1062,39 @@
 
 .marketing-trust-row span { display: inline-flex; align-items: center; gap: 5px; }
 .marketing-trust-row svg { color: var(--brand-teal); }
-.store-badges { display: grid; gap: 11px; margin-top: 24px; }
+.store-badges { display: grid; gap: 8px; margin-top: 24px; }
 .store-badges-label { color: var(--club-gold-dark); font-size: 11px; font-weight: 850; letter-spacing: .18em; text-transform: uppercase; }
-.store-badges-row { display: flex; flex-wrap: wrap; gap: 10px; }
-.store-badge { display: inline-flex; align-items: center; gap: 10px; min-width: 150px; padding: 7px 0; color: var(--club-green-dark); background: transparent; }
-.store-badge img { display: block; width: 34px; height: 34px; flex: 0 0 34px; object-fit: contain; }
-.store-badge strong { font-size: 14px; font-weight: 750; }
+.store-badges-row { display: flex; flex-wrap: wrap; gap: 12px; }
+.store-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+.store-badge.google-play-badge {
+  background: #0f1828;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 4px 12px rgba(15, 24, 40, 0.15);
+}
+.store-badge.google-play-badge:hover {
+  transform: translateY(-2px);
+  background: #18253b;
+  box-shadow: 0 8px 20px rgba(15, 24, 40, 0.25);
+}
+.store-badge.app-store-badge {
+  background: rgba(15, 24, 40, 0.05);
+  color: #61706c;
+  border: 1px dashed rgba(15, 24, 40, 0.2);
+  cursor: default;
+}
+.store-badge img { display: block; width: 22px; height: 22px; flex: 0 0 22px; object-fit: contain; }
+.badge-text-block { display: flex; flex-direction: column; text-align: left; }
+.badge-sub { font-size: 9px; font-weight: 700; letter-spacing: 0.08em; opacity: 0.8; line-height: 1.1; }
+.store-badge strong { font-size: 13px; font-weight: 750; line-height: 1.2; }
 
 .marketing-product-stage {
   overflow: hidden;

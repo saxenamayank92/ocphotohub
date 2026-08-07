@@ -110,11 +110,29 @@ export default function LandingPage() {
               <span><Check size={15} /> Club-owned workspace</span>
               <span><Check size={15} /> No public member profiles</span>
             </div>
-            <div className="store-badges" aria-label="Mobile apps coming soon">
-              <span className="store-badges-label">Coming soon</span>
+            <div className="store-badges" aria-label="Mobile app availability">
+              <span className="store-badges-label">Native Mobile Apps</span>
               <div className="store-badges-row">
-                <span className="store-badge"><img src="./app-store-mark.svg" alt="" width="18" height="18" /><strong>App Store</strong></span>
-                <span className="store-badge"><img src="./google-play-mark.svg" alt="" width="18" height="18" /><strong>Google Play</strong></span>
+                <a
+                  href="https://play.google.com/store/apps/details?id=com.clubphotohub.app&hl=en"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="store-badge google-play-badge"
+                  title="Get Club PhotoHub on Google Play"
+                >
+                  <img src="./google-play-mark.svg" alt="" width="20" height="20" />
+                  <div className="badge-text-block">
+                    <span className="badge-sub">GET IT ON</span>
+                    <strong>Google Play</strong>
+                  </div>
+                </a>
+                <div className="store-badge app-store-badge" title="iOS App Store coming soon">
+                  <img src="./app-store-mark.svg" alt="" width="20" height="20" />
+                  <div className="badge-text-block">
+                    <span className="badge-sub">COMING SOON</span>
+                    <strong>App Store</strong>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

@@ -76,8 +76,8 @@ const faqs = [
   },
   {
     category: 'general',
-    question: 'Will there be dedicated mobile apps for iOS and Android?',
-    answer: 'Yes. Club PhotoHub already works well on phones, tablets and computers. Dedicated iPhone and Android apps are also being developed.'
+    question: 'Are dedicated mobile apps available for iOS and Android?',
+    answer: 'Yes! Club PhotoHub is live on Android on the Google Play Store (App Store for iOS coming soon). The platform also works seamlessly as a responsive web app across all phones, tablets, and desktop computers.'
   },
   {
     category: 'pricing',
