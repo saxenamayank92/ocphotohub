@@ -687,14 +687,14 @@ export default function LeadDashboard() {
             <button onClick={() => setFollowupLead(null)} className="btn-close-modal"><X size={18} /></button>
           </div>
 
-          <div className="email-preview-box">
-            <div className="email-preview-header">
-              <img src="https://clubphotohub.com/club-photo-hub-icon-192.png" width="36" height="36" alt="Icon" />
-              <div>
-                <span className="eyebrow">CUSTOM SAMPLE PREVIEW</span>
-                <h4>Follow-up: Custom preview for {followupLead.clubName}</h4>
+            <div className="email-preview-box">
+              <div className="email-preview-header">
+                <img src="https://clubphotohub.com/club-photo-hub-icon-192.png" width="36" height="36" alt="Icon" />
+                <div>
+                  <span className="eyebrow" style={{ color: '#f59e0b', fontSize: 11, fontWeight: 800 }}>EMAIL SUBJECT LINE</span>
+                  <h4 style={{ color: '#ffffff', margin: '2px 0 0', fontSize: 15, fontWeight: 700 }}>Subject: Follow-up: Custom preview for {followupLead.clubName}</h4>
+                </div>
               </div>
-            </div>
             <div className="email-preview-body">
               {(() => {
                 const targetFirst = (followupLead.firstName && followupLead.firstName.trim() && followupLead.firstName !== 'General Manager') ? followupLead.firstName.trim() : 'there';

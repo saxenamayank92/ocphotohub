@@ -666,24 +666,27 @@
   overflow-y: auto;
 }
 .email-preview-header {
-  background: #172238;
-  color: white;
-  padding: 20px 24px;
+  background: #0f1828;
+  color: #ffffff !important;
+  padding: 16px 20px;
   display: flex;
   align-items: center;
   gap: 14px;
+  border-bottom: 1px solid #1e293b;
 }
 .email-preview-header .eyebrow {
-  color: #e2c892;
-  font-size: 10px;
+  color: #f59e0b;
+  font-size: 11px;
   font-weight: 800;
-  letter-spacing: 2px;
+  letter-spacing: 1.5px;
+  display: block;
 }
 .email-preview-header h4 {
-  margin: 2px 0 0;
-  font-family: Georgia, serif;
-  font-size: 18px;
-  font-weight: normal;
+  margin: 3px 0 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: #ffffff !important;
 }
 .email-preview-body {
   padding: 24px;
