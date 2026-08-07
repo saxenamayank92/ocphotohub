@@ -62,6 +62,7 @@ export default function LeadDashboard() {
 
   // Email Preview Modal state
   const [previewLead, setPreviewLead] = useState(null);
+  const [followupLead, setFollowupLead] = useState(null);
   const [sendingEmail, setSendingEmail] = useState(false);
 
   // Bulk AI Outreach state
@@ -175,6 +176,34 @@ export default function LeadDashboard() {
       await load();
     } catch (error) {
       alert(error.message || 'Could not send outreach email. Please verify MailerSend setup.');
+    } finally {
+      setSendingEmail(false);
+    }
+  };
+
+  const handleSendFollowupEmail = async (lead) => {
+    setSendingEmail(true);
+    try {
+      await sendOutreachEmail({
+        leadId: lead.id,
+        clubName: lead.clubName,
+        firstName: lead.firstName,
+        email: lead.email,
+        organizationType: lead.organizationType,
+        leadCode: lead.leadCode || lead.id,
+        templateType: 'followup'
+      });
+      alert(`Follow-up email successfully sent to ${lead.email}!`);
+      setFollowupLead(null);
+      await load();
+    } catch (error) {
+      alert(error.message || 'Could not send follow-up via server. Opening pre-filled Gmail draft...');
+      const first = lead.firstName || 'General Manager';
+      const encodedClub = encodeURIComponent(lead.clubName);
+      const subject = `Follow-up: Custom preview for ${lead.clubName}`;
+      const body = `Hi ${first},\n\nFollowing up on my note earlier regarding private member photo sharing.\n\nWe just introduced custom sample previews where we set up a private workspace using ${lead.clubName}'s branding and event categories so you can see exactly how your members would experience it. Zero setup required for your staff.\n\nYou can request a private sample preview in 10 seconds here:\n👉 https://clubphotohub.com/book-demo?club=${encodedClub}\n\nOr simply reply to this email with "yes" and I'll build out a preview for ${lead.clubName}.\n\nMayank Saxena\nmayank.saxena@xtide.io\nhttps://clubphotohub.com\n\n--\nxTide Apps / Club PhotoHub\nActon, ON L7J 1H3, Canada\nReply unsubscribe to opt out.`;
+      const gmailUrl = `https://mail.google.com/mail/u/0/?view=cm&fs=1&tf=1&to=${encodeURIComponent(lead.email)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      window.open(gmailUrl, '_blank');
     } finally {
       setSendingEmail(false);
     }
@@ -439,6 +468,15 @@ export default function LeadDashboard() {
                         <Send size={12} /> Send Email
                       </button>
                     )}
+                    {lead.email && (lead.status === 'demo_opened' || lead.status === 'link_clicked' || (lead.clicksCount && lead.clicksCount > 0)) && (
+                      <button
+                        className="btn-send-followup-action"
+                        onClick={() => setFollowupLead(lead)}
+                        title="Send Branded Preview Follow-Up Email"
+                      >
+                        <Sparkles size={12} /> 🔥 Send Follow-Up
+                      </button>
+                    )}
                     {lead.workspaceClubId ? (
                       <a href={`/${lead.workspaceClubId}`} target="_blank" rel="noreferrer" className="btn-workspace-open">
                         Open Workspace <ExternalLink size={12} />
@@ -631,6 +669,63 @@ export default function LeadDashboard() {
               className="btn-submit btn-send-now"
             >
               {sendingEmail ? 'Sending Email...' : `Send Email to ${previewLead.email}`}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Follow-Up Preview Modal */}
+    {followupLead && (
+      <div className="lead-modal-backdrop" onClick={() => setFollowupLead(null)}>
+        <div className="lead-modal-content modal-lg" onClick={e => e.stopPropagation()}>
+          <div className="lead-modal-header">
+            <div>
+              <h3><Sparkles size={18} /> 🔥 Send Branded Preview Follow-Up</h3>
+              <p>Personalized follow-up for <strong>{followupLead.clubName}</strong> ({followupLead.email})</p>
+            </div>
+            <button onClick={() => setFollowupLead(null)} className="btn-close-modal"><X size={18} /></button>
+          </div>
+
+          <div className="email-preview-box">
+            <div className="email-preview-header">
+              <img src="https://clubphotohub.com/club-photo-hub-icon-192.png" width="36" height="36" alt="Icon" />
+              <div>
+                <span className="eyebrow">CUSTOM SAMPLE PREVIEW</span>
+                <h4>Follow-up: Custom preview for {followupLead.clubName}</h4>
+              </div>
+            </div>
+            <div className="email-preview-body">
+              <p>Hi {followupLead.firstName || 'General Manager'},</p>
+              <p>Following up on my note earlier regarding private member photo sharing.</p>
+              <p>We just introduced custom sample previews where we set up a private workspace using <strong>{followupLead.clubName}</strong>'s branding and event categories so you can see exactly how your members would experience it. Zero setup required for your staff.</p>
+              <div className="cta-preview-btn" style={{ background: '#0f1828', color: '#fff', padding: '12px 18px', borderRadius: 8, margin: '14px 0' }}>
+                👉 Request Sample Preview: <code>https://clubphotohub.com/book-demo?club={encodeURIComponent(followupLead.clubName)}</code>
+              </div>
+              <p>Or simply reply to this email with "yes" and I'll build out a preview for {followupLead.clubName}.</p>
+              <p>Best regards,<br /><strong>Mayank Saxena</strong><br />Founder, Club PhotoHub</p>
+            </div>
+          </div>
+
+          <div className="modal-actions" style={{ gap: 10 }}>
+            <button type="button" onClick={() => setFollowupLead(null)} className="btn-cancel">Cancel</button>
+            <a
+              href={`https://mail.google.com/mail/u/0/?view=cm&fs=1&tf=1&to=${encodeURIComponent(followupLead.email)}&su=${encodeURIComponent(`Follow-up: Custom preview for ${followupLead.clubName}`)}&body=${encodeURIComponent(`Hi ${followupLead.firstName || 'General Manager'},\n\nFollowing up on my note earlier regarding private member photo sharing.\n\nWe just introduced custom sample previews where we set up a private workspace using ${followupLead.clubName}'s branding and event categories so you can see exactly how your members would experience it. Zero setup required for your staff.\n\nYou can request a private sample preview in 10 seconds here:\n👉 https://clubphotohub.com/book-demo?club=${encodeURIComponent(followupLead.clubName)}\n\nOr simply reply to this email with "yes" and I'll build out a preview for ${followupLead.clubName}.\n\nMayank Saxena\nmayank.saxena@xtide.io\nhttps://clubphotohub.com\n\n--\nxTide Apps / Club PhotoHub\nActon, ON L7J 1H3, Canada\nReply unsubscribe to opt out.`)}`}
+              target="_blank"
+              rel="noreferrer"
+              className="btn-submit"
+              style={{ background: '#0f1828', color: '#fff', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+            >
+              ✉️ Open in Gmail Compose
+            </a>
+            <button
+              type="button"
+              disabled={sendingEmail}
+              onClick={() => handleSendFollowupEmail(followupLead)}
+              className="btn-submit btn-send-now"
+              style={{ background: '#d97706', color: '#fff' }}
+            >
+              {sendingEmail ? 'Sending Follow-Up...' : `⚡ Send Server Follow-Up`}
             </button>
           </div>
         </div>

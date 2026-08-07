@@ -455,9 +455,18 @@ async function sendOutreachLeadEmail(request, env, origin) {
 
   const code = leadCode || clubName.toLowerCase().replace(/[^a-z0-9]/g, '-').slice(0, 30);
   const demoUrl = `https://clubphotohub.com/?demo=1&lead=${encodeURIComponent(code)}`;
-  const subject = `A private photo hub for ${clubName} members`;
-  const html = outreachEmailTemplate({ clubName, firstName, organizationType, leadCode: code, demoUrl });
-  const text = `Hi ${firstName || 'General Manager'},\n\n${clubName}'s mix of member events creates moments valuable to preserve privately.\n\nClub PhotoHub gives ${clubName} its own branded, roster-verified photo gallery.\n\nExplore Club PhotoHub: ${demoUrl}\n\nBest regards,\nMayank Saxena\nFounder, Club PhotoHub\nmayank.saxena@xtide.io`;
+  const isFollowup = body.templateType === 'followup';
+  const encodedClub = encodeURIComponent(clubName);
+  const previewUrl = `https://clubphotohub.com/book-demo?club=${encodedClub}`;
+
+  const subject = body.subject || (isFollowup ? `Follow-up: Custom preview for ${clubName}` : `A private photo hub for ${clubName} members`);
+  const text = body.text || (isFollowup
+    ? `Hi ${firstName || 'General Manager'},\n\nFollowing up on my note earlier regarding private member photo sharing.\n\nWe just introduced custom sample previews where we set up a private workspace using ${clubName}'s branding and event categories so you can see exactly how your members would experience it. Zero setup required for your staff.\n\nYou can request a private sample preview in 10 seconds here:\n👉 ${previewUrl}\n\nOr simply reply to this email with "yes" and I'll build out a preview for ${clubName}.\n\nBest regards,\nMayank Saxena\nmayank.saxena@xtide.io`
+    : `Hi ${firstName || 'General Manager'},\n\n${clubName}'s mix of member events creates moments valuable to preserve privately.\n\nClub PhotoHub gives ${clubName} its own branded, roster-verified photo gallery.\n\nExplore Club PhotoHub: ${demoUrl}\n\nBest regards,\nMayank Saxena\nFounder, Club PhotoHub\nmayank.saxena@xtide.io`);
+
+  const html = isFollowup
+    ? clubPhotoHubEmail({ eyebrow: 'Sample Workspace Preview', title: `Custom preview for ${clubName}`, intro: `Following up on my note earlier regarding private member photo sharing. We set up custom sample previews styled with ${clubName}'s branding so your team can evaluate it risk-free.`, actionLabel: `Request Preview for ${clubName}`, actionUrl: previewUrl })
+    : outreachEmailTemplate({ clubName, firstName, organizationType, leadCode: code, demoUrl });
 
   const founderName = env.FOUNDER_NAME || 'Mayank Saxena';
   const founderEmail = env.FOUNDER_EMAIL || 'mayank.saxena@xtide.io';
