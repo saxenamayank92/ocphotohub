@@ -192,13 +192,20 @@ export default function BookDemoPage() {
       </main>
 
       <footer className="marketing-footer">
-        <div className="marketing-footer-content">
-          <p>© {new Date().getFullYear()} Club PhotoHub (xTide Apps). All rights reserved.</p>
-          <div className="marketing-footer-links">
+        <div className="marketing-footer-container">
+          <div className="marketing-brand">
+            <img src={platformBrand.mark} alt="" width="28" height="28" />
+            <span>{platformBrand.name}</span>
+          </div>
+          <div className="footer-links">
+            <a href="/features">Features</a>
+            <a href="/pricing">Pricing</a>
             <a href="/security">Security</a>
             <a href="/founding-clubs">Founding Pilot</a>
-            <a href="/app">Member Portal</a>
+            <a href="/privacy">Privacy</a>
+            <a href="/terms">Terms</a>
           </div>
+          <span>© {new Date().getFullYear()} xTide Apps</span>
         </div>
       </footer>
     </div>

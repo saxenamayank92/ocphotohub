@@ -5,36 +5,36 @@ import { platformBrand } from '../brand';
 const securityControls = [
   {
     icon: Server,
-    title: 'Cloud Infrastructure & Hosting',
+    title: 'Global Infrastructure & Hosting',
     items: [
-      'Hosted on Cloudflare Workers edge network across 275+ global data centers.',
-      'Strict TLS 1.3 encryption in transit for all browser and API requests.',
-      'DDoS mitigation and web application firewall (WAF) enabled by default.'
+      'Enterprise cloud network with global edge performance and 99.9% uptime availability.',
+      'Strict TLS 1.3 encryption in transit for all web and mobile application requests.',
+      'Automatic DDoS mitigation and Web Application Firewall (WAF) active by default.'
     ]
   },
   {
     icon: HardDrive,
     title: 'Data Storage & Encryption',
     items: [
-      'Database: Cloudflare D1 distributed SQL with encrypted data stores.',
-      'Photo Storage: Cloudflare R2 Object Storage with AES-256 encryption at rest.',
-      'Passwords hashed with unique cryptographic salts (SHA-256 / PBKDF2).'
+      'Encrypted Private Database: Isolated cloud SQL storage for member verification.',
+      'Bank-Grade Photo Storage: AES-256 encryption at rest for all member photos.',
+      'Password Protection: Salted, one-way cryptographic hashing for all credentials.'
     ]
   },
   {
     icon: Lock,
-    title: 'Tenant Isolation & Privacy',
+    title: 'Tenant Isolation & Member Privacy',
     items: [
-      'Complete workspace isolation: photos and rosters cannot cross club boundaries.',
-      'No public member profiles or search engine indexing (`noindex, nofollow`).',
-      'Roster-verified signup: Only recognized emails in your club directory can join.'
+      'Complete workspace isolation: photos and rosters never cross club boundaries.',
+      'No public member profiles or search engine indexing (noindex, nofollow).',
+      'Roster-verified sign-in: Only recognized emails in your club directory can access.'
     ]
   },
   {
     icon: ShieldCheck,
     title: 'Administrative Controls',
     items: [
-      'Role-based access: Separate permissions for Club Owners, Staff Admins, and Members.',
+      'Role-based permissions: Separate controls for Club Owners, Staff Admins, and Members.',
       'Photo moderation panel allowing instant deletion or caption updates by staff.',
       'Full data export and complete workspace deletion controls upon cancellation.'
     ]
@@ -99,6 +99,24 @@ export default function SecurityPage() {
           </div>
         </section>
       </main>
+
+      <footer className="marketing-footer">
+        <div className="marketing-footer-container">
+          <div className="marketing-brand">
+            <img src={platformBrand.mark} alt="" width="28" height="28" />
+            <span>{platformBrand.name}</span>
+          </div>
+          <div className="footer-links">
+            <a href="/features">Features</a>
+            <a href="/pricing">Pricing</a>
+            <a href="/security">Security</a>
+            <a href="/founding-clubs">Founding Pilot</a>
+            <a href="/privacy">Privacy</a>
+            <a href="/terms">Terms</a>
+          </div>
+          <span>© {new Date().getFullYear()} xTide Apps</span>
+        </div>
+      </footer>
     </div>
   );
 }
