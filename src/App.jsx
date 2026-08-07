@@ -1,6 +1,6 @@
 import React, { lazy, Suspense, useEffect, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
-import { ShieldCheck, AlertCircle, Info } from 'lucide-react';
+import { ShieldCheck, AlertCircle, Info, ArrowRight, Sparkles } from 'lucide-react';
 import { getAllPhotos, savePhoto, deletePhoto as localDeletePhoto, clearAllPhotos } from './db';
 import { demoAdminUser, demoClub, demoMembers, demoPhotos, demoUser, seedMembers, seedPhotos } from './seedData';
 import Login from './components/Login';
