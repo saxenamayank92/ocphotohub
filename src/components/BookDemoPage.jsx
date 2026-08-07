@@ -95,8 +95,8 @@ export default function BookDemoPage() {
               <div className="demo-trust-item">
                 <ShieldCheck className="trust-icon" size={20} />
                 <div>
-                  <strong>Built by a Private Club Operator</strong>
-                  <span>Designed by Mayank Saxena from inside Canadian private club operations.</span>
+                  <strong>Purpose-Built for Private Clubs</strong>
+                  <span>Focused exclusively on private golf, yacht, country, and racquet club needs.</span>
                 </div>
               </div>
               <div className="demo-trust-item">

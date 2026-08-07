@@ -105,7 +105,7 @@ export default function LandingPage() {
               </div>
             </div>
             <div className="marketing-trust-row">
-              <span><Check size={15} /> Built by a private-club operator</span>
+              <span><Check size={15} /> Purpose-built for private clubs</span>
               <span><Check size={15} /> Roster-verified access</span>
               <span><Check size={15} /> Club-owned workspace</span>
               <span><Check size={15} /> No public member profiles</span>
@@ -248,26 +248,6 @@ export default function LandingPage() {
               <article><strong>01</strong><h3>Create the workspace</h3><p>Choose your organization type, verify the primary administrator and start a separate 30-day trial.</p></article>
               <article><strong>02</strong><h3>Add the directory</h3><p>Enter member names, numbers and registered emails so only recognized people can create accounts.</p></article>
               <article><strong>03</strong><h3>Share the moments</h3><p>Members verify themselves, choose their password and begin uploading, browsing, liking and downloading.</p></article>
-            </div>
-          </div>
-        </section>
-
-        {/* FOUNDER STORY SECTION */}
-        <section className="marketing-section founder-story-section">
-          <div className="founder-story-card">
-            <div className="founder-story-copy">
-              <span>FOUNDER STORY</span>
-              <h2>Built from inside the private-club industry.</h2>
-              <p>
-                Club PhotoHub was created by <strong>Mayank Saxena</strong>, a Canadian private-club operator who saw valuable member and event photos repeatedly disappear into staff phones, email threads, shared folders, and public social platforms.
-              </p>
-              <p>
-                He built a focused alternative that feels familiar to members while giving the club complete data ownership, privacy, and administrative control. Operates under <strong>xTide Apps</strong>.
-              </p>
-              <div className="founder-contact-meta">
-                <span><strong>Mayank Saxena</strong> · Founder, Club PhotoHub</span>
-                <a href="mailto:mayank.saxena@xtide.io" className="founder-email-link">mayank.saxena@xtide.io</a>
-              </div>
             </div>
           </div>
         </section>
