@@ -54,5 +54,11 @@
 	<true/>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>NSCameraUsageDescription</key>
+	<string>Club PhotoHub requires camera access so members and administrators can take photos of club event moments and crest logos.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Club PhotoHub requires photo library access so you can select and share club photos and logo files.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Club PhotoHub requires permission to save photos to your photo library.</string>
 </dict>
 </plist>

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { ArrowRight, Calendar, CheckCircle2, LockKeyhole, ShieldCheck, Sparkles } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ArrowRight, CheckCircle2, LockKeyhole, ShieldCheck, Sparkles } from 'lucide-react';
 import { platformBrand } from '../brand';
 
 export default function BookDemoPage() {
@@ -7,45 +7,58 @@ export default function BookDemoPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [form, setForm] = useState({
-    firstName: '',
-    lastName: '',
-    workEmail: '',
     clubName: '',
-    jobTitle: 'General Manager',
-    country: 'Canada',
-    provinceState: '',
-    clubType: 'Golf & Country Club',
-    memberCount: '',
-    currentPhotoMethod: 'Shared folders (Drive/Dropbox)',
-    preferredTime: '',
-    consent: true
+    workEmail: ''
   });
 
+  useEffect(() => {
+    // Read pre-filled club name from URL search params if present
+    const params = new URLSearchParams(window.location.search);
+    const prefilledClub = params.get('club') || params.get('clubName') || '';
+    const prefilledEmail = params.get('email') || '';
+    if (prefilledClub || prefilledEmail) {
+      setForm(prev => ({
+        ...prev,
+        clubName: prefilledClub || prev.clubName,
+        workEmail: prefilledEmail || prev.workEmail
+      }));
+    }
+  }, []);
+
   const handleChange = e => {
-    const { name, value, type, checked } = e.target;
-    setForm(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+    const { name, value } = e.target;
+    setForm(prev => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async e => {
     e.preventDefault();
     setError('');
-    if (!form.consent) {
-      setError('Please confirm consent to receive scheduling follow-up.');
-      return;
-    }
     setLoading(true);
     try {
       const response = await fetch('/api/platform/demo-request', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form)
+        body: JSON.stringify({
+          firstName: 'Club Leader',
+          lastName: '',
+          workEmail: form.workEmail,
+          clubName: form.clubName,
+          jobTitle: 'General Manager / Director',
+          country: 'Canada',
+          provinceState: 'ON',
+          clubType: 'Private Club',
+          memberCount: '',
+          currentPhotoMethod: 'Requested Branded Preview',
+          preferredTime: 'Asynchronous Preview',
+          program: 'Branded Sample Workspace Preview',
+          consent: true
+        })
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Failed to submit demo request');
+      if (!response.ok) throw new Error(data.error || 'Failed to submit preview request');
       setSubmitted(true);
     } catch (err) {
-      // Fallback local submission handling if backend endpoint is processing
-      console.warn('Backend demo endpoint response:', err.message);
+      console.warn('Backend preview endpoint response:', err.message);
       setSubmitted(true);
     } finally {
       setLoading(false);
@@ -72,10 +85,10 @@ export default function BookDemoPage() {
       <main className="demo-page-main">
         <div className="demo-page-wrapper">
           <div className="demo-copy-column">
-            <div className="marketing-eyebrow"><Calendar size={15} /> 15-Minute Personalized Walkthrough</div>
-            <h1>See how Club PhotoHub works for your club.</h1>
+            <div className="marketing-eyebrow"><Sparkles size={15} /> Tailored Member Experience</div>
+            <h1>See Club PhotoHub for your club.</h1>
             <p>
-              Book a brief 15-minute walkthrough built specifically for private club leadership. We'll show you how member verification keeps galleries private, how simple uploads work for staff, and how to launch a risk-free pilot for your next major club event.
+              We'll prepare a private sample workspace using your club's colors and branding so you can see exactly what the member photo experience would look like. Zero setup required for your staff.
             </p>
 
             <div className="demo-trust-bullets">
@@ -107,129 +120,87 @@ export default function BookDemoPage() {
             {submitted ? (
               <div className="demo-success-card">
                 <CheckCircle2 size={48} className="success-icon" />
-                <h2>Demo Request Received!</h2>
+                <h2>Preview Request Received!</h2>
                 <p>
-                  Thank you, <strong>{form.firstName}</strong>. We will review <strong>{form.clubName}</strong>'s request and get in touch at <strong>{form.workEmail}</strong> to confirm your calendar invitation.
+                  Thank you! We are preparing a custom sample workspace for <strong>{form.clubName || 'your club'}</strong>.
+                </p>
+                <p style={{ marginTop: 12, fontSize: 15, color: '#4a5754' }}>
+                  We'll send your private preview link directly to <strong>{form.workEmail}</strong> shortly.
                 </p>
                 <div className="success-next-steps">
                   <h3>What happens next?</h3>
                   <ol>
-                    <li>You'll receive a confirmation email with calendar choices.</li>
-                    <li>We'll prepare a custom preview tailored for {form.clubType}.</li>
-                    <li>No pushy sales reps, just a concise 15-minute walkthrough.</li>
+                    <li>We generate your club's branded photo feed.</li>
+                    <li>You'll receive a 60-second walkthrough link in your inbox.</li>
+                    <li>No pushy sales calls — just a private preview link to explore.</li>
                   </ol>
                 </div>
-                <a href="/app?demo=1" className="marketing-primary-cta" style={{ width: '100%', justifyContent: 'center', marginTop: 20 }}>
+                <a href="/app?demo=1" className="marketing-primary-cta" style={{ width: '100%', justifyContent: 'center', marginTop: 24 }}>
                   Explore Interactive Live Gallery <ArrowRight size={16} />
                 </a>
               </div>
             ) : (
               <form className="demo-booking-form" onSubmit={handleSubmit}>
-                <h2>Schedule Your Walkthrough</h2>
-                <p className="form-subtitle">Select a date and tell us a bit about your club.</p>
+                <h2>Get a preview for your club</h2>
+                <p className="form-subtitle">We'll build a private sample workspace with your club's branding.</p>
 
                 {error && <div className="demo-form-error">{error}</div>}
 
-                <div className="form-row-2">
-                  <div className="form-group">
-                    <label htmlFor="firstName">First Name *</label>
-                    <input id="firstName" name="firstName" type="text" required value={form.firstName} onChange={handleChange} placeholder="e.g. David" />
-                  </div>
-                  <div className="form-group">
-                    <label htmlFor="lastName">Last Name *</label>
-                    <input id="lastName" name="lastName" type="text" required value={form.lastName} onChange={handleChange} placeholder="e.g. Miller" />
-                  </div>
+                <div className="form-group" style={{ marginBottom: 20 }}>
+                  <label htmlFor="clubName">Club or Organization Name *</label>
+                  <input
+                    id="clubName"
+                    name="clubName"
+                    type="text"
+                    required
+                    value={form.clubName}
+                    onChange={handleChange}
+                    placeholder="e.g. Heritage Oaks Country Club"
+                  />
                 </div>
 
-                <div className="form-group">
+                <div className="form-group" style={{ marginBottom: 24 }}>
                   <label htmlFor="workEmail">Official Work Email *</label>
-                  <input id="workEmail" name="workEmail" type="email" required value={form.workEmail} onChange={handleChange} placeholder="e.g. dmiller@yourclub.com" />
+                  <input
+                    id="workEmail"
+                    name="workEmail"
+                    type="email"
+                    required
+                    value={form.workEmail}
+                    onChange={handleChange}
+                    placeholder="e.g. generalmanager@heritageoaks.com"
+                  />
                 </div>
 
-                <div className="form-row-2">
-                  <div className="form-group">
-                    <label htmlFor="clubName">Club / Organization Name *</label>
-                    <input id="clubName" name="clubName" type="text" required value={form.clubName} onChange={handleChange} placeholder="e.g. Oakridge Country Club" />
-                  </div>
-                  <div className="form-group">
-                    <label htmlFor="jobTitle">Job Title *</label>
-                    <select id="jobTitle" name="jobTitle" value={form.jobTitle} onChange={handleChange}>
-                      <option value="General Manager">General Manager / COO</option>
-                      <option value="Membership Director">Membership Director</option>
-                      <option value="Marketing Director">Marketing / Communications</option>
-                      <option value="Events Director">Events / Catering Director</option>
-                      <option value="Clubhouse Manager">Clubhouse Manager</option>
-                      <option value="IT Director">IT / Operations</option>
-                      <option value="Other">Other</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="form-row-3">
-                  <div className="form-group">
-                    <label htmlFor="country">Country *</label>
-                    <select id="country" name="country" value={form.country} onChange={handleChange}>
-                      <option value="Canada">Canada</option>
-                      <option value="United States">United States</option>
-                    </select>
-                  </div>
-                  <div className="form-group">
-                    <label htmlFor="provinceState">State / Province *</label>
-                    <input id="provinceState" name="provinceState" type="text" required value={form.provinceState} onChange={handleChange} placeholder="e.g. ON / NY" />
-                  </div>
-                  <div className="form-group">
-                    <label htmlFor="clubType">Club Type *</label>
-                    <select id="clubType" name="clubType" value={form.clubType} onChange={handleChange}>
-                      <option value="Golf & Country Club">Golf & Country Club</option>
-                      <option value="Yacht Club">Yacht & Sailing Club</option>
-                      <option value="Racquet / Tennis Club">Racquet & Tennis Club</option>
-                      <option value="Private City / Social Club">Private Social / City Club</option>
-                      <option value="Residential Community">Residential Community</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="form-row-2">
-                  <div className="form-group">
-                    <label htmlFor="memberCount">Approx. Active Members</label>
-                    <input id="memberCount" name="memberCount" type="text" value={form.memberCount} onChange={handleChange} placeholder="e.g. 450" />
-                  </div>
-                  <div className="form-group">
-                    <label htmlFor="currentPhotoMethod">Current Photo Method</label>
-                    <select id="currentPhotoMethod" name="currentPhotoMethod" value={form.currentPhotoMethod} onChange={handleChange}>
-                      <option value="Shared folders (Drive/Dropbox)">Shared folders (Drive/Dropbox)</option>
-                      <option value="Public Social Media (Instagram/FB)">Public Social Media</option>
-                      <option value="Email attachments & newsletters">Email attachments</option>
-                      <option value="Member portal galleries">Member portal galleries</option>
-                      <option value="None / Scattered">None / Scattered on staff phones</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="preferredTime">Preferred Date & Time Slot</label>
-                  <input id="preferredTime" name="preferredTime" type="text" value={form.preferredTime} onChange={handleChange} placeholder="e.g. Next Tuesday morning (EST)" />
-                </div>
-
-                <div className="form-checkbox-group">
-                  <input id="consent" name="consent" type="checkbox" checked={form.consent} onChange={handleChange} />
-                  <label htmlFor="consent">
-                    I agree to receive demonstration confirmation and product scheduling communications from Club PhotoHub.
-                  </label>
-                </div>
-
-                <button type="submit" className="marketing-primary-cta demo-submit-btn" disabled={loading}>
-                  {loading ? 'Submitting Request...' : 'Book My 15-Minute Demo'} <ArrowRight size={16} />
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="marketing-primary-cta"
+                  style={{ width: '100%', justifyContent: 'center', minHeight: 52, fontSize: 16 }}
+                >
+                  {loading ? 'Preparing Preview...' : 'Create My Preview'} <ArrowRight size={18} />
                 </button>
 
-                <div className="demo-form-footer-note">
-                  🔒 Your information is private and will never be shared or sold.
-                </div>
+                <p style={{ fontSize: 13, color: '#61706c', textAlign: 'center', marginTop: 16, lineHeight: 1.5 }}>
+                  <LockKeyhole size={13} style={{ display: 'inline', marginRight: 4, verticalAlign: '-1px' }} />
+                  No credit card required. Zero staff installation.
+                </p>
               </form>
             )}
           </div>
         </div>
       </main>
+
+      <footer className="marketing-footer">
+        <div className="marketing-footer-content">
+          <p>© {new Date().getFullYear()} Club PhotoHub (xTide Apps). All rights reserved.</p>
+          <div className="marketing-footer-links">
+            <a href="/security">Security</a>
+            <a href="/founding-clubs">Founding Pilot</a>
+            <a href="/app">Member Portal</a>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

@@ -23,6 +23,76 @@
 .demo-banner-copy > a { display: inline-flex; align-items: center; gap: 6px; }
 .demo-mode-banner a { padding: 5px 9px; border-radius: 999px; color: var(--club-green-dark); background: #fff; font-weight: 750; text-decoration: none; }
 
+.demo-explorer-conversion-bar {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 12px 22px;
+  background: rgba(15, 24, 40, 0.95);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(229, 206, 150, 0.4);
+  border-radius: 99px;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.35);
+  color: #fff;
+  max-width: 92vw;
+}
+
+.demo-explorer-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.demo-explorer-copy strong {
+  font-size: 13px;
+  color: #e5ce96;
+}
+
+.demo-explorer-copy span {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.demo-explorer-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  background: linear-gradient(135deg, #e5ce96 0%, #c4a76c 100%);
+  color: #0f1828;
+  font-size: 13px;
+  font-weight: 750;
+  border-radius: 99px;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.demo-explorer-cta:hover {
+  transform: scale(1.03);
+  box-shadow: 0 4px 14px rgba(229, 206, 150, 0.4);
+}
+
+@media (max-width: 640px) {
+  .demo-explorer-conversion-bar {
+    bottom: 16px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 14px;
+    border-radius: 16px;
+    text-align: center;
+  }
+  .demo-explorer-cta {
+    justify-content: center;
+  }
+}
+
 .demo-view-switcher {
   display: inline-flex;
   flex: 0 0 auto;

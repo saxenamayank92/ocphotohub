@@ -1513,7 +1513,7 @@ export default {
               'Authorization': `Bearer ${env.MAILERSEND_API_TOKEN}`
             },
             body: JSON.stringify({
-              from: { email: 'notifications@clubphotohub.com', name: 'Club PhotoHub Growth' },
+              from: { email: env.MAILERSEND_SENDER_EMAIL || env.FOUNDER_EMAIL || 'mayank.saxena@xtide.io', name: 'Club PhotoHub Growth' },
               to: [{ email: env.FOUNDER_EMAIL, name: 'Mayank Saxena' }],
               subject: `🔥 Demo Request: ${clubName} (${firstName} ${lastName})`,
               text: `New Demo Request Received!\n\nClub: ${clubName}\nContact: ${firstName} ${lastName} (${jobTitle})\nEmail: ${workEmail}\nCountry/State: ${country} / ${provinceState}\nClub Type: ${clubType}\nMembers: ${memberCount}\nMethod: ${currentPhotoMethod}\nPreferred Slot: ${preferredTime}\nProgram: ${program}`
@@ -1522,6 +1522,28 @@ export default {
         }
 
         return json({ ok: true, id: requestId }, 201, origin);
+      }
+
+      if (path === '/platform/test-email' && request.method === 'GET') {
+        if (!env.MAILERSEND_API_TOKEN) {
+          return json({ error: 'MAILERSEND_API_TOKEN binding is missing.' }, 400, origin);
+        }
+        const fromEmail = env.MAILERSEND_SENDER_EMAIL || 'MS_test@trial-3vyda25yg1v42c70.mlsend.com';
+        const response = await fetch('https://api.mailersend.com/v1/email', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${env.MAILERSEND_API_TOKEN}`
+          },
+          body: JSON.stringify({
+            from: { email: fromEmail, name: 'Club PhotoHub Test' },
+            to: [{ email: env.FOUNDER_EMAIL || 'mayank.saxena@xtide.io', name: 'Mayank Saxena' }],
+            subject: '🔥 Test Email from Club PhotoHub',
+            text: 'This is a live diagnostic test email from your Club PhotoHub Cloudflare Worker.'
+          })
+        });
+        const resText = await response.text();
+        return json({ status: response.status, ok: response.ok, responseText: resText, fromEmail, tokenLength: env.MAILERSEND_API_TOKEN.length }, 200, origin);
       }
 
       if (path === '/reset' && request.method === 'POST') {

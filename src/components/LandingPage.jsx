@@ -98,7 +98,7 @@ export default function LandingPage() {
             <h1>Your club’s private home for member photos.</h1>
             <p>Give members and staff one beautifully branded place to collect, organize and enjoy club moments without public social media, scattered email attachments or messy shared folders.</p>
             <div className="marketing-hero-actions">
-              <a className="marketing-primary-cta hero-main-cta" href="/book-demo">Book a 15-minute demo <ArrowRight size={18} /></a>
+              <a className="marketing-primary-cta hero-main-cta" href="/book-demo">See it for your club <ArrowRight size={18} /></a>
               <div className="marketing-hero-secondary-row">
                 <a className="marketing-secondary-cta" href="/app?onboard=club">Create your club's account</a>
                 <a className="marketing-tertiary-cta" href="/app?demo=1">View a demo <ArrowRight size={16} /></a>
@@ -369,10 +369,10 @@ export default function LandingPage() {
           <div>
             <span>Get started today</span>
             <h2>Give every moment a place to belong.</h2>
-            <p>Schedule a 15-minute walkthrough or launch your club's workspace directly.</p>
+            <p>Get a private sample workspace with your club's branding or launch your workspace directly.</p>
           </div>
           <div className="final-actions">
-            <a className="marketing-primary-cta" href="/book-demo">Book a 15-minute demo <ArrowRight size={18} /></a>
+            <a className="marketing-primary-cta" href="/book-demo">See it for your club <ArrowRight size={18} /></a>
             <a className="marketing-secondary-cta" href="/app?onboard=club">Create your club's account</a>
             <a className="marketing-tertiary-cta" href="/app?demo=1">View a demo <ArrowRight size={16} /></a>
           </div>

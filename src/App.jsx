@@ -435,14 +435,25 @@ export default function App() {
       <Header user={currentUser} club={currentClub || clubBrand} isAdmin={isAdmin} activeTab={activeTab} setActiveTab={setActiveTab} onLogout={handleLogout} />
       {demoMode && <div className="demo-mode-banner">
         <div className="demo-banner-copy">
-          <span><ShieldCheck size={15} /> Exploring the read-only Demo Club</span>
-          <a href="/app?onboard=club">Create your workspace</a>
+          <span><Sparkles size={15} /> Exploring the interactive Demo Club</span>
+          <a href="/book-demo">See this for your club →</a>
         </div>
         <div className="demo-view-switcher" role="tablist" aria-label="Demo view">
           <button type="button" role="tab" aria-selected={!demoAdminView} className={!demoAdminView ? 'active' : ''} onClick={() => handleDemoViewChange('member')}>Member view</button>
           <button type="button" role="tab" aria-selected={demoAdminView} className={demoAdminView ? 'active' : ''} onClick={() => handleDemoViewChange('admin')}>Admin view</button>
         </div>
       </div>}
+      {demoMode && (
+        <div className="demo-explorer-conversion-bar">
+          <div className="demo-explorer-copy">
+            <strong>Imagine this with your club's branding.</strong>
+            <span>We'll build a private sample workspace with your club's colors & logo.</span>
+          </div>
+          <a href="/book-demo" className="demo-explorer-cta">
+            Show me my club's version <ArrowRight size={16} />
+          </a>
+        </div>
+      )}
       {!demoMode && trialDaysLeft !== null && currentUser?.role === 'owner' && <div className={`trial-status-banner ${trialDaysLeft === 0 ? 'expired' : ''}`}><span>{trialDaysLeft > 0 ? `${trialDaysLeft} days left in your free trial` : 'Your trial has ended. This workspace is now read-only.'}</span><a href="/pricing#pricing-links">Choose a plan</a></div>}
       <main className="content-wrapper">
         <Suspense fallback={<div className="panel-loading" role="status"><div className="spinner" /><span>Loading…</span></div>}>
