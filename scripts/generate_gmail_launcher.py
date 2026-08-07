@@ -2,7 +2,31 @@
 import urllib.parse
 import json
 
-# 50 Brand-New Untouched Leads (Zero overlap with previously contacted clubs)
+# 20 Demo Explorer Follow-Up Contacts
+followup_leads = [
+    {"name": "Patrick Holleran", "title": "General Manager & COO", "club": "The National Golf Club of Canada", "email": "pholleran@nationalgolfclub.com", "short": "The National"},
+    {"name": "Joseph Nasso", "title": "General Manager & COO", "club": "The Thornhill Club", "email": "jnasso@thethornhillclub.ca", "short": "The Thornhill Club"},
+    {"name": "Dave Allen", "title": "General Manager & COO", "club": "Islington Golf Club", "email": "dallen@islingtongolfclub.com", "short": "Islington Golf Club"},
+    {"name": "Kimberly Suddaby", "title": "Membership & Marketing Director", "club": "Bayview Golf & Country Club", "email": "ksuddaby@bayviewclub.com", "short": "Bayview Golf & Country Club"},
+    {"name": "Jason Wyatt", "title": "General Manager", "club": "Credit Valley Golf & Country Club", "email": "jwyatt@creditvalleybf.com", "short": "Credit Valley Golf & Country Club"},
+    {"name": "Ian Leggatt", "title": "General Manager", "club": "Meadowbrook Golf Club", "email": "ileggatt@meadowbrookgolf.net", "short": "Meadowbrook Golf Club"},
+    {"name": "Markus Giesler", "title": "General Manager & COO", "club": "Donalda Club", "email": "mgiesler@donaldaclub.ca", "short": "Donalda Club"},
+    {"name": "Robb Walker", "title": "General Manager", "club": "Devil's Pulpit Golf Association", "email": "rwalker@pulpitridge.com", "short": "Devil's Pulpit Golf Association"},
+    {"name": "Scott Kolb", "title": "General Manager", "club": "Victoria Golf Club", "email": "skolb@victoriagolfclub.ca", "short": "Victoria Golf Club"},
+    {"name": "Greg Richardson", "title": "General Manager", "club": "The Glencoe Club", "email": "grichardson@glencoe.org", "short": "The Glencoe Club"},
+    {"name": "Paul Boussiere", "title": "General Manager", "club": "Coppinwood Golf Club", "email": "pboussiere@coppinwood.com", "short": "Coppinwood Golf Club"},
+    {"name": "Marc Peterson", "title": "General Manager", "club": "Ottawa Hunt & Golf Club", "email": "mpeterson@ottawahuntclub.org", "short": "Ottawa Hunt & Golf Club"},
+    {"name": "Jonathyn Quigley", "title": "General Manager", "club": "Cataraqui Golf & Country Club", "email": "jquigley@cataraqui.com", "short": "Cataraqui Golf & Country Club"},
+    {"name": "Steven Friend", "title": "General Manager & COO", "club": "Canoe Brook Country Club", "email": "sfriend@canoebrook.org", "short": "Canoe Brook Country Club"},
+    {"name": "Kevin Vitale", "title": "General Manager", "club": "Baltusrol Golf Club", "email": "kvitale@baltusrol.org", "short": "Baltusrol Golf Club"},
+    {"name": "Thomas Bove", "title": "General Manager", "club": "Plainfield Country Club", "email": "tbove@plainfieldcc.com", "short": "Plainfield Country Club"},
+    {"name": "Dan Brierley", "title": "General Manager", "club": "Somerset Hills Country Club", "email": "dbrierley@somersethillscc.org", "short": "Somerset Hills Country Club"},
+    {"name": "Mark Peterson", "title": "General Manager", "club": "Pine Valley Golf Club", "email": "mpeterson@pinevalley.org", "short": "Pine Valley Golf Club"},
+    {"name": "Paul Levy", "title": "General Manager & COO", "club": "Merion Golf Club", "email": "plevy@meriongolfclub.com", "short": "Merion Golf Club"},
+    {"name": "Bernard Lackner", "title": "Chief Executive Officer & GM", "club": "Fisher Island Club", "email": "blackner@fisherislandclub.com", "short": "Fisher Island Club"}
+]
+
+# 50 Brand-New Untouched Leads
 leads = [
     {"name": "Jason Scoular", "title": "General Manager", "club": "Hamilton Golf & Country Club", "email": "jscoular@hamiltongolf.com", "hooks": "Hamilton Golf & Country Club's RBC Canadian Open heritage course events host great member turnouts", "short": "Hamilton Golf & Country Club", "type": "demo"},
     {"name": "Mark Ross", "title": "General Manager", "club": "Capilano Golf & Country Club", "email": "mross@capilanogolf.com", "hooks": "Capilano's mountain-view Stanley Thompson events bring out passionate member participation", "short": "Capilano", "type": "reply"},
@@ -41,7 +65,7 @@ leads = [
     {"name": "Peter Kraus", "title": "General Manager", "club": "Milwaukee Country Club", "email": "pkraus@milwaukeecc.org", "hooks": "Milwaukee Country Club's Colt & Alison course events foster high member participation", "short": "Milwaukee CC", "type": "demo"},
     {"name": "John King", "title": "General Manager", "club": "Detroit Golf Club", "email": "jking@detroitgolfclub.org", "hooks": "Detroit Golf Club's Rocket Mortgage host course events bring out passionate member turnouts", "short": "Detroit Golf Club", "type": "reply"},
     {"name": "Charles Ford", "title": "General Manager", "club": "Oakland Hills Country Club", "email": "cford@oaklandhillscc.org", "hooks": "Oakland Hills' South Course restoration events host legendary member golf tournaments", "short": "Oakland Hills", "type": "demo"},
-    {"name": "Jonathan Harris", "title": "General Manager", "club": "Inverness Club", "email": "jharris@invernessclub.com", "hooks": "Inverness Club's historic championship layout brings together dedicated member tournament fields", "short": "Inverness", "type": "reply"},
+    {"name": "Jonathan Harris", "title": "General Manager", "club": "Inverness Club", "email": "jharris@invernessclub.com", "hooks": "Inverness Club's historic championship layout brings together dedicated member tournament fields", "short": "Inverness", "type": "demo"},
     {"name": "Mark Hopkins", "title": "General Manager & COO", "club": "Scioto Country Club", "email": "mhopkins@sciotocc.org", "hooks": "Scioto's Donald Ross heritage course events host active member dining and golf tournaments", "short": "Scioto", "type": "demo"},
     {"name": "Richard Wilson", "title": "General Manager", "club": "St. Clair Country Club", "email": "rwilson@stclaircc.org", "hooks": "St. Clair's active member-guest tournaments generate continuous member photo sharing", "short": "St. Clair CC", "type": "reply"},
     {"name": "Thomas Miller", "title": "General Manager", "club": "Annandale Golf Club", "email": "tmiller@annandalegolf.com", "hooks": "Annandale's Pasadena foothills setting hosts vibrant member tennis, pool, and golf socials", "short": "Annandale", "type": "demo"},
@@ -57,7 +81,32 @@ leads = [
     {"name": "John Anderson", "title": "General Manager", "club": "Winged Foot Golf Club", "email": "janderson@wfgc.org", "hooks": "Winged Foot's Tillinghast East & West course events bring together legendary member fields", "short": "Winged Foot", "type": "reply"}
 ]
 
-def generate_draft(lead):
+def generate_followup_draft(lead):
+    first_name = lead['name'].split()[0] if lead['name'] != 'General Manager' else 'General Manager'
+    encoded_club = urllib.parse.quote(lead['short'])
+    subject = f"Follow-up: Custom preview for {lead['short']}"
+    body = f"""Hi {first_name},
+
+Following up on my note earlier regarding private member photo sharing.
+
+We just introduced custom sample previews where we set up a private workspace using {lead['short']}'s branding and event categories so you can see exactly how your members would experience it. Zero setup required for your staff.
+
+You can request a private sample preview in 10 seconds here:
+👉 https://clubphotohub.com/book-demo?club={encoded_club}
+
+Or simply reply to this email with "yes" and I'll build out a preview for {lead['short']}.
+
+Mayank Saxena
+mayank.saxena@xtide.io
+https://clubphotohub.com
+
+--
+xTide Apps / Club PhotoHub
+Acton, ON L7J 1H3, Canada
+Reply unsubscribe to opt out."""
+    return subject, body
+
+def generate_initial_draft(lead):
     first_name = lead['name'].split()[0] if lead['name'] != 'General Manager' else 'General Manager'
     if lead['type'] == 'demo':
         subject = f"Member photos at {lead['short']}"
@@ -102,55 +151,75 @@ Acton, ON L7J 1H3, Canada
 Reply unsubscribe to opt out."""
     return subject, body
 
-items = []
-for i, lead in enumerate(leads, 1):
-    subject, body = generate_draft(lead)
-    params = {
-        'view': 'cm',
-        'fs': '1',
-        'tf': '1',
-        'to': lead['email'],
-        'su': subject,
-        'body': body
-    }
+followup_items = []
+for i, lead in enumerate(followup_leads, 1):
+    subject, body = generate_followup_draft(lead)
+    params = { 'view': 'cm', 'fs': '1', 'tf': '1', 'to': lead['email'], 'su': subject, 'body': body }
     url = f"https://mail.google.com/mail/u/0/?{urllib.parse.urlencode(params)}"
-    items.append({
-        "id": i,
-        "name": lead['name'],
-        "title": lead['title'],
-        "club": lead['club'],
-        "email": lead['email'],
-        "subject": subject,
-        "url": url
-    })
+    followup_items.append({ "id": i, "name": lead['name'], "title": lead['title'], "club": lead['club'], "email": lead['email'], "subject": subject, "url": url })
+
+initial_items = []
+for i, lead in enumerate(leads, 1):
+    subject, body = generate_initial_draft(lead)
+    params = { 'view': 'cm', 'fs': '1', 'tf': '1', 'to': lead['email'], 'su': subject, 'body': body }
+    url = f"https://mail.google.com/mail/u/0/?{urllib.parse.urlencode(params)}"
+    initial_items.append({ "id": i, "name": lead['name'], "title": lead['title'], "club": lead['club'], "email": lead['email'], "subject": subject, "url": url })
 
 html_content = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>50 Untouched Gmail One-Click Compose Launcher</title>
+  <title>Gmail One-Click Outreach & Follow-Up Launcher</title>
   <style>
     body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f7f9fa; color: #1f2937; padding: 30px; margin: 0; }}
-    .container {{ max-width: 920px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); padding: 30px; }}
+    .container {{ max-width: 960px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); padding: 30px; }}
     h1 {{ font-size: 24px; color: #0f1828; margin-top: 0; }}
-    .subtitle {{ color: #4b5563; font-size: 14px; line-height: 1.5; margin-bottom: 24px; }}
-    .tag-fresh {{ display: inline-block; background: #d1fae5; color: #065f46; font-size: 12px; font-weight: 700; padding: 4px 8px; border-radius: 4px; margin-bottom: 12px; }}
+    .subtitle {{ color: #4b5563; font-size: 14px; line-height: 1.5; margin-bottom: 20px; }}
+    .section-title {{ font-size: 18px; font-weight: 750; color: #0f1828; margin-top: 36px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }}
+    .tag-hot {{ display: inline-block; background: #fef3c7; color: #92400e; font-size: 12px; font-weight: 700; padding: 4px 8px; border-radius: 4px; }}
+    .tag-fresh {{ display: inline-block; background: #d1fae5; color: #065f46; font-size: 12px; font-weight: 700; padding: 4px 8px; border-radius: 4px; }}
     .grid {{ display: grid; gap: 12px; }}
     .card {{ display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border: 1px solid #e5e7eb; border-radius: 8px; background: #fafafa; }}
     .card:hover {{ background: #f3f4f6; border-color: #d1d5db; }}
+    .card.hot-card {{ border-left: 4px solid #f59e0b; background: #fffdf5; }}
     .meta {{ display: flex; flex-direction: column; gap: 2px; }}
     .meta strong {{ font-size: 15px; color: #111827; }}
     .meta span {{ font-size: 13px; color: #4b5563; }}
     .meta small {{ font-size: 12px; color: #059669; font-weight: 600; }}
     .btn {{ background: #0f1828; color: white; text-decoration: none; padding: 8px 16px; border-radius: 6px; font-weight: 600; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }}
+    .btn.hot-btn {{ background: #d97706; }}
+    .btn.hot-btn:hover {{ background: #b45309; }}
     .btn:hover {{ background: #1f2937; }}
   </style>
 </head>
 <body>
   <div class="container">
-    <span class="tag-fresh">✨ 50 Brand-New Untouched Target Leads (Zero Overlap)</span>
-    <h1>🚀 50 Untouched Gmail One-Click Outreach Launcher</h1>
-    <p class="subtitle">Click <strong>"Compose in Gmail"</strong> next to any lead below. It will open Chrome directly to your Gmail compose window with the <strong>To</strong> address, <strong>Subject</strong>, and <strong>Rewritten Copy</strong> pre-filled! Zero previously emailed contacts included.</p>
+    <h1>🚀 Gmail One-Click Outreach & Follow-Up Launcher</h1>
+    <p class="subtitle">Click <strong>"Compose in Gmail"</strong> to open your browser straight into Gmail with <strong>To</strong>, <strong>Subject</strong>, and <strong>Custom Copy</strong> pre-filled!</p>
+
+    <!-- SECTION 1: FOLLOW-UPS FOR DEMO EXPLORERS -->
+    <div class="section-title">
+      <span class="tag-hot">🔥 DEMO EXPLORERS (20 Contacts)</span>
+      <span>Personalized "See it for your club" Follow-Up Emails</span>
+    </div>
+    <div class="grid">
+      {"".join([f'''
+      <div class="card hot-card">
+        <div class="meta">
+          <strong>#{item["id"]} {item["name"]} ({item["title"]}) — {item["club"]}</strong>
+          <span>To: {item["email"]}</span>
+          <small>Subject: {item["subject"]}</small>
+        </div>
+        <a href="{item["url"]}" target="_blank" class="btn hot-btn">✉️ Follow-Up in Gmail</a>
+      </div>
+      ''' for item in followup_items])}
+    </div>
+
+    <!-- SECTION 2: 50 FRESH UNTOUCHED TARGET LEADS -->
+    <div class="section-title" style="margin-top: 40px;">
+      <span class="tag-fresh">✨ FRESH TARGET LEADS (50 Contacts)</span>
+      <span>New GM & Membership Director Initial Outreach</span>
+    </div>
     <div class="grid">
       {"".join([f'''
       <div class="card">
@@ -161,7 +230,7 @@ html_content = f"""<!DOCTYPE html>
         </div>
         <a href="{item["url"]}" target="_blank" class="btn">✉️ Compose in Gmail</a>
       </div>
-      ''' for item in items])}
+      ''' for item in initial_items])}
     </div>
   </div>
 </body>
@@ -171,4 +240,4 @@ html_content = f"""<!DOCTYPE html>
 with open('public/open_gmail_drafts.html', 'w', encoding='utf-8') as f:
     f.write(html_content)
 
-print("Successfully generated 50 brand-new untouched leads in public/open_gmail_drafts.html!")
+print("Successfully generated Launcher with 20 Follow-Up + 50 Initial leads!")
