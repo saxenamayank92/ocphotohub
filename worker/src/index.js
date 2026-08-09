@@ -364,20 +364,40 @@ function getClubActivityPhrase(organizationType = '') {
 const outreachEmailTemplate = ({ clubName, firstName = '', organizationType = 'Private Club', leadCode, demoUrl }) => {
   const recipientName = firstName ? emailEscape(firstName) : 'General Manager';
   const escapedClub = emailEscape(clubName);
-  const activities = getClubActivityPhrase(organizationType);
+  const code = leadCode || clubName.toLowerCase().replace(/[^a-z0-9]/g, '-').slice(0, 30);
+  const trackUrl = demoUrl || `https://clubphotohub.com/preview/${encodeURIComponent(code)}`;
 
-  const trackUrl = demoUrl || `https://clubphotohub.com/?demo=1&lead=${encodeURIComponent(leadCode || clubName.toLowerCase().replace(/[^a-z0-9]/g, '-'))}`;
+  const textBody = `Hi ${recipientName},
+
+Right now, after major tournaments and social events at ${clubName}, photos end up scattered across member group chats, raw Google Drive folders, or public social media.
+
+Unlike Google Photos or Dropbox, which require personal Gmail sign-ins, leak raw public links, and offer zero privacy, Club PhotoHub integrates directly with ${clubName}'s official member roster so only verified members can access your private gallery.
+
+I put together a live interactive concept preview for your executive team to test:
+👉 ${trackUrl}
+
+💡 Self-Funding Software: Private Event Vaults capability is included FREE for clubs joining now. By offering private 30-day photo vaults to members hosting weddings, tournaments & social events at ${clubName} ($80–$200 on event invoices), the software completely pays for itself while generating new catering margin.
+
+Would love to hear your thoughts on whether this fits ${clubName}'s 2026 member engagement goals.
+
+Best regards,
+Mayank Saxena
+Founder, Club PhotoHub
+mayank.saxena@xtide.io
+https://clubphotohub.com`;
+
+  const htmlBody = clubPhotoHubEmail({
+    eyebrow: 'Interactive Workspace Preview',
+    title: `Private Member Photo Sharing for ${escapedClub}`,
+    intro: `Hi ${recipientName},<br/><br/>Right now, after major tournaments and social events at <strong>${escapedClub}</strong>, photos end up scattered across member group chats, raw Google Drive folders, or public social media.<br/><br/>Unlike <strong>Google Photos or Dropbox</strong>, which require personal Gmail sign-ins, leak raw public links, and offer zero privacy, <strong>Club PhotoHub integrates directly with ${escapedClub}'s official member roster</strong> so only verified members can access your private gallery.<br/><br/><strong>💡 Self-Funding Software:</strong> Private Event Vaults capability is included <strong>FREE</strong> for early partner clubs. By offering private 30-day photo vaults to members hosting weddings, tournaments & social events at ${escapedClub} ($80–$200 on event invoices), the software completely pays for itself while generating new catering margin.<br/><br/>Would love to hear your thoughts on whether this fits ${escapedClub}'s 2026 member engagement goals.`,
+    actionLabel: `Explore Interactive Preview →`,
+    actionUrl: trackUrl
+  });
 
   return {
-    subject: `Private member photo sharing for ${escapedClub}`,
-    text: `Hi ${recipientName},\n\nI’m reaching out from Club PhotoHub where we help private clubs elevate member engagement and photo delivery across ${activities}. We created Club PhotoHub to give ${escapedClub} a dedicated, secure platform for member event galleries.\n\nYou can explore the live platform and see how it works for ${escapedClub} here:\n👉 ${trackUrl}\n\nOr simply reply to this email with "yes" and I'll set up a branded preview workspace for ${escapedClub}.\n\nMayank Saxena\nFounder, Club PhotoHub\nmayank.saxena@xtide.io`,
-    html: clubPhotoHubEmail({
-      eyebrow: '',
-      title: `Private Member Photo Sharing for ${escapedClub}`,
-      intro: `Hi ${recipientName},\n\nI’m reaching out from Club PhotoHub where we help private clubs elevate member engagement and photo delivery across ${activities}. We created Club PhotoHub to give ${escapedClub} a dedicated, secure platform for member event galleries.`,
-      actionLabel: `Explore Club PhotoHub`,
-      actionUrl: trackUrl
-    })
+    subject: `Interactive Photo Hub Concept for ${escapedClub} Leadership`,
+    text: textBody,
+    html: htmlBody
   };
 };
 
@@ -395,19 +415,21 @@ async function sendOutreachLeadEmail(request, env, origin) {
   }
 
   const code = leadCode || clubName.toLowerCase().replace(/[^a-z0-9]/g, '-').slice(0, 30);
-  const demoUrl = `https://clubphotohub.com/?demo=1&lead=${encodeURIComponent(code)}`;
+  const trackUrl = `https://clubphotohub.com/preview/${encodeURIComponent(code)}`;
   const isFollowup = body.templateType === 'followup';
   const encodedClub = encodeURIComponent(clubName);
-  const previewUrl = `https://clubphotohub.com/book-demo?club=${encodedClub}`;
+  const previewUrl = `https://clubphotohub.com/preview/${encodeURIComponent(code)}`;
 
-  const subject = body.subject || (isFollowup ? `Follow-up: Custom preview for ${clubName}` : `A private photo hub for ${clubName} members`);
+  const generated = outreachEmailTemplate({ clubName, firstName, organizationType, leadCode: code, demoUrl: trackUrl });
+
+  const subject = body.subject || (isFollowup ? `Re: Roster security & self-funding photo hub for ${clubName}` : generated.subject);
   const text = body.text || (isFollowup
-    ? `Hi ${firstName || 'General Manager'},\n\nFollowing up on my note earlier regarding private member photo sharing.\n\nWe just introduced custom sample previews where we set up a private workspace using ${clubName}'s branding and event categories so you can see exactly how your members would experience it. Zero setup required for your staff.\n\nYou can request a private sample preview in 10 seconds here:\n👉 ${previewUrl}\n\nOr simply reply to this email with "yes" and I'll build out a preview for ${clubName}.\n\nBest regards,\nMayank Saxena\nmayank.saxena@xtide.io`
-    : `Hi ${firstName || 'General Manager'},\n\n${clubName}'s mix of member events creates moments valuable to preserve privately.\n\nClub PhotoHub gives ${clubName} its own branded, roster-verified photo gallery.\n\nExplore Club PhotoHub: ${demoUrl}\n\nBest regards,\nMayank Saxena\nFounder, Club PhotoHub\nmayank.saxena@xtide.io`);
+    ? `Hi ${firstName || 'General Manager'},\n\nFollowing up on my note regarding ${clubName}'s private photo gallery.\n\n🔒 Roster-Level Security: Access is strictly validated against ${clubName}'s official member roster (Member # + Last Name). No public link leaks, no outsider snoopers, and zero personal Google account sign-ins required.\n\n💰 How The Software Pays For Itself: Private Event Vaults feature is included FREE for early partner clubs. Your catering team can bill $80–$200 per private wedding, tournament, or social event directly on the member's event invoice with $0 transaction fees to us. Just 6–10 private events per year completely covers your annual software investment.\n\nYou can test ${clubName}'s live workspace preview here:\n👉 ${trackUrl}\n\nWorth a quick 5-minute conversation this week?\n\nBest regards,\nMayank Saxena\nmayank.saxena@xtide.io`
+    : generated.text);
 
   const html = isFollowup
-    ? clubPhotoHubEmail({ eyebrow: 'Sample Workspace Preview', title: `Custom preview for ${clubName}`, intro: `Following up on my note earlier regarding private member photo sharing. We set up custom sample previews styled with ${clubName}'s branding so your team can evaluate it risk-free.`, actionLabel: `Request Preview for ${clubName}`, actionUrl: previewUrl })
-    : outreachEmailTemplate({ clubName, firstName, organizationType, leadCode: code, demoUrl });
+    ? clubPhotoHubEmail({ eyebrow: 'Sample Workspace Preview', title: `Custom preview for ${clubName}`, intro: `Following up on my note regarding ${clubName}'s private photo gallery.<br/><br/><strong>🔒 Roster-Level Security:</strong> Access is strictly validated against ${clubName}'s official member roster (Member # + Last Name). No public link leaks, no outsider snoopers, and zero personal Google account sign-ins required.<br/><br/><strong>💰 How The Software Pays For Itself:</strong> Private Event Vaults feature is included FREE for early partner clubs. Your catering team can bill $80–$200 per private wedding, tournament, or social event directly on the member's event invoice with $0 transaction fees to us. Just 6–10 private events per year completely covers your annual software investment.`, actionLabel: `Explore ${clubName} Preview →`, actionUrl: trackUrl })
+    : generated.html;
 
   const founderName = env.FOUNDER_NAME || 'Mayank Saxena';
   const founderEmail = env.FOUNDER_EMAIL || 'mayank.saxena@xtide.io';
