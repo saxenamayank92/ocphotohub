@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  clubphotohub-sandbox:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    restart: unless-stopped
+    container_name: clubphotohub_sandbox
