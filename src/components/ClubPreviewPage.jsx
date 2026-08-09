@@ -50,6 +50,22 @@ export default function ClubPreviewPage({ clubCode }) {
     ? `${lead.contact_first_name} ${lead.contact_last_name || ''}`.trim() 
     : 'Executive Leadership';
 
+  // Extract domain for official logo lookup
+  const leadDomain = lead?.contact_email ? lead.contact_email.split('@')[1] : null;
+  const logoUrl = leadDomain ? `https://logo.clearbit.com/${leadDomain}` : null;
+  const faviconUrl = leadDomain ? `https://www.google.com/s2/favicons?domain=${leadDomain}&sz=128` : null;
+  const [imgError, setImgError] = useState(false);
+
+  // Generate luxury monogram initials (e.g., Winged Foot -> WF)
+  const clubInitials = clubTitle
+    .replace(/^(the|le|la|royal)\s+/i, '')
+    .split(' ')
+    .map(w => w[0])
+    .filter(Boolean)
+    .join('')
+    .slice(0, 3)
+    .toUpperCase();
+
   const samplePhotos = [
     {
       id: 1,
@@ -93,11 +109,19 @@ export default function ClubPreviewPage({ clubCode }) {
         <div className="preview-top-brand">
           <ShieldCheck className="preview-top-shield" size={24} />
           <span className="preview-top-hub">Club PhotoHub</span>
-          <span className="preview-top-badge">VIP Executive Walkthrough</span>
+          <span className="preview-top-badge">Private Concept Preview</span>
         </div>
         <button type="button" className="preview-top-claim-btn" onClick={() => setClaimModalOpen(true)}>
-          Activate Free 30-Day Trial →
+          Claim & Authorize Official Workspace →
         </button>
+      </div>
+
+      {/* Legal & Fair Use Concept Disclaimer Bar */}
+      <div className="preview-disclaimer-bar">
+        <ShieldCheck size={16} />
+        <span>
+          <strong>Executive Concept Walkthrough</strong> — Prepared by Club PhotoHub exclusively for evaluation by {clubTitle} leadership. This is a private interactive proposal; all trademarks & crests belong to their respective owners.
+        </span>
       </div>
 
       {/* Main Hero Header */}
@@ -106,6 +130,22 @@ export default function ClubPreviewPage({ clubCode }) {
           <div className="preview-executive-tag">
             <Sparkles size={16} />
             <span>Exclusively Prepared for <strong>{executiveName}</strong> & Board of Directors</span>
+          </div>
+
+          {/* Club Crest / Logo Display */}
+          <div className="preview-crest-container">
+            {logoUrl && !imgError ? (
+              <img 
+                src={logoUrl} 
+                alt={`${clubTitle} Crest`} 
+                className="preview-club-crest-img"
+                onError={() => setImgError(true)}
+              />
+            ) : (
+              <div className="preview-crest-monogram">
+                <span>{clubInitials}</span>
+              </div>
+            )}
           </div>
 
           <h1 className="preview-club-title">{clubTitle}</h1>

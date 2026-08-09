@@ -6,6 +6,62 @@
   padding-bottom: 80px;
 }
 
+/* Disclaimer Bar */
+.preview-disclaimer-bar {
+  background: rgba(30, 41, 59, 0.95);
+  border-bottom: 1px solid rgba(251, 191, 36, 0.25);
+  padding: 10px 24px;
+  text-align: center;
+  font-size: 0.82rem;
+  color: #9ca3af;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.preview-disclaimer-bar strong {
+  color: #fbbf24;
+}
+
+/* Crest & Monogram */
+.preview-crest-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.preview-club-crest-img {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  border-radius: 50%;
+  padding: 8px;
+  background: #ffffff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.preview-crest-monogram {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+  border: 2px solid #d97706;
+  box-shadow: 0 0 20px rgba(217, 119, 6, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.preview-crest-monogram span {
+  font-size: 1.5rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  background: linear-gradient(180deg, #fef08a 0%, #d97706 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
 /* Top Banner */
 .preview-top-bar {
   display: flex;
