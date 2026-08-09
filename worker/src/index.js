@@ -663,8 +663,8 @@ Your primary responsibilities:
 
 Respond directly, helpfully, and with high professional energy as an executive AI Sales Agent in clean markdown formatting.`;
 
-      // Try gemini-1.5-flash first, then gemini-2.0-flash
-      const modelsToTry = ['gemini-1.5-flash', 'gemini-2.0-flash'];
+      // Try latest Gemini Flash models sequentially
+      const modelsToTry = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-flash'];
       for (const modelName of modelsToTry) {
         try {
           const aiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
@@ -683,7 +683,7 @@ Respond directly, helpfully, and with high professional energy as an executive A
             const aiData = await aiRes.json();
             const text = aiData?.candidates?.[0]?.content?.parts?.[0]?.text;
             if (text && text.trim()) {
-              toolAction = 'LLM_REASONING_CYCLE';
+              toolAction = `LLM_REASONING_${modelName.toUpperCase().replace(/[^A-Z0-9]/g, '_')}`;
               replyText = text.trim();
               break;
             }
@@ -713,29 +713,35 @@ Respond directly, helpfully, and with high professional energy as an executive A
         } else {
           try {
             const startTime = Date.now();
-            const testRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                contents: [{ parts: [{ text: "Hello! Confirm in 1 concise sentence that you are online and working as Hunter AI Sales Agent for Club PhotoHub." }] }]
-              })
-            });
+            const modelsToTest = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-flash'];
+            let testSuccess = false;
 
-            const duration = Date.now() - startTime;
-            if (testRes.ok) {
-              const testData = await testRes.json();
-              const reply = testData?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-              replyText = `🟢 **Gemini AI API is 100% LIVE and WORKING!** (Responded in ${duration}ms)\n\n` +
-                `**Live LLM Response from Gemini**: "${reply.trim()}"\n\n` +
-                `• **Model**: \`gemini-1.5-flash\`\n` +
-                `• **Endpoint**: Google Generative AI API v1beta\n` +
-                `• **Latency**: ${duration}ms\n` +
-                `• **HTTP Status**: 200 OK`;
-            } else {
-              const errBody = await testRes.text();
-              replyText = `❌ **Gemini API Test Response** (HTTP ${testRes.status})\n\n` +
-                `**Error Details**: \`${errBody.slice(0, 300)}\`\n\n` +
-                `*Tip: Check if your GEMINI_API_KEY is valid or enter a custom key in Agent Settings!*`;
+            for (const mName of modelsToTest) {
+              const testRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${mName}:generateContent?key=${apiKey}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  contents: [{ parts: [{ text: "Hello! Confirm in 1 concise sentence that you are online and working as Hunter AI Sales Agent for Club PhotoHub." }] }]
+                })
+              });
+
+              const duration = Date.now() - startTime;
+              if (testRes.ok) {
+                const testData = await testRes.json();
+                const reply = testData?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                replyText = `🟢 **Gemini Flash AI API is 100% LIVE and WORKING!** (Responded in ${duration}ms)\n\n` +
+                  `**Live LLM Response from Gemini**: "${reply.trim()}"\n\n` +
+                  `• **Active Model**: \`${mName}\`\n` +
+                  `• **Endpoint**: Google Generative AI API v1beta\n` +
+                  `• **Latency**: ${duration}ms\n` +
+                  `• **HTTP Status**: 200 OK`;
+                testSuccess = true;
+                break;
+              }
+            }
+
+            if (!testSuccess) {
+              replyText = `❌ **Gemini Flash API Test Response**: All model endpoints returned non-200 responses. Check your \`GEMINI_API_KEY\` quota & permissions in Google AI Studio!`;
             }
           } catch (e) {
             replyText = `❌ **Gemini API Connection Failed**: ${e.message}`;
