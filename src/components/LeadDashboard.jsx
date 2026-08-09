@@ -913,21 +913,16 @@ export default function LeadDashboard() {
             </div>
             <div className="email-preview-body">
               <p>Hi {previewLead.firstName || 'General Manager'},</p>
-              <p>{previewLead.clubName}'s mix of member activities creates a wide range of member moments that would be valuable to preserve and share privately.</p>
-              <p>After working in private clubs, I saw how important these photos are to members and how difficult it is to give them one simple, private place to enjoy them. That is why I started Club PhotoHub.</p>
-              <p><strong>Club PhotoHub gives {previewLead.clubName} its own branded, roster-verified photo gallery:</strong></p>
-              <ul>
-                <li><strong>Private member access:</strong> Members confirm identity using club email & member number.</li>
-                <li><strong>Club branded:</strong> Custom logo, colors, and event categories.</li>
-                <li><strong>Easy on any device:</strong> Browse, upload, caption, like, and download on phone, tablet, or PC.</li>
-                <li><strong>Simple for staff:</strong> Full administrator moderation and roster control.</li>
-              </ul>
-              <div className="offer-preview">
-                <strong>Founding partner offer:</strong> 20% off for 12 months using code <strong>FOUNDING20</strong>
-              </div>
+              <p>Right now, after major tournaments and galas at {previewLead.clubName}, photos end up scattered across member group chats, raw Google Drive folders, or public social media.</p>
+              <p>Unlike <strong>Google Photos or Dropbox</strong> — which require personal Gmail sign-ins, leak raw public links, and offer zero privacy — <strong>Club PhotoHub integrates directly with {previewLead.clubName}'s official member roster</strong> so only verified members can access your private gallery.</p>
+              <p>I put together a live interactive concept preview for your executive team to test:</p>
               <div className="cta-preview-btn">
-                [Explore Club PhotoHub] ➔ <code>https://clubphotohub.com/?demo=1&lead={previewLead.leadCode || previewLead.id}</code>
+                👉 Custom Workspace Preview: <code>https://clubphotohub.com/preview/{encodeURIComponent(previewLead.leadCode || previewLead.id)}</code>
               </div>
+              <div className="offer-preview">
+                <strong>🎁 Early Access Bonus:</strong> Clubs activating their 30-day trial this month receive <strong>3 Complimentary Private Event Vaults ($600 value)</strong> for your upcoming 2026 weddings & galas hosted at {previewLead.clubName}.
+              </div>
+              <p>Would love to hear your thoughts on whether this fits {previewLead.clubName}'s 2026 member engagement goals.</p>
               <p>Best regards,<br /><strong>Mayank Saxena</strong><br />Founder, Club PhotoHub</p>
             </div>
           </div>
