@@ -87,10 +87,11 @@
 }
 
 .lead-cards {
-  max-width: 1400px;
+  width: 100%;
+  max-width: 100%;
   margin: 0 auto 24px;
   display: grid;
-  grid-template-columns: repeat(7, minmax(130px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
   gap: 12px;
 }
 .lead-cards article, .lead-panel {
@@ -895,17 +896,35 @@
 }
 
 .lead-dashboard-main-col {
-  flex: 0 0 67%;
-  max-width: 67%;
+  flex: 1 1 65%;
+  max-width: 100%;
   min-width: 0;
 }
 
 .lead-dashboard-agent-col {
-  flex: 0 0 33%;
-  max-width: 33%;
-  min-width: 0;
+  flex: 0 0 35%;
+  max-width: 420px;
+  min-width: 300px;
   position: sticky;
   top: 16px;
+}
+
+@media (max-width: 1120px) {
+  .lead-dashboard-split-layout {
+    flex-direction: column;
+    gap: 20px;
+  }
+  .lead-dashboard-main-col,
+  .lead-dashboard-agent-col {
+    flex: 1 1 100%;
+    max-width: 100%;
+    width: 100%;
+    position: static;
+  }
+  .lead-dashboard-agent-col .ai-agent-console-card {
+    height: auto;
+    min-height: 480px;
+  }
 }
 
 .lead-dashboard-agent-col .ai-agent-console-card {

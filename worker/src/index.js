@@ -460,10 +460,10 @@ async function handleAgentChatCommand(request, env, origin) {
         actionUrl: previewUrl
       },
       {
-        subject: `Following up — custom preview for Heritage Oaks Country Club`,
+        subject: `Following up: Custom preview for Heritage Oaks Country Club`,
         eyebrow: ``,
         title: `Custom Preview for Heritage Oaks Country Club`,
-        intro: `Hi Mayank,\n\nI hope you liked what you saw! Following up on my note earlier regarding private member photo sharing — we set up a custom sample preview styled with Heritage Oaks Country Club's branding so your team can evaluate it risk-free.`,
+        intro: `Hi Mayank,\n\nI hope you liked what you saw! Following up on my note earlier regarding private member photo sharing. We set up a custom sample preview styled with Heritage Oaks Country Club's branding so your team can evaluate it risk-free.`,
         actionLabel: `View Custom Preview`,
         actionUrl: previewUrl
       }
@@ -510,9 +510,9 @@ async function handleAgentChatCommand(request, env, origin) {
           try {
             await sendMail(env, {
               to: lead.contact_email,
-              subject: `Following up — custom preview for ${lead.club_name}`,
+              subject: `Following up: Custom preview for ${lead.club_name}`,
               text: `Hi ${contactGreeting === 'General Manager' ? 'General Manager & Team' : contactGreeting},\n\nI hope you liked what you saw! Following up on my note earlier regarding private member photo sharing.\n\nWe can build out a custom, branded sample preview for ${lead.club_name} so your team can evaluate it risk-free.\n\nYou can request a sample preview in 10 seconds here:\n👉 ${previewUrl}\n\nOr simply reply to this email with "yes" and I'll set up a preview for ${lead.club_name}.\n\nMayank Saxena\nFounder, Club PhotoHub\nmayank.saxena@xtide.io`,
-              html: clubPhotoHubEmail({ eyebrow: '', title: `Custom preview for ${lead.club_name}`, intro: `Hi ${contactGreeting === 'General Manager' ? 'General Manager & Team' : contactGreeting},\n\nI hope you liked what you saw! Following up on my note earlier regarding private member photo sharing — we can build out a custom, branded sample preview for ${lead.club_name} so your team can evaluate it risk-free.`, actionLabel: `Request Preview for ${lead.club_name}`, actionUrl: previewUrl })
+              html: clubPhotoHubEmail({ eyebrow: '', title: `Custom preview for ${lead.club_name}`, intro: `Hi ${contactGreeting === 'General Manager' ? 'General Manager & Team' : contactGreeting},\n\nI hope you liked what you saw! Following up on my note earlier regarding private member photo sharing. We can build out a custom, branded sample preview for ${lead.club_name} so your team can evaluate it risk-free.`, actionLabel: `Request Preview for ${lead.club_name}`, actionUrl: previewUrl })
             });
             emailsSent++;
           } catch (e) {
