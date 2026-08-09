@@ -43,7 +43,7 @@ export const demoMembers = [
 export const demoPhotos = [
   {
     id: 'demo-lakeside-social',
-    url: './demo/lakeside-social.jpg',
+    url: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=1200&auto=format&fit=crop',
     caption: 'Golden hour on the terrace with friends. This is what summer at the club feels like.',
     category: 'Events',
     uploaderName: 'Alex Morgan',
@@ -54,7 +54,7 @@ export const demoPhotos = [
   },
   {
     id: 'demo-golf-morning',
-    url: './demo/golf-morning.jpg',
+    url: 'https://images.unsplash.com/photo-1587174486073-ae5e5cff23aa?q=80&w=1200&auto=format&fit=crop',
     caption: 'First group out and a beautiful start to championship weekend.',
     category: 'Golf',
     uploaderName: 'Jordan Lee',
@@ -65,7 +65,7 @@ export const demoPhotos = [
   },
   {
     id: 'demo-tennis-social',
-    url: './demo/tennis-social.jpg',
+    url: 'https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?q=80&w=1200&auto=format&fit=crop',
     caption: 'A close match, a lot of laughs, and the best kind of Saturday afternoon.',
     category: 'Tennis',
     uploaderName: 'Taylor Chen',
@@ -76,7 +76,7 @@ export const demoPhotos = [
   },
   {
     id: 'demo-garden-dinner',
-    url: './demo/garden-dinner.jpg',
+    url: 'https://images.unsplash.com/photo-1550966871-3ed3cdb5ed0c?q=80&w=1200&auto=format&fit=crop',
     caption: 'The annual garden dinner brought the whole community together.',
     category: 'Dining',
     uploaderName: 'Club Team',
@@ -84,6 +84,17 @@ export const demoPhotos = [
     createdAt: '2026-07-17T23:30:00.000Z',
     hearts: 46,
     heartUsers: ['DEMO-1001', 'DEMO-1002', 'DEMO-1003']
+  },
+  {
+    id: 'demo-clubhouse-lounge',
+    url: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?q=80&w=1200&auto=format&fit=crop',
+    caption: 'Sunset view from the private clubhouse lounge.',
+    category: 'Clubhouse',
+    uploaderName: 'Sarah Jenkins',
+    uploaderId: 'DEMO-1004',
+    createdAt: '2026-07-16T19:00:00.000Z',
+    hearts: 21,
+    heartUsers: ['DEMO-1001']
   }
 ];
 

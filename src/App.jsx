@@ -52,9 +52,9 @@ export default function App() {
 
   const queryParams = new URLSearchParams(window.location.search);
   const demoMode = queryParams.get('demo') === '1';
-  const initialDemoAdmin = (demoMode || isPreviewMode) && queryParams.get('demoView') === 'admin';
+  const initialDemoAdmin = (demoMode || isPreviewMode) && queryParams.get('demoView') !== 'member';
   const [demoAdminView, setDemoAdminView] = useState(initialDemoAdmin);
-  const [currentUser, setCurrentUser] = useState(initialDemoAdmin ? demoAdminUser : ((demoMode || isPreviewMode) ? demoUser : null));
+  const [currentUser, setCurrentUser] = useState((demoMode || isPreviewMode) ? (initialDemoAdmin ? demoAdminUser : demoUser) : null);
   const [isAdmin, setIsAdmin] = useState(initialDemoAdmin);
   const [activeTab, setActiveTab] = useState(initialDemoAdmin ? 'admin' : 'gallery');
   const [members, setMembers] = useState((demoMode || isPreviewMode) ? demoMembers : []);
@@ -311,7 +311,7 @@ export default function App() {
   };
 
   const handleDemoViewChange = view => {
-    if (!demoMode) return;
+    if (!demoMode && !isPreviewMode) return;
     const admin = view === 'admin';
     setDemoAdminView(admin);
     setCurrentUser(admin ? demoAdminUser : demoUser);
@@ -320,9 +320,8 @@ export default function App() {
 
     // Keep the preview link shareable without causing a navigation or reload.
     const nextUrl = new URL(window.location.href);
-    nextUrl.searchParams.set('demo', '1');
     if (admin) nextUrl.searchParams.set('demoView', 'admin');
-    else nextUrl.searchParams.delete('demoView');
+    else nextUrl.searchParams.set('demoView', 'member');
     window.history.replaceState({}, '', `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`);
   };
 
