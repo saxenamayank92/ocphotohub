@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, BarChart3, Building2, Check, Clock, Copy, Edit3, ExternalLink, Lock, Mail, MousePointerClick, Plus, RefreshCw, Search, Send, Sparkles, Trash2, Users, X, Zap } from 'lucide-react';
+import { ArrowLeft, BarChart3, Bot, Building2, Check, Clock, Copy, Edit3, ExternalLink, Lock, Mail, MousePointerClick, Plus, RefreshCw, Search, Send, Sparkles, Trash2, Users, X, Zap } from 'lucide-react';
 import { completePlatformLogin, createOutreachLead, deleteOutreachLead, getLeadDashboard, getPlatformSession, requestPlatformLogin, sendOutreachEmail, updateOutreachLead } from '../api';
 import AIAgentConsole from './AIAgentConsole';
 import './LeadDashboard.css';
