@@ -118,18 +118,69 @@
   box-shadow: 0 4px 14px rgba(229, 206, 150, 0.4);
 }
 
-@media (max-width: 640px) {
-  .demo-explorer-conversion-bar {
-    bottom: 16px;
+@media (max-width: 768px) {
+  .demo-mode-banner {
     flex-direction: column;
     align-items: stretch;
-    gap: 10px;
-    padding: 14px;
-    border-radius: 16px;
+    gap: 8px;
+    padding: 8px 12px;
+  }
+  .demo-banner-copy {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: 8px;
+  }
+  .demo-banner-copy > span {
+    font-size: 11px;
+    line-height: 1.25;
+  }
+  .preview-banner-claim-btn {
+    padding: 5px 10px;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+  .demo-view-switcher {
+    width: 100%;
+    display: flex;
+  }
+  .demo-view-switcher button {
+    flex: 1;
     text-align: center;
+    padding: 6px 8px;
+  }
+
+  .demo-explorer-conversion-bar {
+    bottom: 74px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 12px 8px 14px;
+    border-radius: 99px;
+    width: calc(100vw - 24px);
+    max-width: 440px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  }
+  .demo-explorer-copy {
+    gap: 0;
+    text-align: left;
+    overflow: hidden;
+  }
+  .demo-explorer-copy strong {
+    font-size: 11px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .demo-explorer-copy span {
+    display: none;
   }
   .demo-explorer-cta {
-    justify-content: center;
+    padding: 6px 12px;
+    font-size: 11px;
+    flex-shrink: 0;
   }
 }
 
@@ -1935,7 +1986,11 @@
 @media (max-width: 860px) {
   .admin-portal-layout {
     flex-direction: column;
-    gap: 16px;
+    gap: 12px;
+  }
+
+  .admin-sidebar-header {
+    display: none;
   }
 
   .admin-sidebar {
@@ -1944,17 +1999,19 @@
     min-width: 100% !important;
     position: relative !important;
     top: 0 !important;
-    padding: 14px;
+    padding: 6px 0 !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
   }
 
   .admin-sidebar-nav-list {
-    display: flex;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    gap: 8px;
-    padding-bottom: 6px;
-    margin: 0 -6px;
-    padding: 0 6px 6px;
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    gap: 8px !important;
+    padding: 4px 6px 8px 6px !important;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
   }
@@ -1964,17 +2021,28 @@
   }
 
   .admin-menu-btn {
-    flex: 0 0 auto;
-    padding: 10px 14px;
-    font-size: 13px;
-    white-space: nowrap;
-    min-height: 44px;
+    flex: 0 0 auto !important;
+    padding: 8px 14px !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    white-space: nowrap !important;
+    min-height: 38px !important;
+    border-radius: 99px !important;
+    background: #ffffff !important;
+    border: 1px solid rgba(0, 0, 0, 0.12) !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04) !important;
+  }
+
+  .admin-menu-btn.active {
+    background: var(--club-navy) !important;
+    color: #ffffff !important;
+    border-color: var(--club-navy) !important;
   }
 
   .admin-card {
     width: 100% !important;
     flex: 1 1 100% !important;
-    padding: 18px !important;
+    padding: 14px !important;
     border-radius: var(--radius-md);
     min-height: auto !important;
   }
