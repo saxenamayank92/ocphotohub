@@ -19,7 +19,7 @@ import {
   completeClubOnboarding, updateCurrentClub, requestAdminPasswordReset,
   completeAdminPasswordReset, deleteCloudAccount, deleteCloudOrganization, registerCloudPushToken, resolveApiUrl
 } from './api';
-import { clubBrand } from './brand';
+import { clubBrand, platformBrand } from './brand';
 import { initializeNativeApp, registerPushNotifications, setNativeStatusBarForApp } from './services/pushNotifications';
 import './App.css';
 
