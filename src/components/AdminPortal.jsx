@@ -608,13 +608,13 @@ export default function AdminPortal({
                 </h3>
               </div>
               <p style={{ margin: '0 0 16px', fontSize: '13.5px', color: '#cbd5e1', lineHeight: '1.6' }}>
-                You have complete freedom over event pricing. While standalone consumer event platforms typically charge <strong>$250 to $600+ per single wedding</strong>, your club can bundle Private Event Vaults into catering packages or bill <strong>$350 – $750+</strong> directly on the member's monthly banquet invoice.
+                You have complete freedom over event pricing. While standalone consumer event platforms typically charge <strong>$150 to $400+ per single wedding</strong>, your club can bundle Private Event Vaults into catering packages or bill <strong>$80 – $200</strong> directly on the member's <strong>event invoice</strong>.
                 <br /><br />
                 <strong>Club PhotoHub charges $0 per-event transaction fees</strong> and handles zero billing. 100% of the event revenue stays directly with your club.
               </p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', fontSize: '12.5px', color: '#94a3b8', borderTop: '1px solid rgba(255, 255, 255, 0.1)', paddingTop: '14px' }}>
-                <span>✓ <strong>Industry Benchmark:</strong> External vendors charge $250–$600/event</span>
-                <span>✓ <strong>Offline Billing:</strong> Direct on club account or banquet invoice</span>
+                <span>✓ <strong>Industry Benchmark:</strong> External vendors charge $150–$400/event</span>
+                <span>✓ <strong>Offline Billing:</strong> Direct on event or catering invoice</span>
                 <span>✓ <strong>$0 Transaction Fee:</strong> Keep 100% of event margin</span>
               </div>
             </div>
