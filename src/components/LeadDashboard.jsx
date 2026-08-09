@@ -57,6 +57,7 @@ export default function LeadDashboard() {
   const [submitting, setSubmitting] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('engagement');
+  const [mobileTab, setMobileTab] = useState('leads');
   const [copiedId, setCopiedId] = useState('');
   const [activeLeadActivity, setActiveLeadActivity] = useState(null);
   const [editingNotesLeadId, setEditingNotesLeadId] = useState('');
@@ -336,7 +337,32 @@ export default function LeadDashboard() {
       </div>
     </header>
 
-    <div className="lead-dashboard-split-layout">
+    {/* Mobile View Switcher Bar (App-like navigation for mobile screens) */}
+    <div className="mobile-view-tabs-bar">
+      <button
+        className={`mobile-tab-btn ${mobileTab === 'leads' ? 'active' : ''}`}
+        onClick={() => setMobileTab('leads')}
+      >
+        <Building2 size={16} />
+        <span>Hot Leads ({filteredLeads.length})</span>
+      </button>
+      <button
+        className={`mobile-tab-btn ${mobileTab === 'agent' ? 'active' : ''}`}
+        onClick={() => setMobileTab('agent')}
+      >
+        <Bot size={16} />
+        <span>Hunter AI Co-Pilot</span>
+      </button>
+      <button
+        className={`mobile-tab-btn ${mobileTab === 'feed' ? 'active' : ''}`}
+        onClick={() => setMobileTab('feed')}
+      >
+        <Zap size={16} />
+        <span>Signals ({recentEvents.length})</span>
+      </button>
+    </div>
+
+    <div className={`lead-dashboard-split-layout mobile-tab-${mobileTab}`}>
       {/* LEFT COLUMN (70% AREA) */}
       <div className="lead-dashboard-main-col">
         <section className="lead-cards">
@@ -583,6 +609,90 @@ export default function LeadDashboard() {
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile Lead Cards List (App-like touch cards for mobile screens) */}
+      <div className="lead-mobile-cards-list">
+        {filteredLeads.map(lead => {
+          const code = lead.leadCode || lead.id;
+          const mainLink = `https://clubphotohub.com/?lead=${encodeURIComponent(code)}`;
+          const demoLink = `https://clubphotohub.com/?demo=1&lead=${encodeURIComponent(code)}`;
+          const isHot = calculateEngagementScore(lead) >= 50;
+          const isEngaged = lead.status === 'demo_opened' || lead.status === 'link_clicked' || (lead.clicksCount && lead.clicksCount > 0);
+
+          return (
+            <div key={`mob-${lead.id}`} className={`mobile-lead-card ${isHot ? 'hot-card' : ''}`}>
+              <div className="mob-card-header">
+                <div>
+                  <strong className="mob-club-name"><Building2 size={15} style={{ verticalAlign: 'middle', marginRight: 4 }} /> {lead.clubName}</strong>
+                  <span className="mob-org-type">{lead.organizationType}</span>
+                </div>
+                {isHot && <span className="badge-hot-lead">🔥 HOT LEAD</span>}
+              </div>
+
+              <div className="mob-card-contact">
+                {lead.firstName || lead.lastName ? (
+                  <div className="mob-contact-name">👤 {lead.firstName} {lead.lastName}</div>
+                ) : null}
+                {lead.email && (
+                  <a href={`mailto:${lead.email}`} className="mob-contact-email">✉️ {lead.email}</a>
+                )}
+              </div>
+
+              <div className="mob-card-stats-row">
+                <span className={`lead-status ${lead.status}`}>
+                  {lead.status === 'outreach_sent' && '✉️ Sent'}
+                  {lead.status === 'link_clicked' && '👁️ Clicked'}
+                  {lead.status === 'demo_opened' && '🚀 Demo Opened'}
+                  {lead.status === 'verification_started' && '⏳ Verification'}
+                  {lead.status === 'workspace_created' && '🎉 Workspace Created'}
+                  {!statusLabels[lead.status] && (lead.status || 'Outreach Sent')}
+                </span>
+
+                <div className="mob-clicks-pill">
+                  <MousePointerClick size={13} />
+                  <strong>{lead.clicksCount || 0} clicks</strong>
+                </div>
+                <small className="mob-time-ago">{formatTimeAgo(lead.lastClickedAt || lead.lastSeenAt)}</small>
+              </div>
+
+              <div className="mob-card-primary-action">
+                {lead.email && isEngaged ? (
+                  <button
+                    className="btn-send-followup-action mob-primary-btn"
+                    onClick={() => setFollowupLead(lead)}
+                  >
+                    <Sparkles size={14} /> 🔥 Send Follow-Up Preview
+                  </button>
+                ) : lead.email ? (
+                  <button
+                    className="btn-send-email-action mob-primary-btn"
+                    onClick={() => setPreviewLead(lead)}
+                  >
+                    <Send size={14} /> Send Outreach Email
+                  </button>
+                ) : null}
+              </div>
+
+              <div className="mob-card-secondary-links">
+                <button
+                  className="lead-copy-link-btn"
+                  onClick={() => copyToClipboard(mainLink, `${lead.id}-mob-main`)}
+                >
+                  {copiedId === `${lead.id}-mob-main` ? <Check size={13} className="text-success" /> : <Copy size={13} />}
+                  {copiedId === `${lead.id}-mob-main` ? 'Copied Link!' : 'Copy Landing Link'}
+                </button>
+                <button
+                  className="lead-copy-demo-btn"
+                  onClick={() => copyToClipboard(demoLink, `${lead.id}-mob-demo`)}
+                >
+                  {copiedId === `${lead.id}-mob-demo` ? <Check size={13} className="text-success" /> : <Sparkles size={13} />}
+                  {copiedId === `${lead.id}-mob-demo` ? 'Copied Demo!' : 'Copy Demo Link'}
+                </button>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </section>
   </div>

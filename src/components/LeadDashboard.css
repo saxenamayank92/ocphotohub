@@ -870,34 +870,47 @@
 }
 
 /* ==========================================================================
-   70% LEFT / 30% RIGHT SPLIT DASHBOARD LAYOUT
+   DESKTOP FULL-WIDTH SPACE EFFICIENCY
    ========================================================================== */
+.lead-admin {
+  min-height: 100vh;
+  background: #f7f5f0;
+  color: #1c2531;
+  padding: 16px clamp(12px, 2.5vw, 32px);
+  font-family: var(--font-sans);
+}
+.lead-header,
+.lead-cards,
+.lead-panel {
+  max-width: 100%;
+}
+
 .lead-dashboard-split-layout {
   display: flex;
-  gap: 24px;
+  gap: 20px;
   align-items: flex-start;
-  max-width: 1600px;
+  max-width: 100%;
   margin: 0 auto;
   width: 100%;
 }
 
 .lead-dashboard-main-col {
-  flex: 0 0 66%;
-  max-width: 66%;
+  flex: 0 0 67%;
+  max-width: 67%;
   min-width: 0;
 }
 
 .lead-dashboard-agent-col {
-  flex: 0 0 34%;
-  max-width: 34%;
+  flex: 0 0 33%;
+  max-width: 33%;
   min-width: 0;
   position: sticky;
-  top: 24px;
+  top: 16px;
 }
 
 .lead-dashboard-agent-col .ai-agent-console-card {
-  height: calc(100vh - 120px);
-  min-height: 600px;
+  height: calc(100vh - 80px);
+  min-height: 580px;
   display: flex;
   flex-direction: column;
   margin-bottom: 0;
@@ -906,6 +919,11 @@
 .lead-dashboard-agent-col .agent-chat-window {
   flex: 1;
   max-height: none;
+}
+
+.mobile-view-tabs-bar,
+.lead-mobile-cards-list {
+  display: none;
 }
 
 /* ==========================================================================
@@ -1260,6 +1278,193 @@
 .btn-send-agent:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* ==========================================================================
+   MOBILE-FIRST APP-LIKE UI (< 990px)
+   ========================================================================== */
+@media (max-width: 990px) {
+  .lead-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .lead-header-actions {
+    width: 100%;
+    display: flex;
+    gap: 8px;
+  }
+  .lead-header-actions button {
+    flex: 1;
+    justify-content: center;
+    padding: 10px 8px;
+    font-size: 12px;
+  }
+
+  /* Mobile Tabs Switcher Bar */
+  .mobile-view-tabs-bar {
+    display: flex;
+    gap: 6px;
+    background: #0f172a;
+    padding: 6px;
+    border-radius: 12px;
+    margin-bottom: 16px;
+    border: 1px solid #1e293b;
+  }
+  .mobile-tab-btn {
+    flex: 1;
+    background: transparent;
+    color: #94a3b8;
+    border: none;
+    padding: 8px 6px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    white-space: nowrap;
+    transition: all 0.15s ease;
+  }
+  .mobile-tab-btn.active {
+    background: #d97706;
+    color: #ffffff;
+  }
+
+  /* Split Layout on Mobile */
+  .lead-dashboard-split-layout {
+    flex-direction: column;
+    gap: 16px;
+  }
+  .lead-dashboard-main-col,
+  .lead-dashboard-agent-col {
+    flex: 0 0 100%;
+    max-width: 100%;
+    width: 100%;
+    position: static;
+  }
+
+  /* Tab-based Display on Mobile */
+  .mobile-tab-leads .lead-dashboard-agent-col {
+    display: none;
+  }
+  .mobile-tab-agent .lead-dashboard-main-col {
+    display: none;
+  }
+  .mobile-tab-agent .lead-dashboard-agent-col {
+    display: block;
+  }
+  .mobile-tab-feed .lead-dashboard-agent-col {
+    display: none;
+  }
+  .mobile-tab-feed .lead-panel {
+    display: none;
+  }
+
+  /* Mobile Cards vs Table */
+  .lead-table-wrap {
+    display: none;
+  }
+  .lead-mobile-cards-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  /* Mobile Lead Card Styling */
+  .mobile-lead-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .mobile-lead-card.hot-card {
+    border-left: 4px solid #f59e0b;
+    background: #fffdf5;
+  }
+  .mob-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .mob-club-name {
+    font-size: 15px;
+    color: #0f172a;
+    display: block;
+  }
+  .mob-org-type {
+    font-size: 11px;
+    color: #64748b;
+    display: block;
+  }
+  .mob-card-contact {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    background: #f8fafc;
+    padding: 8px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+  }
+  .mob-contact-name {
+    font-weight: 700;
+    color: #1e293b;
+  }
+  .mob-contact-email {
+    color: #2563eb;
+    text-decoration: none;
+    word-break: break-all;
+  }
+  .mob-card-stats-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 11px;
+  }
+  .mob-clicks-pill {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: #f1f5f9;
+    padding: 3px 8px;
+    border-radius: 6px;
+  }
+  .mob-card-primary-action {
+    margin-top: 4px;
+  }
+  .mob-primary-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 12px;
+    font-size: 13px;
+    border-radius: 8px;
+  }
+  .mob-card-secondary-links {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .mob-card-secondary-links button {
+    justify-content: center;
+    font-size: 11px;
+    padding: 8px;
+  }
+
+  /* Mobile Agent Card Height */
+  .lead-dashboard-agent-col .ai-agent-console-card {
+    height: auto;
+    min-height: 480px;
+  }
+  .lead-dashboard-agent-col .agent-chat-window {
+    max-height: 300px;
+  }
 }
 
 /* ==========================================================================
