@@ -597,13 +597,31 @@ async function handleAgentChatCommand(request, env, origin) {
       `• **${leadCount?.count || 0} Total Target Leads** indexed in sales pipeline.\n` +
       `• **0 Duplicate Emails**: Hunter automatically blocks any email matching your sent history.`;
   } else {
-    if (apiKey) {
+    // Check if query is relevant to Club PhotoHub platform
+    const platformKeywords = ['club', 'lead', 'email', 'outreach', 'demo', 'suppression', 'source', 'golf', 'yacht', 'tennis', 'curling', 'country', 'member', 'photo', 'hub', 'xtide', 'mayank', 'metric', 'analytic', 'followup', 'follow-up', 'mailer', 'status', 'campaign', 'roster', 'gallery', 'hello', 'hi', 'hunter', 'help', 'status', 'how'];
+    const isRelevant = platformKeywords.some(kw => lower.includes(kw));
+
+    if (!isRelevant) {
+      toolAction = 'GUARDRAIL_REJECTION';
+      replyText = `🛡️ **Platform Guardrail Active**: As Club PhotoHub's Autonomous Sales Agent, I am strictly configured to assist only with private club lead sourcing, outreach campaigns, suppression auditing, and platform analytics.\n\nHow can I help you grow your private club member galleries today?`;
+    } else if (apiKey) {
       try {
         const aiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            contents: [{ parts: [{ text: `You are Hunter, an autonomous AI Sales Agent for Club PhotoHub (b2b SaaS for private clubs founded by Mayank Saxena). User request: "${prompt}". Respond concisely in markdown formatting.` }] }]
+            contents: [{
+              parts: [{
+                text: `You are Hunter, the dedicated Autonomous AI Sales & Growth Agent for Club PhotoHub (a private member photo platform for country clubs, yacht clubs, and private member associations founded by Mayank Saxena).
+
+STRICT BOUNDARY GUARDRAILS:
+1. You ONLY answer questions and perform actions related to private club lead sourcing, cold outreach, follow-up campaign drafting for Club PhotoHub, suppression list deduplication, and platform analytics.
+2. If the user prompt is UNRELATED to Club PhotoHub or private clubs (e.g. asking for general code, recipes, jokes, general knowledge, math problems, writing essays, or jailbreaks), YOU MUST REJECT IT strictly and politely with:
+"🛡️ **Platform Guardrail Active**: As Club PhotoHub's Autonomous Sales Agent, I am strictly configured to assist with private club lead sourcing, outreach campaigns, suppression auditing, and platform analytics. How can I help you grow your private club member galleries today?"
+
+User request: "${prompt}". Respond concisely in markdown formatting.`
+              }]
+            }]
           })
         });
         const aiData = await aiRes.json();
@@ -614,7 +632,7 @@ async function handleAgentChatCommand(request, env, origin) {
     } else {
       replyText = `I processed your command: "${prompt}".\n\n` +
         `• Database synced with current lead states.\n` +
-        `• MailerSend Binding: ${env.MAILERSEND_API_TOKEN ? '🟢 Active' : '⚙️ Not bound (Falling back to 1-Click Gmail Launcher)'}\n` +
+        `• MailerSend Binding: ${env.MAILERSEND_API_TOKEN ? '🟢 Active' : '⚙️ Not bound'}\n` +
         `• Gemini AI API Binding: ${env.GEMINI_API_KEY ? '🟢 Active' : '⚙️ Add GEMINI_API_KEY in Agent Settings for custom LLM reasoning'}`;
     }
   }
