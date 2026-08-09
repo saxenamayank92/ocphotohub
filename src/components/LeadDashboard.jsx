@@ -913,14 +913,11 @@ export default function LeadDashboard() {
             </div>
             <div className="email-preview-body">
               <p>Hi {previewLead.firstName || 'General Manager'},</p>
-              <p>Right now, after major tournaments and galas at {previewLead.clubName}, photos end up scattered across member group chats, raw Google Drive folders, or public social media.</p>
-              <p>Unlike <strong>Google Photos or Dropbox</strong>, which require personal Gmail sign-ins, leak raw public links, and offer zero privacy, <strong>Club PhotoHub integrates directly with {previewLead.clubName}'s official member roster</strong> so only verified members can access your private gallery.</p>
-              <p>I put together a live interactive concept preview for your executive team to test:</p>
+              <p>Right now, after major tournaments and social events at {previewLead.clubName}, member photos end up scattered across group chats, raw email attachments, or unverified social media.</p>
+              <p>Unlike <strong>Google Photos or Dropbox</strong>, which require personal Gmail sign-ins, leak raw public links, and offer zero privacy, <strong>Club PhotoHub gives {previewLead.clubName} a private, club-branded gallery secured directly by your official member roster</strong>.</p>
+              <p>I set up a 60-second interactive preview for your executive team to test:</p>
               <div className="cta-preview-btn">
                 👉 Custom Workspace Preview: <code>https://clubphotohub.com/preview/{encodeURIComponent(previewLead.leadCode || previewLead.id)}</code>
-              </div>
-              <div className="offer-preview">
-                <strong>💡 Self-Funding Software:</strong> Private Event Vaults feature is included <strong>FREE</strong> for early partner clubs. By offering private 30-day photo vaults to members hosting weddings, tournaments & social events at {previewLead.clubName} ($80–$200 on event invoices), the software completely pays for itself while generating new catering margin.
               </div>
               <p>Would love to hear your thoughts on whether this fits {previewLead.clubName}'s 2026 member engagement goals.</p>
               <p>Best regards,<br /><strong>Mayank Saxena</strong><br />Founder, Club PhotoHub</p>
