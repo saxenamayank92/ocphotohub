@@ -374,17 +374,18 @@ const outreachEmailTemplate = ({ clubName, firstName = '', organizationType = 'P
 
   const bodyText = `Hi ${recipientName},
 
-Right now, after major tournaments and social events at ${clubName}, photos end up scattered across member group chats, raw Google Drive folders, or public social media.
+Right now, after major tournaments and social events at ${clubName}, member photos end up scattered across group chats, raw email attachments, or unverified social media.
 
-Unlike Google Photos or Dropbox, which require personal Gmail sign-ins, leak raw public links, and offer zero privacy, Club PhotoHub integrates directly with ${clubName}'s official member roster so only verified members can access your private gallery.
+Unlike Google Photos or Dropbox, which require personal Gmail sign-ins, leak raw public links, and offer zero privacy, Club PhotoHub gives ${clubName} a private, club-branded gallery secured directly by your official member roster.
 
-💡 Self-Funding Software: Private Event Vaults capability is included FREE for early partner clubs. By offering private 30-day photo vaults to members hosting weddings, tournaments & social events at ${clubName} ($80–$200 on event invoices), the software completely pays for itself while generating new catering margin.
+I set up a 60-second interactive preview for your executive team to test:
+👉 ${trackUrl}
 
 Would love to hear your thoughts on whether this fits ${clubName}'s 2026 member engagement goals.`;
 
   return {
     subject: `Interactive Photo Hub Concept for ${clubName} Leadership`,
-    text: `${bodyText}\n\n👉 ${trackUrl}\n\nMayank Saxena\nFounder, Club PhotoHub\nmayank.saxena@xtide.io`,
+    text: `${bodyText}\n\nMayank Saxena\nFounder, Club PhotoHub\nmayank.saxena@xtide.io\nhttps://clubphotohub.com`,
     html: clubPhotoHubEmail({
       eyebrow: 'Interactive Workspace Preview',
       title: `Private Member Photo Sharing for ${clubName}`,
@@ -420,14 +421,14 @@ Following up on my note regarding ${clubName}'s private photo gallery.
 
 🔒 Roster-Level Security: Access is strictly validated against ${clubName}'s official member roster (Member # + Last Name). No public link leaks, no outsider snoopers, and zero personal Google account sign-ins required.
 
-💰 How The Software Pays For Itself: Private Event Vaults feature is included FREE for early partner clubs. Your catering team can bill $80–$200 per private wedding, tournament, or social event directly on the member's event invoice with $0 transaction fees to us. Just 6–10 private events per year completely covers your annual software investment.
+💰 How The Software Pays For Itself: Your catering team can offer 30-day Private Event Photo Vaults for weddings, tournaments & social events hosted at ${clubName} — billing $80–$200 directly on the member's event invoice with $0 transaction fees to us. Just 6–8 private events per year completely covers your annual software investment.
 
 You can test ${clubName}'s live workspace preview here:
 👉 ${trackUrl}
 
 Worth a quick 5-minute conversation this week?`;
 
-  const subject = body.subject || (isFollowup ? `Re: Roster security & self-funding photo hub for ${clubName}` : generated.subject);
+  const subject = body.subject || (isFollowup ? `Re: Self-funding photo hub for ${clubName}` : generated.subject);
   const text = body.text || (isFollowup ? `${followupText}\n\nMayank Saxena\nmayank.saxena@xtide.io` : generated.text);
 
   const html = isFollowup
@@ -490,15 +491,15 @@ async function handleAgentChatCommand(request, env, origin) {
         subject: `Interactive Photo Hub Concept for Heritage Oaks Country Club Leadership`,
         eyebrow: `Interactive Workspace Preview`,
         title: `Private Member Photo Sharing for Heritage Oaks Country Club`,
-        intro: `Hi Mayank,\n\nRight now, after major tournaments and social events at Heritage Oaks Country Club, photos end up scattered across member group chats, raw Google Drive folders, or public social media.\n\nUnlike Google Photos or Dropbox, which require personal Gmail sign-ins, leak raw public links, and offer zero privacy, Club PhotoHub integrates directly with Heritage Oaks Country Club's official member roster so only verified members can access your private gallery.\n\n💡 Self-Funding Software: Private Event Vaults capability is included FREE for early partner clubs. By offering private 30-day photo vaults to members hosting weddings, tournaments & social events at Heritage Oaks Country Club ($80–$200 on event invoices), the software completely pays for itself while generating new catering margin.\n\nWould love to hear your thoughts on whether this fits Heritage Oaks Country Club's 2026 member engagement goals.`,
+        intro: `Hi Mayank,\n\nRight now, after major tournaments and social events at Heritage Oaks Country Club, member photos end up scattered across group chats, raw email attachments, or unverified social media.\n\nUnlike Google Photos or Dropbox, which require personal Gmail sign-ins, leak raw public links, and offer zero privacy, Club PhotoHub gives Heritage Oaks Country Club a private, club-branded gallery secured directly by your official member roster.\n\nI set up a 60-second interactive preview for your executive team to test:\n\nWould love to hear your thoughts on whether this fits Heritage Oaks Country Club's 2026 member engagement goals.`,
         actionLabel: `Explore Interactive Preview →`,
         actionUrl: `https://clubphotohub.com/preview/heritage-oaks`
       },
       {
-        subject: `Re: Roster security & self-funding photo hub for Heritage Oaks Country Club`,
+        subject: `Re: Self-funding photo hub for Heritage Oaks Country Club`,
         eyebrow: `Sample Workspace Preview`,
         title: `Custom Preview for Heritage Oaks Country Club`,
-        intro: `Hi Mayank,\n\nFollowing up on my note regarding Heritage Oaks Country Club's private photo gallery.\n\n🔒 Roster-Level Security: Access is strictly validated against Heritage Oaks Country Club's official member roster (Member # + Last Name). No public link leaks, no outsider snoopers, and zero personal Google account sign-ins required.\n\n💰 How The Software Pays For Itself: Private Event Vaults feature is included FREE for early partner clubs. Your catering team can bill $80–$200 per private wedding, tournament, or social event directly on the member's event invoice with $0 transaction fees to us. Just 6–10 private events per year completely covers your annual software investment.`,
+        intro: `Hi Mayank,\n\nFollowing up on my note regarding Heritage Oaks Country Club's private photo gallery.\n\n🔒 Roster-Level Security: Access is strictly validated against Heritage Oaks Country Club's official member roster (Member # + Last Name). No public link leaks, no outsider snoopers, and zero personal Google account sign-ins required.\n\n💰 How The Software Pays For Itself: Your catering team can offer 30-day Private Event Photo Vaults for weddings, tournaments & social events hosted at Heritage Oaks Country Club — billing $80–$200 directly on the member's event invoice with $0 transaction fees to us. Just 6–8 private events per year completely covers your annual software investment.`,
         actionLabel: `Explore Heritage Oaks Preview →`,
         actionUrl: `https://clubphotohub.com/preview/heritage-oaks`
       }
