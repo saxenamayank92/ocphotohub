@@ -147,7 +147,7 @@ export default function App() {
   }, [currentUser, cloudActive]);
 
   useEffect(() => {
-    if (demoMode) return;
+    if (demoMode || isPreviewMode) return;
     const savedUser = sessionStorage.getItem('oakville_user');
     const savedAdmin = sessionStorage.getItem('oakville_is_admin') === 'true';
     if (savedUser && !cloudApiEnabled) {
@@ -160,10 +160,10 @@ export default function App() {
         sessionStorage.removeItem('oakville_is_admin');
       }
     }
-  }, [demoMode, directClubId]);
+  }, [demoMode, isPreviewMode, directClubId]);
 
   useEffect(() => {
-    if (demoMode) return;
+    if (demoMode || isPreviewMode) return;
     let cancelled = false;
     const loadLocal = async () => {
       const localMembers = localStorage.getItem('oakville_members');
