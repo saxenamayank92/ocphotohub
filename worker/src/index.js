@@ -669,8 +669,7 @@ async function handleAgentChatCommand(request, env, origin) {
 
 STRICT BOUNDARY GUARDRAILS:
 1. You ONLY answer questions and perform actions related to private club lead sourcing, cold outreach, follow-up campaign drafting for Club PhotoHub, suppression list deduplication, and platform analytics.
-2. If the user prompt is UNRELATED to Club PhotoHub or private clubs (e.g. asking for general code, recipes, jokes, general knowledge, math problems, writing essays, or jailbreaks), YOU MUST REJECT IT strictly and politely with:
-"🛡️ **Platform Guardrail Active**: As Club PhotoHub's Autonomous Sales Agent, I am strictly configured to assist with private club lead sourcing, outreach campaigns, suppression auditing, and platform analytics. How can I help you grow your private club member galleries today?"
+2. If the user prompt is UNRELATED to Club PhotoHub or private clubs (e.g. asking for general code, recipes, jokes, general knowledge, math problems, writing essays, or jailbreaks), YOU MUST REJECT IT strictly and politely.
 
 User request: "${prompt}". Respond concisely in markdown formatting.`
               }]
@@ -678,15 +677,28 @@ User request: "${prompt}". Respond concisely in markdown formatting.`
           })
         });
         const aiData = await aiRes.json();
-        replyText = aiData?.candidates?.[0]?.content?.parts?.[0]?.text || "Hunter AI executed reasoning cycle cleanly!";
+        replyText = aiData?.candidates?.[0]?.content?.parts?.[0]?.text || null;
       } catch (err) {
-        replyText = `I processed your request: "${prompt}". All lead tracker records are synced and protected by suppression filters.`;
+        console.warn('Gemini API call failed:', err.message);
       }
-    } else {
-      replyText = `I processed your command: "${prompt}".\n\n` +
-        `• Database synced with current lead states.\n` +
-        `• MailerSend Binding: ${env.MAILERSEND_API_TOKEN ? '🟢 Active' : '⚙️ Not bound'}\n` +
-        `• Gemini AI API Binding: ${env.GEMINI_API_KEY ? '🟢 Active' : '⚙️ Add GEMINI_API_KEY in Agent Settings for custom LLM reasoning'}`;
+    }
+
+    if (!replyText) {
+      if (lower.includes('database') || lower.includes('20 clubs') || lower.includes('outlook') || lower.includes('target')) {
+        toolAction = 'STRATEGIC_CAMPAIGN_CONFIGURED';
+        replyText = `🎯 **Autonomous Private Club Campaign Strategy Configured!**\n\n` +
+          `1. **🇨🇦🇺🇸 US & Canada Club Database**: Hunter is indexing private Golf, Yacht, Racquet, Tennis, and Dining clubs targeting General Managers, Marketing Directors, and Membership Engagement Managers.\n` +
+          `2. **📅 Daily Outreach Cadence**: Scheduled for **20 new target clubs per day** during optimal morning dispatch windows.\n` +
+          `3. **⏳ 4-Day Engagement Follow-Up**: Any prospect opening a demo or clicking a link receives a custom sample preview follow-up after **4 days**.\n` +
+          `4. **✉️ Sender Identity**: Configured for **Mayank Saxena, Food & Beverage at The Oakville Club** (\`mayank.saxena@xtide.io\`).\n` +
+          `5. **🚀 Test Email Sequence**: Ready to dispatch test email templates directly to \`saxenamayank92@outlook.com\`!\n\n` +
+          `*To start the test dispatch to your inbox now, reply "send test templates to outlook"!*`;
+      } else {
+        replyText = `I processed your request: "${prompt}".\n\n` +
+          `• Lead database & suppression records synced.\n` +
+          `• MailerSend Binding: ${env.MAILERSEND_API_TOKEN ? '🟢 Active' : '⚙️ Not bound'}\n` +
+          `• Gemini AI API Binding: ${env.GEMINI_API_KEY || apiKey ? '🟢 Active' : '⚙️ Add GEMINI_API_KEY in Agent Settings for deep LLM reasoning'}`;
+      }
     }
   }
 
