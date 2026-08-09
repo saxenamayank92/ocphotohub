@@ -76,6 +76,7 @@ export default function Root({ url }) {
     || directClubPath
     || currentUrl.pathname === '/app'
     || currentUrl.pathname.startsWith('/app/')
+    || currentUrl.pathname.startsWith('/preview/')
     || currentUrl.searchParams.has('reset')
     || currentUrl.searchParams.get('demo') === '1';
 
