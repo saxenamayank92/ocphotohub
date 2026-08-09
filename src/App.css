@@ -22,8 +22,40 @@
 .demo-banner-copy > span,
 .demo-banner-copy > a { display: inline-flex; align-items: center; gap: 6px; }
 .demo-mode-banner a { padding: 5px 9px; border-radius: 999px; color: var(--club-green-dark); background: #fff; font-weight: 750; text-decoration: none; }
-.preview-banner-claim-btn { padding: 5px 12px; border-radius: 999px; color: #0f172a; background: #fbbf24; font-weight: 800; border: none; cursor: pointer; transition: transform 0.15s ease; }
-.preview-banner-claim-btn:hover { transform: scale(1.04); background: #f59e0b; }
+.header-claim-cta-btn {
+  padding: 6px 14px;
+  border-radius: 999px;
+  color: #0f172a;
+  background: #fbbf24;
+  font-weight: 800;
+  font-size: 12px;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(251, 191, 36, 0.3);
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.header-claim-cta-btn:hover {
+  transform: scale(1.03);
+  background: #f59e0b;
+}
+
+@media (max-width: 768px) {
+  .desktop-only-inline {
+    display: none;
+  }
+  .club-header.demo-header-slim {
+    padding: 6px 10px !important;
+  }
+  .club-header.demo-header-slim .brand-subtitle {
+    display: none !important;
+  }
+  .header-claim-cta-btn {
+    padding: 5px 10px !important;
+    font-size: 11px !important;
+  }
+}
 
 /* Claim Modal Overlay */
 .preview-claim-modal-overlay {
