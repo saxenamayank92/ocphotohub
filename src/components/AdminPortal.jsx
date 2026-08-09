@@ -23,6 +23,7 @@ export default function AdminPortal({
   onUpdatePhoto,
   onHeartPhoto,
   onResetDatabase,
+  demoMode,
   addToast
 }) {
   const [activeSubTab, setActiveSubTab] = useState('gallery'); // 'gallery' | 'clubs' | 'dashboard' | 'members' | 'moderation' | 'cloud'
@@ -494,11 +495,13 @@ export default function AdminPortal({
           </button>
         </div>
 
-        <div style={{ marginTop: 'auto', paddingTop: '20px' }}>
-          <button className="btn-danger" style={{ width: '100%', justifyContent: 'center', backgroundColor: '#8B5CF6' }} onClick={handleResetDatabaseClick}>
-            <RefreshCw size={14} /> Reset Hub Content
-          </button>
-        </div>
+        {!demoMode && (
+          <div style={{ marginTop: 'auto', paddingTop: '20px' }}>
+            <button className="btn-danger" style={{ width: '100%', justifyContent: 'center', backgroundColor: '#8B5CF6' }} onClick={handleResetDatabaseClick}>
+              <RefreshCw size={14} /> Reset Hub Content
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Main Content Area */}
