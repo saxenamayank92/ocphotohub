@@ -219,6 +219,42 @@ export default function AIAgentConsole({ onRefreshLeads, leads = [] }) {
         <div ref={chatBottomRef} />
       </div>
 
+      {/* Quick Action Chips */}
+      <div className="agent-quick-chips">
+        <button
+          type="button"
+          className="quick-chip"
+          onClick={() => handleSendMessage('who should be targeted next?')}
+          disabled={isProcessing}
+        >
+          🎯 Target Queue
+        </button>
+        <button
+          type="button"
+          className="quick-chip highlight"
+          onClick={() => handleSendMessage('target next 20 clubs')}
+          disabled={isProcessing}
+        >
+          🚀 Dispatch Next 20
+        </button>
+        <button
+          type="button"
+          className="quick-chip"
+          onClick={() => handleSendMessage('who has been contacted?')}
+          disabled={isProcessing}
+        >
+          📋 Outreach Audit
+        </button>
+        <button
+          type="button"
+          className="quick-chip"
+          onClick={() => handleSendMessage('dispatch follow-ups')}
+          disabled={isProcessing}
+        >
+          🔥 Send Follow-Ups
+        </button>
+      </div>
+
       {/* Interactive Input Form */}
       <form onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }} className="agent-input-bar">
         <input

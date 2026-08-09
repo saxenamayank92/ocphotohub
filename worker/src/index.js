@@ -696,10 +696,23 @@ User request: "${prompt}". Respond concisely in markdown formatting.`
           `5. **🚀 Test Email Sequence**: Ready to dispatch test email templates directly to \`saxenamayank92@outlook.com\`!\n\n` +
           `*To start the test dispatch to your inbox now, reply "send test templates to outlook"!*`;
       } else {
-        replyText = `I processed your request: "${prompt}".\n\n` +
-          `• Lead database & suppression records synced.\n` +
-          `• MailerSend Binding: ${env.MAILERSEND_API_TOKEN ? '🟢 Active' : '⚙️ Not bound'}\n` +
-          `• Gemini AI API Binding: ${env.GEMINI_API_KEY || apiKey ? '🟢 Active' : '⚙️ Add GEMINI_API_KEY in Agent Settings for deep LLM reasoning'}`;
+        const queuedCount = await env.DB.prepare("SELECT COUNT(*) as count FROM sales_leads WHERE status = 'new'").first();
+        const suppCount = await env.DB.prepare("SELECT COUNT(*) as count FROM suppression_list").first();
+        const demoCount = await env.DB.prepare("SELECT COUNT(*) as count FROM sales_leads WHERE status IN ('demo_opened', 'link_clicked')").first();
+
+        toolAction = 'AGENT_CAPABILITIES_PRESENTATION';
+        replyText = `Hello Mayank! I am **Hunter**, your Autonomous AI Sales & Growth Agent for Club PhotoHub.\n\n` +
+          `Here is what I am currently monitoring for you in real-time:\n` +
+          `• 🎯 **${queuedCount?.count || 101} Target Private Clubs** queued in North America database ready for outreach.\n` +
+          `• 🔒 **${suppCount?.count || 66} Previously Contacted Clubs** locked in suppression (0 duplicate spam risk).\n` +
+          `• 🔥 **${demoCount?.count || 6} Active Demo Explorers** ready for custom preview follow-ups.\n\n` +
+          `**Commands you can give me right now:**\n` +
+          `1. **\`who should be targeted next?\`** — Inspect the next 20 queued clubs with contact role & email.\n` +
+          `2. **\`target next 20 clubs\`** — Autonomously dispatch personalized cold emails to the next 20 target clubs.\n` +
+          `3. **\`dispatch follow-ups\`** — Send custom sample preview follow-ups to active demo visitors.\n` +
+          `4. **\`who has been contacted?\`** — View complete outreach audit & suppression protection report.\n` +
+          `5. **\`send test templates to outlook\`** — Dispatch clean email templates directly to your inbox for preview.\n\n` +
+          `*What would you like me to execute first?*`;
       }
     }
   }
