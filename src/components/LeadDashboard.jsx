@@ -639,6 +639,16 @@ export default function LeadDashboard() {
                         <Send size={12} /> Send Email
                       </button>
                     )}
+                    <a
+                      className="btn-preview-link-action"
+                      href={`/preview/${encodeURIComponent(lead.leadCode || lead.id)}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      title="View Custom Club Photo Portal Preview"
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', padding: '4px 8px', borderRadius: '4px', background: 'rgba(251, 191, 36, 0.12)', color: '#fbbf24', border: '1px solid rgba(251, 191, 36, 0.3)', textDecoration: 'none', fontWeight: 600 }}
+                    >
+                      <ExternalLink size={12} /> Preview Link
+                    </a>
                     {lead.email && (lead.status === 'demo_opened' || lead.status === 'link_clicked' || (lead.clicksCount && lead.clicksCount > 0)) && (
                       <button
                         className="btn-send-followup-action"

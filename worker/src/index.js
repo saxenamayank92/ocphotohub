@@ -621,16 +621,21 @@ async function handleAgentChatCommand(request, env, origin) {
         }
 
         const contactGreeting = lead.contact_first_name && lead.contact_first_name !== 'General Manager' ? lead.contact_first_name : 'General Manager';
-        const trackUrl = `https://clubphotohub.com/?demo=1&lead=${encodeURIComponent(lead.lead_code || lead.id)}`;
-        const activities = getClubActivityPhrase(lead.organization_type);
+        const previewUrl = `https://clubphotohub.com/preview/${encodeURIComponent(lead.lead_code || lead.id)}`;
 
         if (env.MAILERSEND_API_TOKEN) {
           try {
             await sendMail(env, {
               to: lead.contact_email,
-              subject: `Private member photo sharing for ${lead.club_name}`,
-              text: `Hi ${contactGreeting},\n\nI’m reaching out from Club PhotoHub where we help private clubs elevate member engagement and photo delivery across ${activities}. We created Club PhotoHub to give ${lead.club_name} a dedicated, secure platform for member event galleries.\n\nYou can explore the live platform and see how it works for ${lead.club_name} here:\n👉 ${trackUrl}\n\nOr simply reply to this email with "yes" and I'll set up a branded preview workspace for ${lead.club_name}.\n\nMayank Saxena\nFounder, Club PhotoHub\nmayank.saxena@xtide.io`,
-              html: clubPhotoHubEmail({ eyebrow: '', title: `Private Member Photo Sharing for ${lead.club_name}`, intro: `Hi ${contactGreeting},\n\nI’m reaching out from Club PhotoHub where we help private clubs elevate member engagement and photo delivery across ${activities}. We created Club PhotoHub to give ${lead.club_name} a dedicated, secure platform for member event galleries.`, actionLabel: `Explore Club PhotoHub`, actionUrl: trackUrl })
+              subject: `Quick question re: ${lead.club_name} member photos`,
+              text: `Hi ${contactGreeting},\n\nQuick question — after major member events at ${lead.club_name}, how does your team currently share high-res photos with members without burying them in slow Google Drive links or exposing them publicly?\n\nWe created Club PhotoHub specifically for private clubs to give members instant, passwordless access to their branded event galleries via QR code or facial recognition search.\n\nI put together a 1-click preview of how ${lead.club_name}'s custom member gallery portal looks:\n👉 ${previewUrl}\n\nWould you be open to testing this for free at your next major member event or gala?\n\nBest regards,\nMayank Saxena\nFounder, Club PhotoHub\nmayank.saxena@xtide.io`,
+              html: clubPhotoHubEmail({ 
+                eyebrow: 'Private Club Member Engagement', 
+                title: `Custom Preview for ${lead.club_name}`, 
+                intro: `Hi ${contactGreeting},\n\nQuick question — after major member events at ${lead.club_name}, how does your team currently share high-res photos with members without burying them in slow Google Drive links or exposing them on public social media?\n\nWe created Club PhotoHub to give ${lead.club_name} members instant, passwordless access to their branded event galleries via QR code or facial recognition search.`, 
+                actionLabel: `View ${lead.club_name} Custom Photo Portal`, 
+                actionUrl: previewUrl 
+              })
             });
             emailsSent++;
           } catch (e) {
@@ -1377,6 +1382,16 @@ export default {
       }
       if (path === '/analytics/track' && request.method === 'POST') {
         return trackLeadEvent(request, env, origin);
+      }
+      if (path === '/leads/preview' && request.method === 'GET') {
+        const code = url.searchParams.get('code');
+        if (!code) return json({ error: 'Code required' }, 400, origin);
+        const lead = await env.DB.prepare("SELECT * FROM sales_leads WHERE lead_code = ? OR id = ?").bind(code, code).first();
+        if (lead) {
+          const now = new Date().toISOString();
+          await env.DB.prepare("UPDATE sales_leads SET clicks_count = clicks_count + 1, status = 'hot_prospect', last_seen_at = ? WHERE id = ?").bind(now, lead.id).run();
+        }
+        return json({ ok: true, lead }, 200, origin);
       }
       if (path === '/onboarding/start' && request.method === 'POST') {
         if (!await withinRateLimit(request, env.RESET_RATE_LIMITER, 'club-onboarding-start')) return rateLimited(origin);

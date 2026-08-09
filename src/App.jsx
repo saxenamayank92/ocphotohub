@@ -425,6 +425,16 @@ export default function App() {
 
   if (startupError) return <div className="login-screen"><div className="login-card startup-error-card" role="alert"><ShieldCheck size={42} /><h1>Club PhotoHub is taking a moment</h1><p>{startupError}</p><button type="button" className="btn-primary login-btn" onClick={() => window.location.reload()}>Try again</button></div></div>;
 
+  const previewMatch = typeof window !== 'undefined' && window.location.pathname.match(/^\/preview\/([a-z0-9-]+)\/?$/i);
+  if (previewMatch) {
+    const ClubPreviewPage = lazy(() => import('./components/ClubPreviewPage'));
+    return (
+      <Suspense fallback={<div className="preview-page-root" style={{ padding: 40, textAlign: 'center', color: '#fbbf24' }}>Loading Custom Club Preview...</div>}>
+        <ClubPreviewPage clubCode={previewMatch[1]} />
+      </Suspense>
+    );
+  }
+
   if (!currentUser) {
     if (showClubOnboarding) return <ClubOnboarding onStart={startClubOnboarding} onComplete={handleCompleteClubOnboarding} onCancel={() => { setShowClubOnboarding(false); window.history.replaceState({}, '', '/app'); }} />;
     return <Login clubs={clubs} directClubId={directClubId} members={members} onSearchClubs={searchCloudClubs} onLoginSuccess={handleLoginSuccess} onCloudLogin={handleCloudLogin} onCloudCheckMember={checkCloudMember} onCloudRequestRegistrationCode={requestRegistrationCode} onCloudRegister={handleCloudRegister} onRequestPasswordReset={requestCloudPasswordReset} onCompletePasswordReset={completeCloudPasswordReset} onRequestAdminPasswordReset={requestAdminPasswordReset} onCompleteAdminPasswordReset={completeAdminPasswordReset} onRegisterPassword={handleRegisterPassword} onCreateClub={() => { setShowClubOnboarding(true); window.history.replaceState({}, '', '/app?onboard=club'); }} onOpenDemo={() => { const demoUrl = new URL(window.location.href); demoUrl.searchParams.set('demo', '1'); demoUrl.searchParams.delete('demoView'); if (typeof window !== 'undefined' && window.history?.pushState) { window.history.pushState({}, '', `${demoUrl.pathname}${demoUrl.search}`); } setCurrentUser(demoUser); setCurrentClub(demoClub); setIsAdmin(false); setActiveTab('gallery'); setMembers(demoMembers); setPhotos(demoPhotos); }} firebaseEnabled={cloudApiEnabled || import.meta.env.DEV} />;
