@@ -465,6 +465,75 @@ Worth a quick 5-minute conversation this week?`;
   }
 }
 
+async function handleClaimWorkspace(request, env, origin) {
+  const body = await request.json();
+  const { clubName, name, email, phone, leadCode } = body;
+
+  if (!email || !validEmail(email)) {
+    return json({ error: 'Please enter a valid email address.' }, 400, origin);
+  }
+
+  const now = new Date().toISOString();
+  const founderEmail = env.FOUNDER_EMAIL || 'mayank.saxena@xtide.io';
+  const founderName = env.FOUNDER_NAME || 'Mayank Saxena';
+  const targetClub = clubName || 'Granite Club';
+  const contactName = name || 'Club Executive';
+
+  const code = leadCode || targetClub.toLowerCase().replace(/[^a-z0-9]/g, '-').slice(0, 30);
+  const id = `lead_${randomToken(12)}`;
+
+  try {
+    await env.DB.prepare(`INSERT INTO sales_leads (id, visitor_id, lead_code, club_name, organization_type, contact_first_name, contact_last_name, contact_email, status, clicks_count, last_clicked_at, notes, first_seen_at, last_seen_at)
+      VALUES (?, '', ?, ?, 'Private Club', ?, '', ?, 'claim_requested', 1, ?, ?, ?, ?)
+      ON CONFLICT(contact_email, club_name) DO UPDATE SET status = 'claim_requested', last_seen_at = excluded.last_seen_at`)
+      .bind(id, code, targetClub, contactName, email, now, `Claim requested by ${contactName} (${phone || 'no phone'})`, now, now).run();
+  } catch (err) {
+    console.warn('Claim lead db error:', err.message);
+  }
+
+  if (env.MAILERSEND_API_TOKEN) {
+    // 1. Alert to Mayank
+    try {
+      await sendMail(env, {
+        to: founderEmail,
+        subject: `🚨 NEW WORKSPACE CLAIM: ${targetClub} (${contactName})`,
+        text: `Great news! A decision maker just claimed their official club workspace.\n\n• Club: ${targetClub}\n• Executive Name: ${contactName}\n• Email: ${email}\n• Phone: ${phone || 'Not provided'}\n• Code: ${code}\n• Time: ${now}\n\nLog into your Lead Dashboard to view & provision their workspace!`,
+        html: clubPhotoHubEmail({
+          eyebrow: '🚨 Workspace Claim Alert',
+          title: `New Workspace Claim for ${targetClub}`,
+          intro: `Great news! A decision maker just requested workspace activation for ${targetClub}.\n\n• Executive Name: ${contactName}\n• Business Email: ${email}\n• Phone: ${phone || 'Not provided'}\n• Lead Code: ${code}`,
+          actionLabel: 'Open Lead Dashboard →',
+          actionUrl: 'https://clubphotohub.com/?admin=1'
+        })
+      });
+    } catch (e) {
+      console.error('Founder claim alert error:', e.message);
+    }
+
+    // 2. Confirmation to applicant / GM
+    try {
+      await sendMail(env, {
+        to: email,
+        fromName: `${founderName}, Club PhotoHub`,
+        replyTo: founderEmail,
+        subject: `Workspace Claim Received: Welcome to Club PhotoHub for ${targetClub}`,
+        text: `Hi ${contactName},\n\nThank you for requesting to claim the official Club PhotoHub workspace for ${targetClub}.\n\nMayank Saxena (Founder) has received your request and will reach out directly within 2 hours to help your team set up your custom workspace domain, admin credentials, and QR table cards.\n\nIf you have any urgent questions, feel free to reply directly to this email or contact Mayank at ${founderEmail}.\n\nBest regards,\nMayank Saxena\nFounder, Club PhotoHub\n${founderEmail}`,
+        html: clubPhotoHubEmail({
+          eyebrow: 'Workspace Claim Received',
+          title: `Welcome to Club PhotoHub for ${targetClub}`,
+          intro: `Hi ${contactName},\n\nThank you for claiming the official Club PhotoHub workspace for ${targetClub}.\n\nMayank Saxena (Founder) has received your request and will reach out directly within 2 hours to help your team set up your custom domain, admin credentials, and QR table cards.\n\nIf you have any urgent questions, feel free to reply directly to this email or reach out to Mayank at ${founderEmail}.\n\nBest regards,\nMayank Saxena\nFounder, Club PhotoHub`,
+          actionLabel: `Explore Interactive Preview →`,
+          actionUrl: `https://clubphotohub.com/preview/${encodeURIComponent(code)}`
+        })
+      });
+    } catch (e) {
+      console.error('GM claim confirmation email error:', e.message);
+    }
+  }
+
+  return json({ success: true, message: `Workspace claim for ${targetClub} submitted successfully!` }, 200, origin);
+}
+
 async function handleAgentChatCommand(request, env, origin) {
   const session = await platformAuth(request, env);
   if (!session) return json({ error: 'Sign in to use Hunter AI Agent.' }, 401, origin);
@@ -1422,6 +1491,9 @@ export default {
           await env.DB.prepare("UPDATE sales_leads SET clicks_count = clicks_count + 1, status = 'hot_prospect', last_seen_at = ? WHERE id = ?").bind(now, lead.id).run();
         }
         return json({ ok: true, lead }, 200, origin);
+      }
+      if (path === '/leads/claim' && request.method === 'POST') {
+        return handleClaimWorkspace(request, env, origin);
       }
       if (path === '/onboarding/start' && request.method === 'POST') {
         if (!await withinRateLimit(request, env.RESET_RATE_LIMITER, 'club-onboarding-start')) return rateLimited(origin);

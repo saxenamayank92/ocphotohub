@@ -581,10 +581,26 @@ export default function App() {
                 </button>
               </div>
             ) : (
-              <form onSubmit={(e) => {
+              <form onSubmit={async (e) => {
                 e.preventDefault();
+                try {
+                  const apiUrl = import.meta.env.VITE_API_URL || 'https://pictide-api.summer-wind-c5c6.workers.dev';
+                  await fetch(`${apiUrl}/api/leads/claim`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      clubName: currentClub?.name || 'Granite Club',
+                      name: claimForm.name,
+                      email: claimForm.email,
+                      phone: claimForm.phone,
+                      leadCode: currentClub?.slug || 'granite-club'
+                    })
+                  });
+                } catch (err) {
+                  console.warn('Claim submission error:', err);
+                }
                 setClaimSubmitted(true);
-                addToast(`Claim request sent for ${currentClub?.name}! We'll contact you shortly.`, 'success');
+                addToast(`Claim request sent for ${currentClub?.name || 'your club'}! We'll contact you shortly.`, 'success');
               }}>
                 <h2 style={{ fontSize: '1.4rem', color: '#0f172a', marginBottom: 6, fontWeight: 800 }}>Activate {currentClub?.name} Workspace</h2>
                 <p style={{ color: '#64748b', fontSize: '0.9rem', marginBottom: 20 }}>

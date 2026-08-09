@@ -97,8 +97,24 @@ export default function ClubPreviewPage({ clubCode }) {
     }
   ];
 
-  const handleClaimSubmit = (e) => {
+  const handleClaimSubmit = async (e) => {
     e.preventDefault();
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://pictide-api.summer-wind-c5c6.workers.dev';
+      await fetch(`${apiUrl}/api/leads/claim`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clubName: clubTitle || 'Granite Club',
+          name: claimForm.name,
+          email: claimForm.email,
+          phone: claimForm.phone,
+          leadCode: clubCode || 'granite-club'
+        })
+      });
+    } catch (err) {
+      console.warn('Claim submission error:', err);
+    }
     setClaimSubmitted(true);
   };
 
