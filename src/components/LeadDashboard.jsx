@@ -73,8 +73,8 @@ export default function LeadDashboard() {
   const [bulkInput, setBulkInput] = useState('');
   const [bulkProgress, setBulkProgress] = useState(null);
 
-  const load = useCallback(async () => {
-    setState(previous => ({ ...previous, loading: true, error: '' }));
+  const load = useCallback(async (isInitial = false) => {
+    if (isInitial) setState(previous => ({ ...previous, loading: true, error: '' }));
     try {
       const session = await getPlatformSession();
       if (!session.authenticated) {
@@ -88,7 +88,7 @@ export default function LeadDashboard() {
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { load(true); }, [load]);
 
   const metrics = useMemo(() => Object.fromEntries((state.data?.metrics || []).map(item => [item.eventType, item])), [state.data]);
   const max = Math.max(1, ...order.map(key => metrics[key]?.visitors || 0));
