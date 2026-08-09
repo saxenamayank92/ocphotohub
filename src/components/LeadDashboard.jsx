@@ -56,6 +56,7 @@ export default function LeadDashboard() {
   });
   const [submitting, setSubmitting] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState('engagement');
   const [copiedId, setCopiedId] = useState('');
   const [activeLeadActivity, setActiveLeadActivity] = useState(null);
   const [editingNotesLeadId, setEditingNotesLeadId] = useState('');
@@ -97,19 +98,42 @@ export default function LeadDashboard() {
   const leads = useMemo(() => state.data?.leads || [], [state.data]);
   const recentEvents = useMemo(() => state.data?.recentEvents || [], [state.data]);
 
+  const calculateEngagementScore = useCallback(lead => {
+    let score = (lead.clicksCount || 0) * 15;
+    if (lead.status === 'workspace_created') score += 100;
+    else if (lead.status === 'verification_started') score += 80;
+    else if (lead.status === 'demo_opened') score += 50;
+    else if (lead.status === 'link_clicked') score += 30;
+    return score;
+  }, []);
+
   const filteredLeads = useMemo(() => {
-    if (!searchQuery.trim()) return leads;
-    const query = searchQuery.toLowerCase().trim();
-    return leads.filter(l =>
-      l.clubName?.toLowerCase().includes(query) ||
-      l.email?.toLowerCase().includes(query) ||
-      l.firstName?.toLowerCase().includes(query) ||
-      l.lastName?.toLowerCase().includes(query) ||
-      l.organizationType?.toLowerCase().includes(query) ||
-      l.leadCode?.toLowerCase().includes(query) ||
-      l.status?.toLowerCase().includes(query)
-    );
-  }, [leads, searchQuery]);
+    let list = leads;
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      list = leads.filter(l =>
+        l.clubName?.toLowerCase().includes(query) ||
+        l.email?.toLowerCase().includes(query) ||
+        l.firstName?.toLowerCase().includes(query) ||
+        l.lastName?.toLowerCase().includes(query) ||
+        l.organizationType?.toLowerCase().includes(query) ||
+        l.leadCode?.toLowerCase().includes(query) ||
+        l.status?.toLowerCase().includes(query)
+      );
+    }
+
+    return [...list].sort((a, b) => {
+      if (sortBy === 'engagement') {
+        const scoreDiff = calculateEngagementScore(b) - calculateEngagementScore(a);
+        if (scoreDiff !== 0) return scoreDiff;
+        return (b.clicksCount || 0) - (a.clicksCount || 0);
+      }
+      if (sortBy === 'clicks') return (b.clicksCount || 0) - (a.clicksCount || 0);
+      if (sortBy === 'activity') return new Date(b.lastClickedAt || b.lastSeenAt || 0) - new Date(a.lastClickedAt || a.lastSeenAt || 0);
+      if (sortBy === 'name') return (a.clubName || '').localeCompare(b.clubName || '');
+      return 0;
+    });
+  }, [leads, searchQuery, sortBy, calculateEngagementScore]);
 
   const handlePlatformLogin = async event => {
     event.preventDefault();
@@ -347,6 +371,30 @@ export default function LeadDashboard() {
       </div>
     </section>
 
+    {/* Live Activity Stream & Notifications Feed */}
+    {recentEvents.length > 0 && (
+      <div className="lead-activity-feed-card">
+        <div className="feed-header">
+          <div className="feed-title">
+            <span className="feed-pulse" />
+            <strong>🔔 Live Activity Stream & Hot Signals</strong>
+          </div>
+          <small>{recentEvents.length} recent prospect signals recorded</small>
+        </div>
+        <div className="feed-items-wrap">
+          {recentEvents.slice(0, 4).map((ev, idx) => (
+            <div key={ev.id || idx} className="feed-item">
+              <span className={`feed-badge ${ev.eventType}`}>
+                {ev.eventType === 'demo_opened' ? '🚀 Demo Opened' : ev.eventType === 'email_link_clicked' ? '👁️ Link Clicked' : ev.eventType === 'workspace_created' ? '🎉 Workspace Created' : '⚡ Action'}
+              </span>
+              <span className="feed-text"><strong>{ev.clubName || 'Target Club'}</strong> {ev.email ? `(${ev.email})` : ''}</span>
+              <small className="feed-time">{formatTimeAgo(ev.createdAt)}</small>
+            </div>
+          ))}
+        </div>
+      </div>
+    )}
+
     <section className="lead-panel">
       <div className="panel-title flex-wrap">
         <div>
@@ -357,6 +405,15 @@ export default function LeadDashboard() {
           </span>
         </div>
         <div className="panel-toolbar">
+          <div className="sort-by-wrap">
+            <span className="sort-label">Sort:</span>
+            <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="sort-by-select">
+              <option value="engagement">🔥 Highest Engagement (Hot First)</option>
+              <option value="clicks">⚡ Most Clicks</option>
+              <option value="activity">🕒 Last Activity</option>
+              <option value="name">🔤 Club Name (A-Z)</option>
+            </select>
+          </div>
           <div className="lead-search">
             <Search size={15} />
             <input
@@ -393,7 +450,12 @@ export default function LeadDashboard() {
 
               return <tr key={lead.id} className={lead.clicksCount > 0 ? 'lead-row-engaged' : ''}>
                 <td>
-                  <strong><Building2 size={15} /> {lead.clubName}</strong>
+                  <strong>
+                    <Building2 size={15} /> {lead.clubName}
+                    {calculateEngagementScore(lead) >= 50 && (
+                      <span className="badge-hot-lead" title="High Engagement Intent: Priority Target">🔥 HOT LEAD</span>
+                    )}
+                  </strong>
                   <small>{lead.organizationType}</small>
                   {lead.firstName || lead.lastName || lead.email ? (
                     <div className="lead-contact-sub">
