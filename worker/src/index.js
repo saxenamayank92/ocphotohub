@@ -335,7 +335,7 @@ async function sendMail(env, { to, subject, text, html, fromName = 'Club PhotoHu
 }
 
 const emailEscape = value => escapeHtml(String(value ?? ''));
-const clubPhotoHubEmail = ({ eyebrow = 'Secure member access', title, intro, code, details, actionLabel, actionUrl, secondaryActionLabel, secondaryActionUrl, signature, securityNote = true }) => {
+const clubPhotoHubEmail = ({ eyebrow = '', title, intro, code, details, actionLabel, actionUrl, secondaryActionLabel, secondaryActionUrl, signature, securityNote = true }) => {
   const codeMarkup = code
     ? `<div style="margin:28px 0 24px;padding:18px 22px;background:#f7f3eb;border:1px solid #d8c39a;border-radius:14px;color:#17133f;font-family:Arial,sans-serif;font-size:34px;font-weight:700;letter-spacing:9px;text-align:center">${emailEscape(code)}</div>`
     : '';
@@ -347,97 +347,27 @@ const clubPhotoHubEmail = ({ eyebrow = 'Secure member access', title, intro, cod
     : '';
   const signatureMarkup = signature ? `<p style="margin:28px 0 0;color:#172238;font-size:15px;line-height:1.6">${emailEscape(signature).replace(/\n/g, '<br>')}</p>` : '';
   const noteMarkup = securityNote ? '<p style="margin:28px 0 0;color:#697874;font-size:13px;line-height:1.6">If you did not request this email, you can safely ignore it. For help, contact <a href="mailto:support@xtide.io" style="color:#285c59">support@xtide.io</a>.</p>' : '';
-  return `<!doctype html><html><body style="margin:0;background:#f7f5f0;color:#1c2531;font-family:Arial,Helvetica,sans-serif"><div style="padding:32px 16px"><div style="max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #dce2e0;border-top:7px solid #c8a76b;border-radius:20px;overflow:hidden;box-shadow:0 10px 28px rgba(13,23,40,.09)"><div style="padding:26px 32px 24px;background:#172238;color:#ffffff"><img src="https://clubphotohub.com/club-photo-hub-icon-192.png" width="48" height="48" alt="Club PhotoHub" style="display:block;width:48px;height:48px;border:0;border-radius:12px"><div style="margin-top:16px;color:#e2c892;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase">Club PhotoHub</div><div style="margin-top:8px;font-family:Georgia,'Times New Roman',serif;font-size:30px;line-height:1.2">${emailEscape(title)}</div></div><div style="padding:32px"><div style="color:#a78345;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase">${emailEscape(eyebrow)}</div><p style="margin:16px 0 0;font-size:17px;line-height:1.65">${emailEscape(intro)}</p>${codeMarkup}${details ? `<p style="margin:18px 0 0;color:#697874;font-size:14px;line-height:1.65">${emailEscape(details)}</p>` : ''}${actionMarkup}${secondaryActionMarkup}${signatureMarkup}${noteMarkup}</div><div style="padding:18px 32px;background:#faf9f6;border-top:1px solid #e6e8e4;color:#697874;font-size:12px;line-height:1.5">A private place for the moments that bring your club together.<br><span style="color:#a78345">Club PhotoHub by xTide Apps</span></div></div></div></body></html>`;
+  const eyebrowMarkup = eyebrow ? `<div style="color:#a78345;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:12px">${emailEscape(eyebrow)}</div>` : '';
+  return `<!doctype html><html><body style="margin:0;background:#f7f5f0;color:#1c2531;font-family:Arial,Helvetica,sans-serif"><div style="padding:32px 16px"><div style="max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #dce2e0;border-top:7px solid #c8a76b;border-radius:20px;overflow:hidden;box-shadow:0 10px 28px rgba(13,23,40,.09)"><div style="padding:26px 32px 24px;background:#172238;color:#ffffff"><img src="https://clubphotohub.com/club-photo-hub-icon-192.png" width="48" height="48" alt="Club PhotoHub" style="display:block;width:48px;height:48px;border:0;border-radius:12px"><div style="margin-top:16px;color:#e2c892;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase">Club PhotoHub</div><div style="margin-top:8px;font-family:Georgia,'Times New Roman',serif;font-size:30px;line-height:1.2">${emailEscape(title)}</div></div><div style="padding:32px">${eyebrowMarkup}<p style="margin:0 0 0;font-size:17px;line-height:1.65">${emailEscape(intro)}</p>${codeMarkup}${details ? `<p style="margin:18px 0 0;color:#697874;font-size:14px;line-height:1.65">${emailEscape(details)}</p>` : ''}${actionMarkup}${secondaryActionMarkup}${signatureMarkup}${noteMarkup}</div><div style="padding:18px 32px;background:#faf9f6;border-top:1px solid #e6e8e4;color:#697874;font-size:12px;line-height:1.5">A private place for the moments that bring your club together.<br><span style="color:#a78345">Club PhotoHub by xTide Apps</span></div></div></div></body></html>`;
 };
 
 const outreachEmailTemplate = ({ clubName, firstName = '', organizationType = 'Private Club', leadCode, demoUrl }) => {
   const recipientName = firstName ? emailEscape(firstName) : 'General Manager';
   const escapedClub = emailEscape(clubName);
 
-  let activities = 'golf, tennis, swimming, fitness and social groups';
-  const orgLower = (organizationType || '').toLowerCase();
-  if (orgLower.includes('yacht')) {
-    activities = 'sailing, boating, waterfront dining and member social events';
-  } else if (orgLower.includes('curling')) {
-    activities = 'leagues, bonspiels, club dining and member events';
-  } else if (orgLower.includes('tennis') || orgLower.includes('racquet')) {
-    activities = 'tennis, racquets, fitness, dining and club events';
-  } else if (orgLower.includes('golf')) {
-    activities = 'golf tournaments, clubhouse dining and member social calendar';
-  }
-
   const trackUrl = demoUrl || `https://clubphotohub.com/?demo=1&lead=${encodeURIComponent(leadCode || clubName.toLowerCase().replace(/[^a-z0-9]/g, '-'))}`;
 
-  return `<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>A private photo hub for ${escapedClub} members</title>
-</head>
-<body style="margin:0;padding:0;background:#f7f5f0;color:#1c2531;font-family:Arial,Helvetica,sans-serif;-webkit-font-smoothing:antialiased;">
-  <div style="padding:32px 16px;background:#f7f5f0;">
-    <div style="max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #dce2e0;border-top:7px solid #c8a76b;border-radius:20px;overflow:hidden;box-shadow:0 10px 28px rgba(13,23,40,0.09);">
-      
-      <!-- Dark Navy Header -->
-      <div style="padding:28px 32px 24px;background:#172238;color:#ffffff;">
-        <img src="https://clubphotohub.com/club-photo-hub-icon-192.png" width="44" height="44" alt="Club PhotoHub Logo" style="display:block;width:44px;height:44px;border:0;border-radius:10px;margin-bottom:14px;">
-        <div style="color:#e2c892;font-size:11px;font-weight:800;letter-spacing:2px;text-transform:uppercase;">CLUB PHOTOHUB</div>
-        <div style="margin-top:8px;font-family:Georgia,'Times New Roman',serif;font-size:26px;line-height:1.25;color:#ffffff;font-weight:normal;">A private photo hub for ${escapedClub} members</div>
-      </div>
-
-      <!-- Main Email Body -->
-      <div style="padding:32px;line-height:1.65;font-size:15px;color:#2c3e50;">
-        <p style="margin:0 0 18px;font-size:16px;">Hi ${recipientName},</p>
-
-        <p style="margin:0 0 18px;">${escapedClub}' mix of ${activities} creates a wide range of member moments that would be valuable to preserve and share privately.</p>
-
-        <p style="margin:0 0 18px;">After working in private clubs, I saw how important these photos are to members and how difficult it is to give them one simple, private place to enjoy them. That is why I started Club PhotoHub.</p>
-
-        <p style="margin:0 0 14px;font-weight:700;color:#172238;">Club PhotoHub gives ${escapedClub} its own branded, roster-verified photo gallery:</p>
-
-        <ul style="margin:0 0 24px;padding-left:20px;line-height:1.7;">
-          <li style="margin-bottom:8px;"><strong>Private member access:</strong> Members confirm their identity using the email and member number held by their club.</li>
-          <li style="margin-bottom:8px;"><strong>Club branded:</strong> The gallery uses the club's logo, colours, and event categories.</li>
-          <li style="margin-bottom:8px;"><strong>Easy on any device:</strong> Members can browse, upload, caption, like, and download photos from a phone, tablet, or computer.</li>
-          <li style="margin-bottom:8px;"><strong>Simple for staff:</strong> We help set up the workspace and member roster, while club administrators control access and moderation.</li>
-        </ul>
-
-        <p style="margin:0 0 22px;">The launch plan is <strong>$60 per month</strong> or <strong>$600 annually</strong> and includes 25 GB of photo storage. Every club can try the complete platform free for 30 days without a credit card.</p>
-
-        <!-- Founding Partner Offer Callout Box -->
-        <div style="margin:0 0 26px;padding:18px 22px;background:#fdf8ee;border:1px solid #f3e3c3;border-radius:12px;">
-          <div style="font-weight:800;color:#8a6828;font-size:13px;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Founding partner offer</div>
-          <div style="color:#4a3b18;font-size:14px;line-height:1.5;">20% off the base plan for the first 12 months, whether subscribed monthly or annually, using code <strong>FOUNDING20</strong></div>
-        </div>
-
-        <!-- CTA Button -->
-        <div style="margin:28px 0 30px;">
-          <a href="${emailEscape(trackUrl)}" target="_blank" style="display:inline-block;background:#172238;color:#ffffff;text-decoration:none;padding:14px 28px;border-radius:9px;font-family:Arial,sans-serif;font-size:15px;font-weight:700;letter-spacing:0.3px;">Explore Club PhotoHub</a>
-        </div>
-
-        <p style="margin:0 0 20px;">Would you be open to a brief 10-minute preview?</p>
-
-        <p style="margin:0 0 4px;">Best regards,</p>
-
-        <div style="margin-top:16px;padding-top:14px;border-top:1px solid #eef1ef;">
-          <strong style="display:block;font-size:16px;color:#172238;">Mayank Saxena</strong>
-          <span style="display:block;color:#64748b;font-size:14px;">Founder, Club PhotoHub</span>
-          <a href="mailto:mayank.saxena@xtide.io" style="color:#397874;font-size:14px;text-decoration:none;">mayank.saxena@xtide.io</a><br>
-          <a href="https://clubphotohub.com" style="color:#397874;font-size:14px;text-decoration:none;">clubphotohub.com</a>
-        </div>
-      </div>
-
-      <!-- Footer -->
-      <div style="padding:18px 32px;background:#faf9f6;border-top:1px solid #e6e8e4;color:#697874;font-size:12px;line-height:1.5;">
-        A private place for the moments that bring your club together.<br>
-        <span style="color:#a78345;">Club PhotoHub by xTide Apps</span>
-      </div>
-
-    </div>
-  </div>
-</body>
-</html>`;
+  return {
+    subject: `Private member photo sharing for ${escapedClub}`,
+    text: `Hi ${recipientName},\n\nI’m reaching out from Club PhotoHub where we help private clubs elevate member tournament engagement and photo delivery. We created Club PhotoHub to give private clubs a dedicated, secure platform for member event galleries.\n\nYou can request a custom sample preview for ${escapedClub} in 10 seconds here:\n👉 ${trackUrl}\n\nOr simply reply to this email with "yes" and I'll set up a branded preview workspace for ${escapedClub}.\n\nMayank Saxena\nFounder, Club PhotoHub\nmayank.saxena@xtide.io`,
+    html: clubPhotoHubEmail({
+      eyebrow: '',
+      title: `Private Member Photo Sharing for ${escapedClub}`,
+      intro: `Hi ${recipientName},\n\nI’m reaching out from Club PhotoHub where we help private clubs elevate member tournament engagement and photo delivery. We created Club PhotoHub to give private clubs a dedicated, secure platform for member event galleries.`,
+      actionLabel: `Request Preview for ${escapedClub}`,
+      actionUrl: trackUrl
+    })
+  };
 };
 
 async function sendOutreachLeadEmail(request, env, origin) {
