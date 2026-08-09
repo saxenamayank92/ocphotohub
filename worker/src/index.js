@@ -452,27 +452,19 @@ async function handleAgentChatCommand(request, env, origin) {
 
     const templates = [
       {
-        subject: `[Test 1/3] Private member photo sharing for Heritage Oaks Country Club`,
-        eyebrow: `Initial Cold Outreach Template`,
+        subject: `Private member photo sharing for Heritage Oaks Country Club`,
+        eyebrow: ``,
         title: `Private Member Photo Sharing for Heritage Oaks Country Club`,
         intro: `Hi Mayank,\n\nI’m reaching out from Club PhotoHub where we help private clubs elevate member tournament engagement and photo delivery. We created Club PhotoHub to give private clubs a dedicated, secure platform for member event galleries.`,
         actionLabel: `Request Preview for Heritage Oaks Country Club`,
         actionUrl: previewUrl
       },
       {
-        subject: `[Test 2/3] Follow-up: Custom sample preview for Heritage Oaks Country Club`,
-        eyebrow: `4-Day Engaged Follow-Up Template`,
-        title: `Custom Sample Preview for Heritage Oaks Country Club`,
-        intro: `Hi Mayank,\n\nFollowing up on my note earlier regarding private member photo sharing. We set up custom sample previews styled with Heritage Oaks Country Club's branding so your team can evaluate it risk-free.`,
+        subject: `Following up — custom preview for Heritage Oaks Country Club`,
+        eyebrow: ``,
+        title: `Custom Preview for Heritage Oaks Country Club`,
+        intro: `Hi Mayank,\n\nI hope you liked what you saw! Following up on my note earlier regarding private member photo sharing — we set up a custom sample preview styled with Heritage Oaks Country Club's branding so your team can evaluate it risk-free.`,
         actionLabel: `View Custom Preview`,
-        actionUrl: previewUrl
-      },
-      {
-        subject: `[Test 3/3] VIP Invitation: Heritage Oaks Country Club Executive Access`,
-        eyebrow: `Executive VIP Invitation Template`,
-        title: `VIP Executive Access for Heritage Oaks Country Club`,
-        intro: `Hi Mayank,\n\nI wanted to personally invite your executive leadership team to explore Club PhotoHub's private gallery workflow. Experience seamless photo delivery for golf tournaments, galas, and social events.`,
-        actionLabel: `Access Executive VIP Demo`,
         actionUrl: previewUrl
       }
     ];
@@ -484,7 +476,7 @@ async function handleAgentChatCommand(request, env, origin) {
             to: recipient,
             subject: t.subject,
             text: `${t.intro}\n\n👉 ${t.actionUrl}\n\nMayank Saxena\nFounder, Club PhotoHub\nmayank.saxena@xtide.io`,
-            html: clubPhotoHubEmail({ eyebrow: t.eyebrow, title: t.title, intro: t.intro, actionLabel: t.actionLabel, actionUrl: t.actionUrl })
+            html: clubPhotoHubEmail({ eyebrow: '', title: t.title, intro: t.intro, actionLabel: t.actionLabel, actionUrl: t.actionUrl })
           });
           emailsSent++;
         } catch (e) {
@@ -497,9 +489,8 @@ async function handleAgentChatCommand(request, env, origin) {
       `• **Sender**: Mayank Saxena (Founder, Club PhotoHub)\n` +
       `• **Recipient**: \`${recipient}\`\n` +
       `• **Template 1**: Initial Cold Outreach\n` +
-      `• **Template 2**: 4-Day Engaged Follow-Up\n` +
-      `• **Template 3**: Executive VIP Access\n\n` +
-      `Check your inbox at \`${recipient}\` to inspect all rendered templates!`;
+      `• **Template 2**: 4-Day Engaged Follow-Up ("I hope you liked what you saw")\n\n` +
+      `Check your inbox at \`${recipient}\` to inspect both rendered templates!`;
   } else if (!isStrategicPrompt && (lower.startsWith('follow-up demo explorers') || lower === 'dispatch follow-ups' || lower === 'send follow ups')) {
     // 1. Fetch demo explorers from D1 database
     const rows = await env.DB.prepare(
@@ -519,9 +510,9 @@ async function handleAgentChatCommand(request, env, origin) {
           try {
             await sendMail(env, {
               to: lead.contact_email,
-              subject: `Follow-up: Custom preview for ${lead.club_name}`,
-              text: `Hi ${contactGreeting === 'General Manager' ? 'General Manager & Team' : contactGreeting},\n\nFollowing up on my note earlier regarding private member photo sharing.\n\nWe just introduced custom sample previews where we set up a private workspace using ${lead.club_name}'s branding and event categories so you can see exactly how your members would experience it.\n\nYou can request a sample preview in 10 seconds here:\n👉 ${previewUrl}\n\nOr simply reply to this email with "yes" and I'll build out a preview for ${lead.club_name}.\n\nMayank Saxena\nFounder, Club PhotoHub\nmayank.saxena@xtide.io`,
-              html: clubPhotoHubEmail({ eyebrow: 'Sample Workspace Preview', title: `Custom preview for ${lead.club_name}`, intro: `Following up on my note earlier regarding private member photo sharing. We set up custom sample previews styled with ${lead.club_name}'s branding so your team can evaluate it risk-free.`, actionLabel: `Request Preview for ${lead.club_name}`, actionUrl: previewUrl })
+              subject: `Following up — custom preview for ${lead.club_name}`,
+              text: `Hi ${contactGreeting === 'General Manager' ? 'General Manager & Team' : contactGreeting},\n\nI hope you liked what you saw! Following up on my note earlier regarding private member photo sharing.\n\nWe can build out a custom, branded sample preview for ${lead.club_name} so your team can evaluate it risk-free.\n\nYou can request a sample preview in 10 seconds here:\n👉 ${previewUrl}\n\nOr simply reply to this email with "yes" and I'll set up a preview for ${lead.club_name}.\n\nMayank Saxena\nFounder, Club PhotoHub\nmayank.saxena@xtide.io`,
+              html: clubPhotoHubEmail({ eyebrow: '', title: `Custom preview for ${lead.club_name}`, intro: `Hi ${contactGreeting === 'General Manager' ? 'General Manager & Team' : contactGreeting},\n\nI hope you liked what you saw! Following up on my note earlier regarding private member photo sharing — we can build out a custom, branded sample preview for ${lead.club_name} so your team can evaluate it risk-free.`, actionLabel: `Request Preview for ${lead.club_name}`, actionUrl: previewUrl })
             });
             emailsSent++;
           } catch (e) {
