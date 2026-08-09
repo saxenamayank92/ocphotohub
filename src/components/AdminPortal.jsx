@@ -595,8 +595,8 @@ export default function AdminPortal({
             <h2 className="admin-section-title" style={{ fontSize: '24px', fontWeight: '800', margin: '0 0 6px' }}>
               🎉 Private Event Photo Vaults (Weddings, Galas & Tournaments)
             </h2>
-            <p style={{ fontSize: '14px', color: '#475569', lineHeight: '1.6', maxWidth: '720px', margin: '0 0 24px' }}>
-              Offer members an exclusive 30-day digital photo vault for private weddings, 50th anniversaries, and golf tournaments hosted at <strong>{club.name}</strong>.
+            <p style={{ fontSize: '13.5px', color: '#475569', lineHeight: '1.5', margin: '0 0 24px' }}>
+              Offer members 30-day private photo vaults for weddings, galas, and tournaments hosted at <strong>{club.name}</strong>.
             </p>
 
             {/* Offline Billing Banner Card */}
