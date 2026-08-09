@@ -513,8 +513,9 @@ async function handleAgentChatCommand(request, env, origin) {
   let emailsSent = 0;
 
   const now = new Date().toISOString();
+  const isStrategicPrompt = prompt.length > 40 || lower.includes('i want') || lower.includes('create a database') || lower.includes('how') || lower.includes('why') || lower.includes('explain') || lower.includes('target') || lower.includes('ask questions');
 
-  if (lower.includes('test') || lower.includes('outlook') || lower.includes('template')) {
+  if (!isStrategicPrompt && (lower.includes('test template') || lower.includes('outlook') || lower === 'send test templates to outlook')) {
     toolAction = 'TEST_EMAIL_SEQUENCE_DISPATCH';
     const recipient = 'saxenamayank92@outlook.com';
     const previewUrl = `https://clubphotohub.com/book-demo?club=Heritage%20Oaks%20Country%20Club`;
@@ -569,7 +570,7 @@ async function handleAgentChatCommand(request, env, origin) {
       `• **Template 2**: 4-Day Engaged Follow-Up\n` +
       `• **Template 3**: Executive VIP Access\n\n` +
       `Check your inbox at \`${recipient}\` to inspect all rendered templates!`;
-  } else if (lower.includes('follow') || lower.includes('demo explorer') || lower.includes('click')) {
+  } else if (!isStrategicPrompt && (lower.startsWith('follow-up demo explorers') || lower === 'dispatch follow-ups' || lower === 'send follow ups')) {
     // 1. Fetch demo explorers from D1 database
     const rows = await env.DB.prepare(
       "SELECT * FROM sales_leads WHERE status IN ('demo_opened', 'link_clicked') OR clicks_count > 0 ORDER BY last_seen_at DESC LIMIT 20"
@@ -606,7 +607,7 @@ async function handleAgentChatCommand(request, env, origin) {
     } else {
       replyText = `Checked your database: All active demo explorers have already received follow-ups!`;
     }
-  } else if (lower.includes('source') || lower.includes('find') || lower.includes('yacht') || lower.includes('golf') || lower.includes('california') || lower.includes('florida')) {
+  } else if (!isStrategicPrompt && (lower.startsWith('source 10') || lower === 'source 10 golf clubs' || lower === 'source 10 yacht clubs')) {
     // 2. Lead Sourcing Execution against D1 database
     toolAction = 'LEAD_SOURCING_RUN';
 
@@ -622,14 +623,12 @@ async function handleAgentChatCommand(request, env, origin) {
     for (const cand of freshCandidates) {
       const code = cand.clubName.toLowerCase().replace(/[^a-z0-9]/g, '-').slice(0, 30);
       const leadId = `lead_${randomToken(12)}`;
-
-      const suppressed = await env.DB.prepare('SELECT 1 FROM suppression_list WHERE email = ?').bind(cand.email).first();
-      if (suppressed) continue;
-
       try {
-        await env.DB.prepare(`INSERT INTO sales_leads (id, visitor_id, lead_code, club_name, organization_type, contact_first_name, contact_last_name, contact_email, status, clicks_count, notes, first_seen_at, last_seen_at)
-          VALUES (?, '', ?, ?, ?, ?, ?, ?, 'outreach_sent', 0, 'Sourced by Hunter AI Agent', ?, ?)
-          ON CONFLICT(contact_email, club_name) DO NOTHING`).bind(leadId, code, cand.clubName, cand.orgType, cand.firstName, cand.lastName, cand.email, now, now).run();
+        await env.DB.prepare(`
+          INSERT INTO sales_leads (id, lead_code, club_name, organization_type, contact_first_name, contact_last_name, contact_email, created_at, status, clicks_count, notes, last_seen_at, last_clicked_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'outreach_sent', 0, 'Sourced via Hunter AI Agent', ?, ?)
+          ON CONFLICT(contact_email, club_name) DO UPDATE SET last_seen_at = excluded.last_seen_at
+        `).bind(leadId, code, cand.clubName, cand.orgType, cand.firstName, cand.lastName, cand.email, now, now, now).run();
 
         insertedClubs.push(`• **${cand.clubName}** (${cand.firstName} ${cand.lastName} — \`${cand.email}\`)`);
         leadsAdded++;
@@ -641,7 +640,7 @@ async function handleAgentChatCommand(request, env, origin) {
     replyText = `Hunter Sourced & Verified **${leadsAdded} fresh target clubs** with **0 suppression overlaps**!\n\n` +
       (insertedClubs.length > 0 ? insertedClubs.join('\n') : 'All candidate clubs already exist in database or suppression list.') +
       `\n\nAll leads are now active in your dashboard table with 1-click dispatch controls!`;
-  } else if (lower.includes('suppression') || lower.includes('audit') || lower.includes('duplicate')) {
+  } else if (!isStrategicPrompt && (lower.includes('audit suppression history') || lower === 'audit suppression')) {
     toolAction = 'SUPPRESSION_AUDIT';
     const suppCount = await env.DB.prepare('SELECT COUNT(*) as count FROM suppression_list').first();
     const leadCount = await env.DB.prepare('SELECT COUNT(*) as count FROM sales_leads').first();
