@@ -351,19 +351,30 @@ const clubPhotoHubEmail = ({ eyebrow = '', title, intro, code, details, actionLa
   return `<!doctype html><html><body style="margin:0;background:#f7f5f0;color:#1c2531;font-family:Arial,Helvetica,sans-serif"><div style="padding:32px 16px"><div style="max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #dce2e0;border-top:7px solid #c8a76b;border-radius:20px;overflow:hidden;box-shadow:0 10px 28px rgba(13,23,40,.09)"><div style="padding:26px 32px 24px;background:#172238;color:#ffffff"><img src="https://clubphotohub.com/club-photo-hub-icon-192.png" width="48" height="48" alt="Club PhotoHub" style="display:block;width:48px;height:48px;border:0;border-radius:12px"><div style="margin-top:16px;color:#e2c892;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase">Club PhotoHub</div><div style="margin-top:8px;font-family:Georgia,'Times New Roman',serif;font-size:30px;line-height:1.2">${emailEscape(title)}</div></div><div style="padding:32px">${eyebrowMarkup}<p style="margin:0 0 0;font-size:17px;line-height:1.65">${emailEscape(intro)}</p>${codeMarkup}${details ? `<p style="margin:18px 0 0;color:#697874;font-size:14px;line-height:1.65">${emailEscape(details)}</p>` : ''}${actionMarkup}${secondaryActionMarkup}${signatureMarkup}${noteMarkup}</div><div style="padding:18px 32px;background:#faf9f6;border-top:1px solid #e6e8e4;color:#697874;font-size:12px;line-height:1.5">A private place for the moments that bring your club together.<br><span style="color:#a78345">Club PhotoHub by xTide Apps</span></div></div></div></body></html>`;
 };
 
+function getClubActivityPhrase(organizationType = '') {
+  const orgLower = (organizationType || '').toLowerCase();
+  if (orgLower.includes('yacht')) return 'sailing regattas, boating events, and waterfront member dining';
+  if (orgLower.includes('curling')) return 'bonspiels, league nights, and member social gatherings';
+  if (orgLower.includes('tennis') || orgLower.includes('racquet')) return 'racquet matches, clinics, and club social events';
+  if (orgLower.includes('golf')) return 'golf outings, clubhouse dining, and member social events';
+  if (orgLower.includes('dining') || orgLower.includes('city') || orgLower.includes('athletic')) return 'member dining, speaker events, and club traditions';
+  return 'member social events, galas, and club traditions';
+}
+
 const outreachEmailTemplate = ({ clubName, firstName = '', organizationType = 'Private Club', leadCode, demoUrl }) => {
   const recipientName = firstName ? emailEscape(firstName) : 'General Manager';
   const escapedClub = emailEscape(clubName);
+  const activities = getClubActivityPhrase(organizationType);
 
   const trackUrl = demoUrl || `https://clubphotohub.com/?demo=1&lead=${encodeURIComponent(leadCode || clubName.toLowerCase().replace(/[^a-z0-9]/g, '-'))}`;
 
   return {
     subject: `Private member photo sharing for ${escapedClub}`,
-    text: `Hi ${recipientName},\n\nI’m reaching out from Club PhotoHub where we help private clubs elevate member tournament engagement and photo delivery. We created Club PhotoHub to give private clubs a dedicated, secure platform for member event galleries.\n\nYou can explore the live platform and see how it works for ${escapedClub} here:\n👉 ${trackUrl}\n\nOr simply reply to this email with "yes" and I'll set up a branded preview workspace for ${escapedClub}.\n\nMayank Saxena\nFounder, Club PhotoHub\nmayank.saxena@xtide.io`,
+    text: `Hi ${recipientName},\n\nI’m reaching out from Club PhotoHub where we help private clubs elevate member engagement and photo delivery across ${activities}. We created Club PhotoHub to give ${escapedClub} a dedicated, secure platform for member event galleries.\n\nYou can explore the live platform and see how it works for ${escapedClub} here:\n👉 ${trackUrl}\n\nOr simply reply to this email with "yes" and I'll set up a branded preview workspace for ${escapedClub}.\n\nMayank Saxena\nFounder, Club PhotoHub\nmayank.saxena@xtide.io`,
     html: clubPhotoHubEmail({
       eyebrow: '',
       title: `Private Member Photo Sharing for ${escapedClub}`,
-      intro: `Hi ${recipientName},\n\nI’m reaching out from Club PhotoHub where we help private clubs elevate member tournament engagement and photo delivery. We created Club PhotoHub to give private clubs a dedicated, secure platform for member event galleries.`,
+      intro: `Hi ${recipientName},\n\nI’m reaching out from Club PhotoHub where we help private clubs elevate member engagement and photo delivery across ${activities}. We created Club PhotoHub to give ${escapedClub} a dedicated, secure platform for member event galleries.`,
       actionLabel: `Explore Club PhotoHub`,
       actionUrl: trackUrl
     })
@@ -456,7 +467,7 @@ async function handleAgentChatCommand(request, env, origin) {
         subject: `Private member photo sharing for Heritage Oaks Country Club`,
         eyebrow: ``,
         title: `Private Member Photo Sharing for Heritage Oaks Country Club`,
-        intro: `Hi Mayank,\n\nI’m reaching out from Club PhotoHub where we help private clubs elevate member tournament engagement and photo delivery. We created Club PhotoHub to give private clubs a dedicated, secure platform for member event galleries.`,
+        intro: `Hi Mayank,\n\nI’m reaching out from Club PhotoHub where we help private clubs elevate member engagement and photo delivery across golf outings, clubhouse dining, and member social events. We created Club PhotoHub to give Heritage Oaks Country Club a dedicated, secure platform for member event galleries.`,
         actionLabel: `Explore Club PhotoHub`,
         actionUrl: mainWebsiteUrl
       },
@@ -464,7 +475,7 @@ async function handleAgentChatCommand(request, env, origin) {
         subject: `Following up: Custom preview for Heritage Oaks Country Club`,
         eyebrow: ``,
         title: `Custom Preview for Heritage Oaks Country Club`,
-        intro: `Hi Mayank,\n\nI hope you liked what you saw! Following up on my note earlier regarding private member photo sharing. We can build out a custom, branded sample preview for Heritage Oaks Country Club so your team can evaluate it risk-free.`,
+        intro: `Hi Mayank,\n\nI hope you liked what you saw! Following up on my note earlier regarding private member photo sharing across golf outings, clubhouse dining, and member social events. We can build out a custom, branded sample preview for Heritage Oaks Country Club so your team can evaluate it risk-free.`,
         actionLabel: `Request Preview for Heritage Oaks Country Club`,
         actionUrl: bookDemoUrl
       }
