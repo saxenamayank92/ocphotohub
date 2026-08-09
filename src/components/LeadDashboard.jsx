@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, BarChart3, Building2, Check, Clock, Copy, Edit3, ExternalLink, Lock, Mail, MousePointerClick, Plus, RefreshCw, Search, Send, Sparkles, Trash2, Users, X, Zap } from 'lucide-react';
 import { completePlatformLogin, createOutreachLead, deleteOutreachLead, getLeadDashboard, getPlatformSession, requestPlatformLogin, sendOutreachEmail, updateOutreachLead } from '../api';
+import AIAgentConsole from './AIAgentConsole';
 import './LeadDashboard.css';
 import './LeadDashboardLogin.css';
 
@@ -310,6 +311,8 @@ export default function LeadDashboard() {
         </button>
       </div>
     </header>
+
+    <AIAgentConsole onRefreshLeads={load} leads={leads} />
 
     <section className="lead-cards">
       {order.map(key => <article key={key}>
