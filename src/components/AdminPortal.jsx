@@ -3,6 +3,7 @@ import {
   Users, Image as ImageIcon, BarChart3, Heart,
   Building2, Trash2, RefreshCw, Upload, FileSpreadsheet, Key, X, FileText, UserPlus, Edit2, Search, HardDrive, Shield, CheckCircle2, ShieldAlert, Crown, Lock
 } from 'lucide-react';
+import PhotoGallery from './PhotoGallery';
 import { resolveApiUrl } from '../api';
 
 const normalizeMemberNumber = num => String(num || '').trim();
@@ -20,10 +21,11 @@ export default function AdminPortal({
   onSetMemberPassword,
   onDeletePhoto,
   onUpdatePhoto,
+  onHeartPhoto,
   onResetDatabase,
   addToast
 }) {
-  const [activeSubTab, setActiveSubTab] = useState('clubs'); // 'clubs' | 'dashboard' | 'members' | 'moderation' | 'cloud'
+  const [activeSubTab, setActiveSubTab] = useState('gallery'); // 'gallery' | 'clubs' | 'dashboard' | 'members' | 'moderation' | 'cloud'
 
   // Club settings state
   const [clubName, setClubName] = useState(club.name || '');
@@ -472,17 +474,20 @@ export default function AdminPortal({
         </div>
 
         <div className="admin-sidebar-nav-list">
+          <button className={`admin-menu-btn ${activeSubTab === 'gallery' ? 'active' : ''}`} onClick={() => setActiveSubTab('gallery')}>
+            <ImageIcon size={16} /> Member Gallery Feed
+          </button>
           <button className={`admin-menu-btn ${activeSubTab === 'clubs' ? 'active' : ''}`} onClick={() => setActiveSubTab('clubs')}>
-            <Building2 size={16} /> Club Setup
+            <Building2 size={16} /> Club Setup & Branding
           </button>
           <button className={`admin-menu-btn ${activeSubTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveSubTab('dashboard')}>
-            <BarChart3 size={16} /> Overview
+            <BarChart3 size={16} /> Overview & Analytics
           </button>
           <button className={`admin-menu-btn ${activeSubTab === 'members' ? 'active' : ''}`} onClick={() => setActiveSubTab('members')}>
             <Users size={16} /> Member & Staff Directory
           </button>
           <button className={`admin-menu-btn ${activeSubTab === 'moderation' ? 'active' : ''}`} onClick={() => setActiveSubTab('moderation')}>
-            <ImageIcon size={16} /> Moderate Photos
+            <Shield size={16} /> Moderate Photos
           </button>
           <button className={`admin-menu-btn ${activeSubTab === 'cloud' ? 'active' : ''}`} onClick={() => setActiveSubTab('cloud')}>
             <HardDrive size={16} /> Storage Usage
@@ -498,6 +503,28 @@ export default function AdminPortal({
 
       {/* Main Content Area */}
       <div className="admin-card">
+
+        {/* --- 0. MEMBER GALLERY FEED --- */}
+        {activeSubTab === 'gallery' && (
+          <div>
+            <div className="admin-section-header" style={{ marginBottom: '16px' }}>
+              <div>
+                <h2 className="admin-section-title">Live Member Gallery & Engagement</h2>
+                <p style={{ fontSize: '13px', color: 'var(--club-gray-dark)', margin: '4px 0 0' }}>
+                  Preview how members experience photos, likes, and social engagement inside {club.name}'s private portal.
+                </p>
+              </div>
+            </div>
+            <PhotoGallery 
+              photos={photos} 
+              currentUser={user} 
+              isAdmin={true} 
+              onHeartPhoto={onHeartPhoto} 
+              onDeletePhoto={onDeletePhoto} 
+              addToast={addToast} 
+            />
+          </div>
+        )}
 
         {/* --- 1. OVERVIEW / ANALYTICS --- */}
         {activeSubTab === 'dashboard' && (
