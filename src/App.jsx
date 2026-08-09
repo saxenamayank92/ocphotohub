@@ -555,7 +555,7 @@ export default function App() {
           {activeTab === 'account' && <AccountSettings user={currentUser} club={currentClub || clubBrand} isAdmin={isAdmin} demoMode={demoMode} onDeleteAccount={handleDeleteAccount} onDeleteOrganization={handleDeleteOrganization} addToast={addToast} />}
         </Suspense>
       </main>
-      {(!isPreviewMode || !demoAdminView) && <MobileBottomNav activeTab={activeTab} setActiveTab={setActiveTab} />}
+      {activeTab !== 'admin' && <MobileBottomNav activeTab={activeTab} setActiveTab={setActiveTab} />}
       <div className="toast-container">
         {toasts.map(toast => <div key={toast.id} className={`toast ${toast.type}`}>
           {toast.type === 'success' && <ShieldCheck size={16} />}
