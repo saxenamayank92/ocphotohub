@@ -496,19 +496,23 @@ export default function App() {
 
   return (
     <div className="app-container">
-      <Header
-        user={currentUser}
-        club={currentClub || clubBrand}
-        isAdmin={isAdmin}
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        onLogout={handleLogout}
-        demoMode={demoMode}
-        isPreviewMode={isPreviewMode}
-        demoAdminView={demoAdminView}
-        onDemoViewChange={handleDemoViewChange}
-        onOpenClaimModal={() => setClaimModalOpen(true)}
-      />
+      <Header user={currentUser} club={currentClub || clubBrand} isAdmin={isAdmin} activeTab={activeTab} setActiveTab={setActiveTab} onLogout={handleLogout} />
+      {(demoMode || isPreviewMode) && (
+        <div className="demo-mode-banner">
+          <div className="demo-banner-copy">
+            <span><Sparkles size={14} /> Concept Preview for <strong>{currentClub?.name || 'Your Club'} Leadership</strong></span>
+            {isPreviewMode && (
+              <button type="button" className="preview-banner-claim-btn" onClick={() => setClaimModalOpen(true)}>
+                Claim Workspace →
+              </button>
+            )}
+          </div>
+          <div className="demo-view-switcher" role="tablist" aria-label="Demo view">
+            <button type="button" role="tab" aria-selected={!demoAdminView} className={!demoAdminView ? 'active' : ''} onClick={() => handleDemoViewChange('member')}>Member view</button>
+            <button type="button" role="tab" aria-selected={demoAdminView} className={demoAdminView ? 'active' : ''} onClick={() => handleDemoViewChange('admin')}>Admin view</button>
+          </div>
+        </div>
+      )}
       {!demoMode && trialDaysLeft !== null && currentUser?.role === 'owner' && <div className={`trial-status-banner ${trialDaysLeft === 0 ? 'expired' : ''}`}><span>{trialDaysLeft > 0 ? `${trialDaysLeft} days left in your free trial` : 'Your trial has ended. This workspace is now read-only.'}</span><a href="/pricing#pricing-links">Choose a plan</a></div>}
       <main className="content-wrapper">
         <Suspense fallback={<div className="panel-loading" role="status"><div className="spinner" /><span>Loading…</span></div>}>

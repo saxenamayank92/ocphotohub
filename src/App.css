@@ -10,36 +10,20 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding: 9px 14px;
+  gap: 12px;
+  padding: 8px 24px;
   color: #fff;
-  background: var(--brand-teal-dark);
+  background: #0f172a;
   font-size: 11px;
   font-weight: 650;
+  border-bottom: 1px solid rgba(251, 191, 36, 0.25);
 }
 
-.demo-banner-copy { display: flex; align-items: center; gap: 14px; }
-.demo-banner-copy > span,
-.demo-banner-copy > a { display: inline-flex; align-items: center; gap: 6px; }
-.demo-mode-banner a { padding: 5px 9px; border-radius: 999px; color: var(--club-green-dark); background: #fff; font-weight: 750; text-decoration: none; }
-.header-claim-cta-btn {
-  padding: 6px 14px;
-  border-radius: 999px;
-  color: #0f172a;
-  background: #fbbf24;
-  font-weight: 800;
-  font-size: 12px;
-  border: none;
-  cursor: pointer;
-  white-space: nowrap;
-  box-shadow: 0 2px 8px rgba(251, 191, 36, 0.3);
-  transition: transform 0.15s ease, background 0.15s ease;
-}
-
-.header-claim-cta-btn:hover {
-  transform: scale(1.03);
-  background: #f59e0b;
-}
+.demo-banner-copy { display: flex; align-items: center; gap: 12px; }
+.demo-banner-copy > span { display: inline-flex; align-items: center; gap: 6px; }
+.demo-mode-banner a { padding: 4px 10px; border-radius: 999px; color: var(--club-green-dark); background: #fff; font-weight: 750; text-decoration: none; }
+.preview-banner-claim-btn { padding: 5px 12px; border-radius: 999px; color: #0f172a; background: #fbbf24; font-weight: 800; border: none; cursor: pointer; transition: transform 0.15s ease; font-size: 11px; }
+.preview-banner-claim-btn:hover { transform: scale(1.04); background: #f59e0b; }
 
 @media (max-width: 768px) {
   .desktop-only-inline {
