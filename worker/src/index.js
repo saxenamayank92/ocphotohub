@@ -952,7 +952,7 @@ async function leadDashboard(request, env, origin) {
       contact_first_name AS firstName, contact_last_name AS lastName, contact_email AS email, status,
       workspace_club_id AS workspaceClubId, clicks_count AS clicksCount, last_clicked_at AS lastClickedAt, notes,
       first_seen_at AS firstSeenAt, last_seen_at AS lastSeenAt
-      FROM sales_leads ORDER BY last_seen_at DESC LIMIT 200`).all(),
+      FROM sales_leads ORDER BY last_seen_at DESC, first_seen_at DESC LIMIT 1000`).all(),
     env.DB.prepare("SELECT COUNT(*) AS count FROM sales_leads WHERE status = 'workspace_created' AND first_seen_at >= ?").bind(since).first(),
     env.DB.prepare(`SELECT id, visitor_id AS visitorId, event_type AS eventType, path, referrer, club_id AS clubId, created_at AS createdAt
       FROM lead_events ORDER BY created_at DESC LIMIT 500`).all()

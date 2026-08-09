@@ -56,6 +56,7 @@ export default function LeadDashboard() {
   });
   const [submitting, setSubmitting] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [sortBy, setSortBy] = useState('engagement');
   const [mobileTab, setMobileTab] = useState('leads');
   const [copiedId, setCopiedId] = useState('');
@@ -110,9 +111,18 @@ export default function LeadDashboard() {
 
   const filteredLeads = useMemo(() => {
     let list = leads;
+
+    if (statusFilter !== 'all') {
+      if (statusFilter === 'engaged') {
+        list = list.filter(l => l.status === 'demo_opened' || l.status === 'link_clicked' || (l.clicksCount && l.clicksCount > 0));
+      } else {
+        list = list.filter(l => l.status === statusFilter);
+      }
+    }
+
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim();
-      list = leads.filter(l =>
+      list = list.filter(l =>
         l.clubName?.toLowerCase().includes(query) ||
         l.email?.toLowerCase().includes(query) ||
         l.firstName?.toLowerCase().includes(query) ||
@@ -134,7 +144,7 @@ export default function LeadDashboard() {
       if (sortBy === 'name') return (a.clubName || '').localeCompare(b.clubName || '');
       return 0;
     });
-  }, [leads, searchQuery, sortBy, calculateEngagementScore]);
+  }, [leads, statusFilter, searchQuery, sortBy, calculateEngagementScore]);
 
   const handlePlatformLogin = async event => {
     event.preventDefault();
@@ -454,6 +464,24 @@ export default function LeadDashboard() {
         </div>
       </div>
 
+      <div className="lead-filter-tabs">
+        <button className={`filter-tab ${statusFilter === 'all' ? 'active' : ''}`} onClick={() => setStatusFilter('all')}>
+          🌐 All Clubs ({leads.length})
+        </button>
+        <button className={`filter-tab ${statusFilter === 'new' ? 'active' : ''}`} onClick={() => setStatusFilter('new')}>
+          🎯 Queued for Outreach ({leads.filter(l => l.status === 'new').length})
+        </button>
+        <button className={`filter-tab ${statusFilter === 'outreach_sent' ? 'active' : ''}`} onClick={() => setStatusFilter('outreach_sent')}>
+          ✉️ Outreach Sent ({leads.filter(l => l.status === 'outreach_sent').length})
+        </button>
+        <button className={`filter-tab ${statusFilter === 'engaged' ? 'active' : ''}`} onClick={() => setStatusFilter('engaged')}>
+          🔥 Hot / Demo Opened ({leads.filter(l => l.status === 'demo_opened' || l.status === 'link_clicked' || (l.clicksCount && l.clicksCount > 0)).length})
+        </button>
+        <button className={`filter-tab ${statusFilter === 'workspace_created' ? 'active' : ''}`} onClick={() => setStatusFilter('workspace_created')}>
+          🎉 Workspaces Created ({leads.filter(l => l.status === 'workspace_created').length})
+        </button>
+      </div>
+
       <div className="lead-table-wrap">
         <table>
           <thead>
@@ -508,13 +536,14 @@ export default function LeadDashboard() {
                   )}
                 </td>
                 <td>
-                  <span className={`lead-status ${lead.status}`}>
+                  <span className={`lead-status ${lead.status || 'outreach_sent'}`}>
+                    {lead.status === 'new' && '🎯 Queued for Outreach'}
                     {lead.status === 'outreach_sent' && '✉️ Outreach Sent'}
                     {lead.status === 'link_clicked' && '👁️ Link Clicked'}
                     {lead.status === 'demo_opened' && '🚀 Demo Opened'}
                     {lead.status === 'verification_started' && '⏳ Verification Started'}
                     {lead.status === 'workspace_created' && '🎉 Workspace Created'}
-                    {!statusLabels[lead.status] && (lead.status || 'Outreach Sent')}
+                    {lead.status && lead.status !== 'new' && !['outreach_sent', 'link_clicked', 'demo_opened', 'verification_started', 'workspace_created'].includes(lead.status) && (lead.status || 'Outreach Sent')}
                   </span>
                 </td>
                 <td>
