@@ -31,12 +31,12 @@ export default function AdminPortal({
 
   const subTabs = [
     { id: 'gallery', label: 'Member Gallery Feed', icon: ImageIcon },
-    { id: 'events', label: '🎉 Private Event Vaults (Coming Soon)', icon: PartyPopper },
     { id: 'clubs', label: 'Club Setup & Branding', icon: Building2 },
     { id: 'dashboard', label: 'Overview & Analytics', icon: BarChart3 },
     { id: 'members', label: 'Member & Staff Directory', icon: Users },
     { id: 'moderation', label: 'Moderate Photos', icon: Shield },
     { id: 'cloud', label: 'Storage Usage', icon: HardDrive },
+    { id: 'events', label: '🎉 Private Event Vaults (Coming Soon)', icon: PartyPopper },
   ];
 
   const currentTabObj = subTabs.find(t => t.id === activeSubTab) || subTabs[0];
