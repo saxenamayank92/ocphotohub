@@ -348,7 +348,13 @@ const clubPhotoHubEmail = ({ eyebrow = '', title, intro, code, details, actionLa
   const signatureMarkup = signature ? `<p style="margin:28px 0 0;color:#172238;font-size:15px;line-height:1.6">${emailEscape(signature).replace(/\n/g, '<br>')}</p>` : '';
   const noteMarkup = securityNote ? '<p style="margin:28px 0 0;color:#697874;font-size:13px;line-height:1.6">If you did not request this email, you can safely ignore it. For help, contact <a href="mailto:support@xtide.io" style="color:#285c59">support@xtide.io</a>.</p>' : '';
   const eyebrowMarkup = eyebrow ? `<div style="color:#a78345;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:12px">${emailEscape(eyebrow)}</div>` : '';
-  return `<!doctype html><html><body style="margin:0;background:#f7f5f0;color:#1c2531;font-family:Arial,Helvetica,sans-serif"><div style="padding:32px 16px"><div style="max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #dce2e0;border-top:7px solid #c8a76b;border-radius:20px;overflow:hidden;box-shadow:0 10px 28px rgba(13,23,40,.09)"><div style="padding:26px 32px 24px;background:#172238;color:#ffffff"><img src="https://clubphotohub.com/club-photo-hub-icon-192.png" width="48" height="48" alt="Club PhotoHub" style="display:block;width:48px;height:48px;border:0;border-radius:12px"><div style="margin-top:16px;color:#e2c892;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase">Club PhotoHub</div><div style="margin-top:8px;font-family:Georgia,'Times New Roman',serif;font-size:30px;line-height:1.2">${emailEscape(title)}</div></div><div style="padding:32px">${eyebrowMarkup}<p style="margin:0 0 0;font-size:17px;line-height:1.65">${emailEscape(intro)}</p>${codeMarkup}${details ? `<p style="margin:18px 0 0;color:#697874;font-size:14px;line-height:1.65">${emailEscape(details)}</p>` : ''}${actionMarkup}${secondaryActionMarkup}${signatureMarkup}${noteMarkup}</div><div style="padding:18px 32px;background:#faf9f6;border-top:1px solid #e6e8e4;color:#697874;font-size:12px;line-height:1.5">A private place for the moments that bring your club together.<br><span style="color:#a78345">Club PhotoHub by xTide Apps</span></div></div></div></body></html>`;
+
+  const introMarkup = String(intro || '')
+    .split(/\n\s*\n/)
+    .map(p => `<p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#1e293b">${emailEscape(p).replace(/\n/g, '<br/>')}</p>`)
+    .join('');
+
+  return `<!doctype html><html><body style="margin:0;background:#f7f5f0;color:#1c2531;font-family:Arial,Helvetica,sans-serif"><div style="padding:32px 16px"><div style="max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #dce2e0;border-top:7px solid #c8a76b;border-radius:20px;overflow:hidden;box-shadow:0 10px 28px rgba(13,23,40,.09)"><div style="padding:26px 32px 24px;background:#172238;color:#ffffff"><img src="https://clubphotohub.com/club-photo-hub-icon-192.png" width="48" height="48" alt="Club PhotoHub" style="display:block;width:48px;height:48px;border:0;border-radius:12px"><div style="margin-top:16px;color:#e2c892;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase">Club PhotoHub</div><div style="margin-top:8px;font-family:Georgia,'Times New Roman',serif;font-size:26px;line-height:1.2">${emailEscape(title)}</div></div><div style="padding:32px">${eyebrowMarkup}${introMarkup}${codeMarkup}${details ? `<p style="margin:18px 0 0;color:#697874;font-size:14px;line-height:1.65">${emailEscape(details)}</p>` : ''}${actionMarkup}${secondaryActionMarkup}${signatureMarkup}${noteMarkup}</div><div style="padding:18px 32px;background:#faf9f6;border-top:1px solid #e6e8e4;color:#697874;font-size:12px;line-height:1.5">A private place for the moments that bring your club together.<br><span style="color:#a78345">Club PhotoHub by xTide Apps</span></div></div></div></body></html>`;
 };
 
 function getClubActivityPhrase(organizationType = '') {
@@ -362,42 +368,30 @@ function getClubActivityPhrase(organizationType = '') {
 }
 
 const outreachEmailTemplate = ({ clubName, firstName = '', organizationType = 'Private Club', leadCode, demoUrl }) => {
-  const recipientName = firstName ? emailEscape(firstName) : 'General Manager';
-  const escapedClub = emailEscape(clubName);
+  const recipientName = firstName ? firstName : 'General Manager';
   const code = leadCode || clubName.toLowerCase().replace(/[^a-z0-9]/g, '-').slice(0, 30);
   const trackUrl = demoUrl || `https://clubphotohub.com/preview/${encodeURIComponent(code)}`;
 
-  const textBody = `Hi ${recipientName},
+  const bodyText = `Hi ${recipientName},
 
 Right now, after major tournaments and social events at ${clubName}, photos end up scattered across member group chats, raw Google Drive folders, or public social media.
 
 Unlike Google Photos or Dropbox, which require personal Gmail sign-ins, leak raw public links, and offer zero privacy, Club PhotoHub integrates directly with ${clubName}'s official member roster so only verified members can access your private gallery.
 
-I put together a live interactive concept preview for your executive team to test:
-👉 ${trackUrl}
+💡 Self-Funding Software: Private Event Vaults capability is included FREE for early partner clubs. By offering private 30-day photo vaults to members hosting weddings, tournaments & social events at ${clubName} ($80–$200 on event invoices), the software completely pays for itself while generating new catering margin.
 
-💡 Self-Funding Software: Private Event Vaults capability is included FREE for clubs joining now. By offering private 30-day photo vaults to members hosting weddings, tournaments & social events at ${clubName} ($80–$200 on event invoices), the software completely pays for itself while generating new catering margin.
-
-Would love to hear your thoughts on whether this fits ${clubName}'s 2026 member engagement goals.
-
-Best regards,
-Mayank Saxena
-Founder, Club PhotoHub
-mayank.saxena@xtide.io
-https://clubphotohub.com`;
-
-  const htmlBody = clubPhotoHubEmail({
-    eyebrow: 'Interactive Workspace Preview',
-    title: `Private Member Photo Sharing for ${escapedClub}`,
-    intro: `Hi ${recipientName},<br/><br/>Right now, after major tournaments and social events at <strong>${escapedClub}</strong>, photos end up scattered across member group chats, raw Google Drive folders, or public social media.<br/><br/>Unlike <strong>Google Photos or Dropbox</strong>, which require personal Gmail sign-ins, leak raw public links, and offer zero privacy, <strong>Club PhotoHub integrates directly with ${escapedClub}'s official member roster</strong> so only verified members can access your private gallery.<br/><br/><strong>💡 Self-Funding Software:</strong> Private Event Vaults capability is included <strong>FREE</strong> for early partner clubs. By offering private 30-day photo vaults to members hosting weddings, tournaments & social events at ${escapedClub} ($80–$200 on event invoices), the software completely pays for itself while generating new catering margin.<br/><br/>Would love to hear your thoughts on whether this fits ${escapedClub}'s 2026 member engagement goals.`,
-    actionLabel: `Explore Interactive Preview →`,
-    actionUrl: trackUrl
-  });
+Would love to hear your thoughts on whether this fits ${clubName}'s 2026 member engagement goals.`;
 
   return {
-    subject: `Interactive Photo Hub Concept for ${escapedClub} Leadership`,
-    text: textBody,
-    html: htmlBody
+    subject: `Interactive Photo Hub Concept for ${clubName} Leadership`,
+    text: `${bodyText}\n\n👉 ${trackUrl}\n\nMayank Saxena\nFounder, Club PhotoHub\nmayank.saxena@xtide.io`,
+    html: clubPhotoHubEmail({
+      eyebrow: 'Interactive Workspace Preview',
+      title: `Private Member Photo Sharing for ${clubName}`,
+      intro: bodyText,
+      actionLabel: `Explore Interactive Preview →`,
+      actionUrl: trackUrl
+    })
   };
 };
 
@@ -417,18 +411,27 @@ async function sendOutreachLeadEmail(request, env, origin) {
   const code = leadCode || clubName.toLowerCase().replace(/[^a-z0-9]/g, '-').slice(0, 30);
   const trackUrl = `https://clubphotohub.com/preview/${encodeURIComponent(code)}`;
   const isFollowup = body.templateType === 'followup';
-  const encodedClub = encodeURIComponent(clubName);
-  const previewUrl = `https://clubphotohub.com/preview/${encodeURIComponent(code)}`;
 
   const generated = outreachEmailTemplate({ clubName, firstName, organizationType, leadCode: code, demoUrl: trackUrl });
 
+  const followupText = `Hi ${firstName || 'General Manager'},
+
+Following up on my note regarding ${clubName}'s private photo gallery.
+
+🔒 Roster-Level Security: Access is strictly validated against ${clubName}'s official member roster (Member # + Last Name). No public link leaks, no outsider snoopers, and zero personal Google account sign-ins required.
+
+💰 How The Software Pays For Itself: Private Event Vaults feature is included FREE for early partner clubs. Your catering team can bill $80–$200 per private wedding, tournament, or social event directly on the member's event invoice with $0 transaction fees to us. Just 6–10 private events per year completely covers your annual software investment.
+
+You can test ${clubName}'s live workspace preview here:
+👉 ${trackUrl}
+
+Worth a quick 5-minute conversation this week?`;
+
   const subject = body.subject || (isFollowup ? `Re: Roster security & self-funding photo hub for ${clubName}` : generated.subject);
-  const text = body.text || (isFollowup
-    ? `Hi ${firstName || 'General Manager'},\n\nFollowing up on my note regarding ${clubName}'s private photo gallery.\n\n🔒 Roster-Level Security: Access is strictly validated against ${clubName}'s official member roster (Member # + Last Name). No public link leaks, no outsider snoopers, and zero personal Google account sign-ins required.\n\n💰 How The Software Pays For Itself: Private Event Vaults feature is included FREE for early partner clubs. Your catering team can bill $80–$200 per private wedding, tournament, or social event directly on the member's event invoice with $0 transaction fees to us. Just 6–10 private events per year completely covers your annual software investment.\n\nYou can test ${clubName}'s live workspace preview here:\n👉 ${trackUrl}\n\nWorth a quick 5-minute conversation this week?\n\nBest regards,\nMayank Saxena\nmayank.saxena@xtide.io`
-    : generated.text);
+  const text = body.text || (isFollowup ? `${followupText}\n\nMayank Saxena\nmayank.saxena@xtide.io` : generated.text);
 
   const html = isFollowup
-    ? clubPhotoHubEmail({ eyebrow: 'Sample Workspace Preview', title: `Custom preview for ${clubName}`, intro: `Following up on my note regarding ${clubName}'s private photo gallery.<br/><br/><strong>🔒 Roster-Level Security:</strong> Access is strictly validated against ${clubName}'s official member roster (Member # + Last Name). No public link leaks, no outsider snoopers, and zero personal Google account sign-ins required.<br/><br/><strong>💰 How The Software Pays For Itself:</strong> Private Event Vaults feature is included FREE for early partner clubs. Your catering team can bill $80–$200 per private wedding, tournament, or social event directly on the member's event invoice with $0 transaction fees to us. Just 6–10 private events per year completely covers your annual software investment.`, actionLabel: `Explore ${clubName} Preview →`, actionUrl: trackUrl })
+    ? clubPhotoHubEmail({ eyebrow: 'Sample Workspace Preview', title: `Custom preview for ${clubName}`, intro: followupText, actionLabel: `Explore ${clubName} Preview →`, actionUrl: trackUrl })
     : generated.html;
 
   const founderName = env.FOUNDER_NAME || 'Mayank Saxena';
@@ -481,15 +484,13 @@ async function handleAgentChatCommand(request, env, origin) {
   if (!isStrategicPrompt && (lower.includes('test template') || lower.includes('outlook') || lower === 'send test templates to outlook')) {
     toolAction = 'TEST_EMAIL_SEQUENCE_DISPATCH';
     const recipient = 'saxenamayank92@outlook.com';
-    const mainWebsiteUrl = `https://clubphotohub.com/?demo=1&lead=heritage-oaks`;
-    const bookDemoUrl = `https://clubphotohub.com/book-demo?club=Heritage%20Oaks%20Country%20Club&lead=heritage-oaks`;
 
     const templates = [
       {
         subject: `Interactive Photo Hub Concept for Heritage Oaks Country Club Leadership`,
         eyebrow: `Interactive Workspace Preview`,
         title: `Private Member Photo Sharing for Heritage Oaks Country Club`,
-        intro: `Hi Mayank,<br/><br/>Right now, after major tournaments and social events at <strong>Heritage Oaks Country Club</strong>, photos end up scattered across member group chats, raw Google Drive folders, or public social media.<br/><br/>Unlike <strong>Google Photos or Dropbox</strong>, which require personal Gmail sign-ins, leak raw public links, and offer zero privacy, <strong>Club PhotoHub integrates directly with Heritage Oaks Country Club's official member roster</strong> so only verified members can access your private gallery.<br/><br/><strong>💡 Self-Funding Software:</strong> Private Event Vaults capability is included <strong>FREE</strong> for early partner clubs. By offering private 30-day photo vaults to members hosting weddings, tournaments & social events at Heritage Oaks Country Club ($80–$200 on event invoices), the software completely pays for itself while generating new catering margin.`,
+        intro: `Hi Mayank,\n\nRight now, after major tournaments and social events at Heritage Oaks Country Club, photos end up scattered across member group chats, raw Google Drive folders, or public social media.\n\nUnlike Google Photos or Dropbox, which require personal Gmail sign-ins, leak raw public links, and offer zero privacy, Club PhotoHub integrates directly with Heritage Oaks Country Club's official member roster so only verified members can access your private gallery.\n\n💡 Self-Funding Software: Private Event Vaults capability is included FREE for early partner clubs. By offering private 30-day photo vaults to members hosting weddings, tournaments & social events at Heritage Oaks Country Club ($80–$200 on event invoices), the software completely pays for itself while generating new catering margin.\n\nWould love to hear your thoughts on whether this fits Heritage Oaks Country Club's 2026 member engagement goals.`,
         actionLabel: `Explore Interactive Preview →`,
         actionUrl: `https://clubphotohub.com/preview/heritage-oaks`
       },
@@ -497,7 +498,7 @@ async function handleAgentChatCommand(request, env, origin) {
         subject: `Re: Roster security & self-funding photo hub for Heritage Oaks Country Club`,
         eyebrow: `Sample Workspace Preview`,
         title: `Custom Preview for Heritage Oaks Country Club`,
-        intro: `Hi Mayank,<br/><br/>Following up on my note regarding Heritage Oaks Country Club's private photo gallery.<br/><br/><strong>🔒 Roster-Level Security:</strong> Access is strictly validated against Heritage Oaks Country Club's official member roster (Member # + Last Name). No public link leaks, no outsider snoopers, and zero personal Google account sign-ins required.<br/><br/><strong>💰 How The Software Pays For Itself:</strong> Private Event Vaults feature is included FREE for early partner clubs. Your catering team can bill $80–$200 per private wedding, tournament, or social event directly on the member's event invoice with $0 transaction fees to us. Just 6–10 private events per year completely covers your annual software investment.`,
+        intro: `Hi Mayank,\n\nFollowing up on my note regarding Heritage Oaks Country Club's private photo gallery.\n\n🔒 Roster-Level Security: Access is strictly validated against Heritage Oaks Country Club's official member roster (Member # + Last Name). No public link leaks, no outsider snoopers, and zero personal Google account sign-ins required.\n\n💰 How The Software Pays For Itself: Private Event Vaults feature is included FREE for early partner clubs. Your catering team can bill $80–$200 per private wedding, tournament, or social event directly on the member's event invoice with $0 transaction fees to us. Just 6–10 private events per year completely covers your annual software investment.`,
         actionLabel: `Explore Heritage Oaks Preview →`,
         actionUrl: `https://clubphotohub.com/preview/heritage-oaks`
       }
