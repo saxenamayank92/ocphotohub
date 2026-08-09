@@ -54,6 +54,10 @@
       "destination": "https://pictide-api.summer-wind-c5c6.workers.dev/api/:path*"
     },
     {
+      "source": "/preview/:path*",
+      "destination": "/app-shell.html"
+    },
+    {
       "source": "/app/:path*",
       "destination": "/app-shell.html"
     },
