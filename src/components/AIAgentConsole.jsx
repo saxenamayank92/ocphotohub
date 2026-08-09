@@ -172,22 +172,6 @@ export default function AIAgentConsole({ onRefreshLeads, leads = [] }) {
         </div>
       </div>
 
-      {/* Quick Action Chips */}
-      <div className="agent-quick-chips">
-        <button onClick={() => handleSendMessage('Source 10 fresh Golf & Country Clubs in California & Florida')} className="chip-btn">
-          <Sparkles size={13} /> Source 10 Golf Clubs
-        </button>
-        <button onClick={() => handleSendMessage('Source 10 Yacht Clubs')} className="chip-btn">
-          <Zap size={13} /> Source 10 Yacht Clubs
-        </button>
-        <button onClick={() => handleSendMessage('Send follow-up emails to all demo explorers')} className="chip-btn chip-hot">
-          <Sparkles size={13} /> 🔥 Follow-Up Demo Explorers ({demoExplorersCount})
-        </button>
-        <button onClick={() => handleSendMessage('Audit suppression list & duplicate emails')} className="chip-btn">
-          <ShieldCheck size={13} /> Audit Suppression History
-        </button>
-      </div>
-
       {/* Chat Messages Console */}
       <div className="agent-chat-window">
         {messages.map(msg => (
