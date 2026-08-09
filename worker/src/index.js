@@ -591,7 +591,7 @@ async function handleAgentChatCommand(request, env, origin) {
 
   } else if (!isStrategicPrompt && (lower.includes('who should be targeted next') || lower.includes('target queue') || lower.includes('next targets') || lower.includes('who to target'))) {
     toolAction = 'TARGET_QUEUE_INSPECT';
-    const queueRows = await env.DB.prepare("SELECT club_name, organization_type, contact_first_name, contact_last_name, contact_email FROM sales_leads WHERE status = 'new' ORDER BY created_at ASC LIMIT 20").all();
+    const queueRows = await env.DB.prepare("SELECT club_name, organization_type, contact_first_name, contact_last_name, contact_email FROM sales_leads WHERE status = 'new' ORDER BY first_seen_at ASC LIMIT 20").all();
     const queueList = queueRows.results || [];
 
     let queueText = queueList.map((l, idx) => `${idx + 1}. **${l.club_name}** (${l.organization_type}) — ${l.contact_first_name || 'General Manager'} (\`${l.contact_email}\`)`).join('\n');
@@ -602,7 +602,7 @@ async function handleAgentChatCommand(request, env, origin) {
 
   } else if (!isStrategicPrompt && (lower.includes('target next 20') || lower.includes('run 20 club outreach') || lower.includes('outreach next 20') || lower === 'target next 20 clubs')) {
     toolAction = 'AUTO_OUTREACH_DISPATCH';
-    const queueRows = await env.DB.prepare("SELECT * FROM sales_leads WHERE status = 'new' ORDER BY created_at ASC LIMIT 20").all();
+    const queueRows = await env.DB.prepare("SELECT * FROM sales_leads WHERE status = 'new' ORDER BY first_seen_at ASC LIMIT 20").all();
     const targetBatch = queueRows.results || [];
 
     if (targetBatch.length > 0) {
