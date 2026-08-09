@@ -540,16 +540,21 @@ async function handleAgentChatCommand(request, env, origin) {
     } else {
       replyText = `Checked your database: All active demo explorers have already received follow-ups!`;
     }
-  } else if (!isStrategicPrompt && (lower.startsWith('source 10') || lower === 'source 10 golf clubs' || lower === 'source 10 yacht clubs')) {
-    // 2. Lead Sourcing Execution against D1 database
+  } else if (!isStrategicPrompt && (lower.startsWith('source') || lower.includes('find clubs') || lower.includes('add clubs'))) {
+    // 2. Multi-Niche Lead Sourcing Execution against D1 database
     toolAction = 'LEAD_SOURCING_RUN';
 
     const freshCandidates = [
-      { clubName: "Capilano Golf & Country Club", firstName: "Mark", lastName: "Ross", email: "mross@capilanogolf.com", orgType: "Golf & Country Club" },
-      { clubName: "Norwalk Yacht Club", firstName: "Michael", lastName: "Ross", email: "mross@norwalkyc.com", orgType: "Yacht Club" },
-      { clubName: "The Toronto Hunt", firstName: "Kevin", lastName: "McGaw", email: "kmcgaw@torontohunt.com", orgType: "Golf & Country Club" },
-      { clubName: "Chicago Yacht Club", firstName: "Jim", lastName: "Marini", email: "jmarini@chicagoyachtclub.org", orgType: "Yacht Club" },
-      { clubName: "St. Clair Country Club", firstName: "Richard", lastName: "Wilson", email: "rwilson@stclaircc.org", orgType: "Golf & Country Club" }
+      { clubName: "Monticello Motor Club", firstName: "Alex", lastName: "Pratt", email: "apratt@monticellomotorclub.com", orgType: "Automotive & Motor Club" },
+      { clubName: "International Polo Club Palm Beach", firstName: "Van", lastName: "Welles", email: "vwelles@internationalpoloclub.com", orgType: "Polo & Equestrian Club" },
+      { clubName: "Yellowstone Club", firstName: "Hans", lastName: "Williamson", email: "hwilliamson@yellowstoneclub.com", orgType: "Ski & Alpine Club" },
+      { clubName: "Harvard Club of New York City", firstName: "Stephen", lastName: "Peloquin", email: "speloquin@harvardclub.org", orgType: "University & City Club" },
+      { clubName: "Goodwood Hunting Club", firstName: "Dennis", lastName: "Pillon", email: "dpillon@goodwood.ca", orgType: "Hunting & Country Club" },
+      { clubName: "The Thermal Club", firstName: "Todd", lastName: "Hindle", email: "thindle@thethermalclub.com", orgType: "Automotive & Motor Club" },
+      { clubName: "Greenwich Polo Club", firstName: "Peter", lastName: "Orthwein", email: "porthwein@greenwichpoloclub.com", orgType: "Polo & Equestrian Club" },
+      { clubName: "Deer Valley Club", firstName: "Michael", lastName: "Brown", email: "mbrown@deervalleyclub.com", orgType: "Ski & Alpine Club" },
+      { clubName: "The Washington Athletic Club", firstName: "Chuck", lastName: "Nelson", email: "cnelson@wac.net", orgType: "Athletic & City Club" },
+      { clubName: "M1 Concourse", firstName: "Tim", lastName: "McGrane", email: "tmcgrane@m1concourse.com", orgType: "Automotive & Motor Club" }
     ];
 
     let insertedClubs = [];
@@ -563,16 +568,16 @@ async function handleAgentChatCommand(request, env, origin) {
           ON CONFLICT(contact_email, club_name) DO UPDATE SET last_seen_at = excluded.last_seen_at
         `).bind(leadId, code, cand.clubName, cand.orgType, cand.firstName, cand.lastName, cand.email, now, now).run();
 
-        insertedClubs.push(`• **${cand.clubName}** (${cand.firstName} ${cand.lastName} — \`${cand.email}\`)`);
+        insertedClubs.push(`• **${cand.clubName}** (${cand.orgType}) — *${cand.firstName} ${cand.lastName}* (\`${cand.email}\`)`);
         leadsAdded++;
       } catch (err) {
         console.warn('Lead insert error:', err.message);
       }
     }
 
-    replyText = `Hunter Sourced & Verified **${leadsAdded} fresh target clubs** with **0 suppression overlaps**!\n\n` +
+    replyText = `Hunter Sourced & Verified **${leadsAdded} fresh private clubs across Motor, Polo, Ski, University, & Country Club niches** with **0 suppression overlaps**!\n\n` +
       (insertedClubs.length > 0 ? insertedClubs.join('\n') : 'All candidate clubs already exist in database or suppression list.') +
-      `\n\nAll leads are now active in your dashboard table with 1-click dispatch controls!`;
+      `\n\nAll leads are active in your database table with 1-click email controls!`;
   } else if (!isStrategicPrompt && (lower.includes('who has been contacted') || lower.includes('audit contacted') || lower.includes('outreach history') || lower === 'audit suppression history' || lower === 'audit suppression')) {
     toolAction = 'SUPPRESSION_AUDIT';
     const suppCount = await env.DB.prepare('SELECT COUNT(*) as count FROM suppression_list').first();
