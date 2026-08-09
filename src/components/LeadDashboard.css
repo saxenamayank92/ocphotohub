@@ -15,6 +15,8 @@
   align-items: flex-end;
   max-width: 1400px;
   margin: 0 auto 28px;
+  flex-wrap: wrap;
+  gap: 16px;
 }
 .lead-header a {
   display: inline-flex;
@@ -34,8 +36,8 @@
   margin-top: 22px;
 }
 .lead-header h1 {
-  font-size: clamp(38px, 5vw, 58px);
-  line-height: 1;
+  font-size: clamp(32px, 4vw, 54px);
+  line-height: 1.1;
   margin-top: 6px;
 }
 .lead-header p {
@@ -45,7 +47,8 @@
 .lead-header-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 .lead-header button {
   display: flex;
@@ -992,37 +995,43 @@
   background: linear-gradient(145deg, #0f172a, #0b1329);
   border: 1px solid #1e293b;
   border-radius: 16px;
-  padding: 24px;
+  padding: 20px;
   margin-bottom: 24px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
   color: #f8fafc;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .agent-console-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 14px;
   padding-bottom: 16px;
   border-bottom: 1px solid #1e293b;
+  flex-wrap: wrap;
 }
 
 .agent-branding {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
+  flex-wrap: wrap;
+  min-width: 0;
 }
 
 .agent-avatar {
   position: relative;
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   border-radius: 12px;
   background: #1e293b;
   border: 1px solid #334155;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .agent-avatar .text-amber {
@@ -1044,12 +1053,13 @@
 .agent-title-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .agent-title-row h3 {
   margin: 0;
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 750;
   color: #ffffff;
 }
@@ -1073,7 +1083,8 @@
 .agent-controls {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .btn-agent-settings {

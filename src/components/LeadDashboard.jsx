@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, BarChart3, Bot, Building2, Check, Clock, Copy, Edit3, ExternalLink, Lock, Mail, MousePointerClick, Plus, RefreshCw, Search, Send, Sparkles, Trash2, Users, X, Zap } from 'lucide-react';
+import { ArrowLeft, BarChart3, Bot, Building2, Check, Clock, Copy, Edit3, ExternalLink, Lock, Mail, MousePointerClick, Plus, RefreshCw, Search, Send, Sparkles, Trash2, Users, X as XIcon, Zap } from 'lucide-react';
 import { completePlatformLogin, createOutreachLead, deleteOutreachLead, getLeadDashboard, getPlatformSession, requestPlatformLogin, sendOutreachEmail, updateOutreachLead } from '../api';
 import AIAgentConsole from './AIAgentConsole';
 import './LeadDashboard.css';
@@ -508,7 +508,7 @@ export default function LeadDashboard() {
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
             />
-            {searchQuery && <button onClick={() => setSearchQuery('')}><X size={14} /></button>}
+            {searchQuery && <button onClick={() => setSearchQuery('')}><XIcon size={14} /></button>}
           </div>
           <span className="lead-count-badge">{filteredLeads.length} leads</span>
         </div>
@@ -791,7 +791,7 @@ export default function LeadDashboard() {
               <h3>Add Outreach Lead</h3>
               <p>Generate a unique tracking link & send personalized outreach</p>
             </div>
-            <button onClick={() => setShowAddModal(false)} className="btn-close-modal"><X size={18} /></button>
+            <button onClick={() => setShowAddModal(false)} className="btn-close-modal"><XIcon size={18} /></button>
           </div>
           <form onSubmit={handleCreateLead} className="lead-add-form">
             <label>
@@ -890,7 +890,7 @@ export default function LeadDashboard() {
               <h3><Send size={18} /> Cold Outreach Email Preview</h3>
               <p>Recipient: <strong>{previewLead.email}</strong> ({previewLead.clubName})</p>
             </div>
-            <button onClick={() => setPreviewLead(null)} className="btn-close-modal"><X size={18} /></button>
+            <button onClick={() => setPreviewLead(null)} className="btn-close-modal"><XIcon size={18} /></button>
           </div>
 
           <div className="email-preview-box">
@@ -946,7 +946,7 @@ export default function LeadDashboard() {
               <h3><Sparkles size={18} /> 🔥 Send Branded Preview Follow-Up</h3>
               <p>Personalized follow-up for <strong>{followupLead.clubName}</strong> ({followupLead.email})</p>
             </div>
-            <button onClick={() => setFollowupLead(null)} className="btn-close-modal"><X size={18} /></button>
+            <button onClick={() => setFollowupLead(null)} className="btn-close-modal"><XIcon size={18} /></button>
           </div>
 
             <div className="email-preview-box">
@@ -1011,7 +1011,7 @@ export default function LeadDashboard() {
               <h3><Zap size={18} /> Bulk AI Outreach Campaign</h3>
               <p>Paste target clubs to automatically create tracking links & send personalized emails</p>
             </div>
-            <button onClick={() => setShowBulkModal(false)} className="btn-close-modal"><X size={18} /></button>
+            <button onClick={() => setShowBulkModal(false)} className="btn-close-modal"><XIcon size={18} /></button>
           </div>
 
           <div className="bulk-modal-body">
@@ -1056,7 +1056,7 @@ export default function LeadDashboard() {
               <h3><Building2 size={18} /> {activeLeadActivity.lead.clubName}</h3>
               <p>Activity timeline and visitor engagement history</p>
             </div>
-            <button onClick={() => setActiveLeadActivity(null)} className="btn-close-modal"><X size={18} /></button>
+            <button onClick={() => setActiveLeadActivity(null)} className="btn-close-modal"><XIcon size={18} /></button>
           </div>
 
           <div className="lead-drawer-body">
@@ -1096,7 +1096,7 @@ export default function LeadDashboard() {
               <h3><Building2 size={22} /> 🇨🇦🇺🇸 North America Private Club Database ({leads.length} Potential Clients)</h3>
               <p>Complete directory of target Golf, Yacht, Racquet, Ski, and City Clubs with executive contact profiles and status checkmarks (✅)</p>
             </div>
-            <button onClick={() => setShowDatabaseModal(false)} className="btn-close-modal"><X size={20} /></button>
+            <button onClick={() => setShowDatabaseModal(false)} className="btn-close-modal"><XIcon size={20} /></button>
           </div>
 
           <div className="db-modal-toolbar">
@@ -1123,7 +1123,7 @@ export default function LeadDashboard() {
                 value={dbSearchQuery}
                 onChange={e => setDbSearchQuery(e.target.value)}
               />
-              {dbSearchQuery && <button onClick={() => setDbSearchQuery('')}><X size={14} /></button>}
+              {dbSearchQuery && <button onClick={() => setDbSearchQuery('')}><XIcon size={14} /></button>}
             </div>
           </div>
 
