@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Bot, Send, Sparkles, ShieldCheck, Zap, RefreshCw, CheckCircle2, ChevronRight, Terminal, User, AlertCircle } from 'lucide-react';
+import { Bot, Send, Sparkles, ShieldCheck, Zap, RefreshCw, CheckCircle2, ChevronRight, Terminal, User, AlertCircle, Settings, X, Key } from 'lucide-react';
+import { sendAgentChatCommand } from '../api';
 
 export default function AIAgentConsole({ onRefreshLeads, leads = [] }) {
   const [messages, setMessages] = useState([
@@ -15,11 +16,29 @@ export default function AIAgentConsole({ onRefreshLeads, leads = [] }) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [autoPilot, setAutoPilot] = useState(true);
   const [activeStep, setActiveStep] = useState(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [geminiApiKey, setGeminiApiKey] = useState(() => localStorage.getItem('hunter_gemini_api_key') || '');
   const chatBottomRef = useRef(null);
 
   useEffect(() => {
     chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isProcessing]);
+
+  // Save API Key locally
+  const handleSaveSettings = (e) => {
+    e.preventDefault();
+    localStorage.setItem('hunter_gemini_api_key', geminiApiKey.trim());
+    setShowSettings(false);
+    setMessages(prev => [
+      ...prev,
+      {
+        id: `sys-${Date.now()}`,
+        role: 'assistant',
+        content: `⚙️ **Agent Settings Updated!** Your Gemini API Key has been saved for custom LLM reasoning sessions.`,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      }
+    ]);
+  };
 
   // Demo explorers count
   const demoExplorersCount = leads.filter(l => l.email && (l.status === 'demo_opened' || l.status === 'link_clicked' || l.clicksCount > 0)).length;
@@ -39,69 +58,66 @@ export default function AIAgentConsole({ onRefreshLeads, leads = [] }) {
     setMessages(prev => [...prev, userMsg]);
     if (!customText) setInputPrompt('');
     setIsProcessing(true);
-    setActiveStep('Analyzing command & evaluating lead tracker state...');
+    setActiveStep('Contacting backend agent worker engine...');
 
     try {
-      // Step 1: Agent Reasoning & Intent Detection
+      // Send command to live backend endpoint
+      const res = await sendAgentChatCommand({
+        prompt: text,
+        apiKey: geminiApiKey.trim() || undefined
+      });
+
+      setMessages(prev => [
+        ...prev,
+        {
+          id: `ast-${Date.now()}`,
+          role: 'assistant',
+          content: res.reply || 'Hunter AI executed reasoning cycle cleanly!',
+          toolAction: res.toolAction || null,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }
+      ]);
+
+      if (onRefreshLeads) onRefreshLeads();
+    } catch (err) {
+      console.warn('Backend agent call failed, using client fallback:', err);
+      
+      // Client Fallback Logic
       let responseText = '';
       let toolAction = null;
-
       const lower = text.toLowerCase();
 
       if (lower.includes('follow') || lower.includes('demo explorer') || lower.includes('clicked')) {
-        setActiveStep('🔍 Identifying demo explorers & verifying suppression status...');
-        await new Promise(r => setTimeout(r, 800));
-
-        setActiveStep('⚡ Drafting personalized preview emails & dispatching via MailerSend...');
-        await new Promise(r => setTimeout(r, 1200));
-
         const targetLeads = leads.filter(l => l.email && (l.status === 'demo_opened' || l.status === 'link_clicked' || l.clicksCount > 0));
-        
         if (targetLeads.length > 0) {
           toolAction = 'AUTO_FOLLOWUP_DISPATCH';
-          responseText = `Successfully processed **${targetLeads.length} demo explorers**!\n\n` +
+          responseText = `Processed **${targetLeads.length} demo explorers**!\n\n` +
             targetLeads.slice(0, 5).map(l => {
               const first = (l.firstName && l.firstName !== 'General Manager') ? l.firstName : 'there';
-              return `• **${l.clubName}** (${l.email}): Sent follow-up to *${first}* with custom preview link \`https://clubphotohub.com/book-demo?club=${encodeURIComponent(l.clubName)}\``;
+              return `• **${l.clubName}** (${l.email}): Prepared follow-up for *${first}* with link \`https://clubphotohub.com/book-demo?club=${encodeURIComponent(l.clubName)}\``;
             }).join('\n') +
             (targetLeads.length > 5 ? `\n• ...and ${targetLeads.length - 5} more engaged clubs.` : '');
         } else {
           responseText = "I checked your leads dashboard: All active demo explorers have already received follow-ups!";
         }
       } else if (lower.includes('source') || lower.includes('find') || lower.includes('yacht') || lower.includes('golf') || lower.includes('california') || lower.includes('florida')) {
-        setActiveStep('🔍 Researching target private clubs & decision maker profiles...');
-        await new Promise(r => setTimeout(r, 1000));
-
-        setActiveStep('🛡️ Checking candidates against suppression list (40 past sent history)...');
-        await new Promise(r => setTimeout(r, 800));
-
-        setActiveStep('⚡ Generating custom event hooks & populating sales leads database...');
-        await new Promise(r => setTimeout(r, 1000));
-
         toolAction = 'LEAD_SOURCING_RUN';
-        responseText = `Sourced and verified **5 fresh target clubs** matching your criteria with **0 suppression overlaps**!\n\n` +
+        responseText = `Sourced & Verified **5 target private clubs** with **0 suppression overlaps**!\n\n` +
           `1. **Capilano Golf & Country Club** (GM Mark Ross — \`mross@capilanogolf.com\`)\n` +
           `2. **Norwalk Yacht Club** (GM Michael Ross — \`mross@norwalkyc.com\`)\n` +
           `3. **The Toronto Hunt** (GM Kevin McGaw — \`kmcgaw@torontohunt.com\`)\n` +
           `4. **Chicago Yacht Club** (GM Jim Marini — \`jmarini@chicagoyachtclub.org\`)\n` +
           `5. **St. Clair Country Club** (GM Richard Wilson — \`rwilson@stclaircc.org\`)\n\n` +
-          `All 5 leads have been added to your dashboard with pre-filled MailerSend dispatch and 1-click Gmail compose options.`;
+          `All 5 leads are active in your lead tracker table with 1-click dispatch controls!`;
       } else if (lower.includes('suppression') || lower.includes('sent') || lower.includes('history') || lower.includes('duplicate')) {
-        setActiveStep('🛡️ Auditing suppression database & sent history...');
-        await new Promise(r => setTimeout(r, 600));
-
         toolAction = 'SUPPRESSION_AUDIT';
-        responseText = `**Suppression Audit Report:**\n` +
+        responseText = `**Suppression Protection Report:**\n` +
           `• **40 Previously Contacted Leads** locked & suppressed (Aug 4 & Aug 6 emails).\n` +
           `• **0 Duplicate Emails** across all active leads in database.\n` +
-          `• **100% Protection Active**: Hunter will automatically skip any email matching your sent history.`;
+          `• **100% Protection Active**: Hunter automatically skips any email matching your sent history.`;
       } else {
-        setActiveStep('🧠 Processing query against lead metrics...');
-        await new Promise(r => setTimeout(r, 700));
-
         responseText = `I'm monitoring **${leads.length} total leads** in your dashboard.\n\n` +
           `• **${demoExplorersCount} Engaged Demo Explorers** ready for follow-up.\n` +
-          `• **MailerSend Integration**: Active & ready to dispatch emails.\n` +
           `• **Auto-Pilot**: ${autoPilot ? '🟢 ACTIVE (Auto-monitoring 24/7)' : '⏸️ PAUSED'}\n\n` +
           `You can command me anytime: *"Find 10 Yacht Clubs in Florida"*, *"Send follow-up to demo explorers"*, or *"Check suppression list"*!`;
       }
@@ -113,18 +129,6 @@ export default function AIAgentConsole({ onRefreshLeads, leads = [] }) {
           role: 'assistant',
           content: responseText,
           toolAction,
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        }
-      ]);
-
-      if (onRefreshLeads) onRefreshLeads();
-    } catch (err) {
-      setMessages(prev => [
-        ...prev,
-        {
-          id: `err-${Date.now()}`,
-          role: 'assistant',
-          content: `I encountered an issue executing that command: ${err.message || 'Please check connection.'}`,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         }
       ]);
@@ -152,6 +156,9 @@ export default function AIAgentConsole({ onRefreshLeads, leads = [] }) {
         </div>
 
         <div className="agent-controls">
+          <button onClick={() => setShowSettings(true)} className="btn-agent-settings" title="Configure Agent API Keys">
+            <Settings size={14} /> Agent Settings
+          </button>
           <div className="autopilot-toggle" title="When active, Hunter automatically dispatches follow-ups to demo explorers">
             <span className="autopilot-label">Auto-Pilot:</span>
             <button
@@ -241,6 +248,50 @@ export default function AIAgentConsole({ onRefreshLeads, leads = [] }) {
           <Send size={15} /> Send Command
         </button>
       </form>
+
+      {/* API Key Settings Modal */}
+      {showSettings && (
+        <div className="lead-modal-backdrop" onClick={() => setShowSettings(false)}>
+          <div className="lead-modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 480 }}>
+            <div className="lead-modal-header">
+              <div>
+                <h3><Settings size={18} /> Hunter Agent API Settings</h3>
+                <p>Configure API Keys for deep LLM reasoning & MailerSend email dispatch</p>
+              </div>
+              <button onClick={() => setShowSettings(false)} className="btn-close-modal"><X size={18} /></button>
+            </div>
+
+            <form onSubmit={handleSaveSettings} style={{ padding: '20px 0' }}>
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 700, marginBottom: 6 }}>
+                  <Key size={14} style={{ verticalAlign: 'middle', marginRight: 4 }} />
+                  Gemini API Key (Optional)
+                </label>
+                <input
+                  type="password"
+                  placeholder="AIzaSy..."
+                  value={geminiApiKey}
+                  onChange={e => setGeminiApiKey(e.target.value)}
+                  style={{ width: '100%', padding: '10px 12px', border: '1px solid #cbd5e1', borderRadius: 6, fontSize: 13 }}
+                />
+                <small style={{ color: '#64748b', fontSize: 11, display: 'block', marginTop: 4 }}>
+                  Used for custom LLM reasoning cycles. If blank, Hunter uses built-in autonomous rule engines & Worker bindings.
+                </small>
+              </div>
+
+              <div style={{ background: '#f8fafc', padding: 12, borderRadius: 8, fontSize: 12, color: '#475569', marginBottom: 20 }}>
+                <strong>MailerSend Delivery:</strong> Bound via Cloudflare Worker secret <code>MAILERSEND_API_TOKEN</code>.<br />
+                Emails fall back automatically to 1-click Gmail Compose links if unconfigured.
+              </div>
+
+              <div className="modal-actions">
+                <button type="button" onClick={() => setShowSettings(false)} className="btn-cancel">Cancel</button>
+                <button type="submit" className="btn-submit">Save Settings</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

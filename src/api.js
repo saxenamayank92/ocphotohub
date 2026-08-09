@@ -168,6 +168,8 @@ export const createOutreachLead = details => request('/platform/leads', { method
 export const deleteOutreachLead = id => request(`/platform/leads/${encodeURIComponent(id)}`, { method: 'DELETE' });
 export const updateOutreachLead = (id, updates) => request(`/platform/leads/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(updates) });
 export const sendOutreachEmail = details => request('/platform/leads/send-outreach', { method: 'POST', body: JSON.stringify(details) });
+export const sendAgentChatCommand = payload => request('/platform/agent/chat', { method: 'POST', body: JSON.stringify(payload) });
+export const fetchAgentLogs = () => request('/platform/agent/logs', { method: 'GET' });
 
 export const createBillingCheckout = details => request('/billing/checkout', {
   method: 'POST',

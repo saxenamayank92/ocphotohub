@@ -955,6 +955,33 @@
   color: #94a3b8;
 }
 
+.agent-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.btn-agent-settings {
+  background: #1e293b;
+  color: #cbd5e1;
+  border: 1px solid #334155;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+
+.btn-agent-settings:hover {
+  background: #334155;
+  color: #ffffff;
+  border-color: #475569;
+}
+
 .autopilot-toggle {
   display: flex;
   align-items: center;
