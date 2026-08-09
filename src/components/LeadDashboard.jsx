@@ -312,9 +312,10 @@ export default function LeadDashboard() {
       </div>
     </header>
 
-    <AIAgentConsole onRefreshLeads={load} leads={leads} />
-
-    <section className="lead-cards">
+    <div className="lead-dashboard-split-layout">
+      {/* LEFT COLUMN (70% AREA) */}
+      <div className="lead-dashboard-main-col">
+        <section className="lead-cards">
       {order.map(key => <article key={key}>
         <span>{labels[key]}</span>
         <strong>{metrics[key]?.visitors || 0}</strong>
@@ -522,6 +523,13 @@ export default function LeadDashboard() {
         </table>
       </div>
     </section>
+  </div>
+
+  {/* RIGHT COLUMN (30% AREA) */}
+  <aside className="lead-dashboard-agent-col">
+    <AIAgentConsole onRefreshLeads={load} leads={leads} />
+  </aside>
+</div>
 
     {/* Add Outreach Lead Modal */}
     {showAddModal && (

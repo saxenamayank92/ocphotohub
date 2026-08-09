@@ -867,6 +867,41 @@
   .form-row-2 {
     grid-template-columns: 1fr;
   }
+/* ==========================================================================
+   70% LEFT / 30% RIGHT SPLIT DASHBOARD LAYOUT
+   ========================================================================== */
+.lead-dashboard-split-layout {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.lead-dashboard-main-col {
+  flex: 0 0 68%;
+  max-width: 68%;
+  min-width: 0;
+}
+
+.lead-dashboard-agent-col {
+  flex: 0 0 32%;
+  max-width: 32%;
+  min-width: 0;
+  position: sticky;
+  top: 24px;
+}
+
+.lead-dashboard-agent-col .ai-agent-console-card {
+  height: calc(100vh - 120px);
+  min-height: 600px;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 0;
+}
+
+.lead-dashboard-agent-col .agent-chat-window {
+  flex: 1;
+  max-height: none;
 }
 
 /* ==========================================================================
