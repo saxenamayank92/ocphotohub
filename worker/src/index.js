@@ -486,20 +486,20 @@ async function handleAgentChatCommand(request, env, origin) {
 
     const templates = [
       {
-        subject: `Private member photo sharing for Heritage Oaks Country Club`,
-        eyebrow: ``,
+        subject: `Interactive Photo Hub Concept for Heritage Oaks Country Club Leadership`,
+        eyebrow: `Interactive Workspace Preview`,
         title: `Private Member Photo Sharing for Heritage Oaks Country Club`,
-        intro: `Hi Mayank,\n\nI’m reaching out from Club PhotoHub where we help private clubs elevate member engagement and photo delivery across golf outings, clubhouse dining, and member social events. We created Club PhotoHub to give Heritage Oaks Country Club a dedicated, secure platform for member event galleries.`,
-        actionLabel: `Explore Club PhotoHub`,
-        actionUrl: mainWebsiteUrl
+        intro: `Hi Mayank,<br/><br/>Right now, after major tournaments and social events at <strong>Heritage Oaks Country Club</strong>, photos end up scattered across member group chats, raw Google Drive folders, or public social media.<br/><br/>Unlike <strong>Google Photos or Dropbox</strong>, which require personal Gmail sign-ins, leak raw public links, and offer zero privacy, <strong>Club PhotoHub integrates directly with Heritage Oaks Country Club's official member roster</strong> so only verified members can access your private gallery.<br/><br/><strong>💡 Self-Funding Software:</strong> Private Event Vaults capability is included <strong>FREE</strong> for early partner clubs. By offering private 30-day photo vaults to members hosting weddings, tournaments & social events at Heritage Oaks Country Club ($80–$200 on event invoices), the software completely pays for itself while generating new catering margin.`,
+        actionLabel: `Explore Interactive Preview →`,
+        actionUrl: `https://clubphotohub.com/preview/heritage-oaks`
       },
       {
-        subject: `Following up: Custom preview for Heritage Oaks Country Club`,
-        eyebrow: ``,
+        subject: `Re: Roster security & self-funding photo hub for Heritage Oaks Country Club`,
+        eyebrow: `Sample Workspace Preview`,
         title: `Custom Preview for Heritage Oaks Country Club`,
-        intro: `Hi Mayank,\n\nI hope you liked what you saw! Following up on my note earlier regarding private member photo sharing across golf outings, clubhouse dining, and member social events. We can build out a custom, branded sample preview for Heritage Oaks Country Club so your team can evaluate it risk-free.`,
-        actionLabel: `Request Preview for Heritage Oaks Country Club`,
-        actionUrl: bookDemoUrl
+        intro: `Hi Mayank,<br/><br/>Following up on my note regarding Heritage Oaks Country Club's private photo gallery.<br/><br/><strong>🔒 Roster-Level Security:</strong> Access is strictly validated against Heritage Oaks Country Club's official member roster (Member # + Last Name). No public link leaks, no outsider snoopers, and zero personal Google account sign-ins required.<br/><br/><strong>💰 How The Software Pays For Itself:</strong> Private Event Vaults feature is included FREE for early partner clubs. Your catering team can bill $80–$200 per private wedding, tournament, or social event directly on the member's event invoice with $0 transaction fees to us. Just 6–10 private events per year completely covers your annual software investment.`,
+        actionLabel: `Explore Heritage Oaks Preview →`,
+        actionUrl: `https://clubphotohub.com/preview/heritage-oaks`
       }
     ];
 
@@ -509,8 +509,8 @@ async function handleAgentChatCommand(request, env, origin) {
           await sendMail(env, {
             to: recipient,
             subject: t.subject,
-            text: `${t.intro}\n\n👉 ${t.actionUrl}\n\nMayank Saxena\nFounder, Club PhotoHub\nmayank.saxena@xtide.io`,
-            html: clubPhotoHubEmail({ eyebrow: '', title: t.title, intro: t.intro, actionLabel: t.actionLabel, actionUrl: t.actionUrl })
+            text: `${t.intro.replace(/<br\s*\/?>/gi, '\n').replace(/<\/?[^>]+(>|$)/g, '')}\n\n👉 ${t.actionUrl}\n\nMayank Saxena\nFounder, Club PhotoHub\nmayank.saxena@xtide.io`,
+            html: clubPhotoHubEmail({ eyebrow: t.eyebrow, title: t.title, intro: t.intro, actionLabel: t.actionLabel, actionUrl: t.actionUrl })
           });
           emailsSent++;
         } catch (e) {
@@ -519,12 +519,12 @@ async function handleAgentChatCommand(request, env, origin) {
       }
     }
 
-    replyText = `🚀 **Dispatched ${emailsSent} Test Email Templates Live via MailerSend!**\n\n` +
+    replyText = `🚀 **Dispatched ${emailsSent} Updated Test Email Templates Live via MailerSend!**\n\n` +
       `• **Sender**: Mayank Saxena (Founder, Club PhotoHub)\n` +
       `• **Recipient**: \`${recipient}\`\n` +
-      `• **Template 1**: Initial Cold Outreach\n` +
-      `• **Template 2**: 4-Day Engaged Follow-Up ("I hope you liked what you saw")\n\n` +
-      `Check your inbox at \`${recipient}\` to inspect both rendered templates!`;
+      `• **Template 1**: Initial Cold Outreach (Roster security vs Google Photos + Self-Funding ROI)\n` +
+      `• **Template 2**: Follow-Up (Roster security + $80-$200 event invoice ROI)\n\n` +
+      `Check your inbox at \`${recipient}\` to inspect both updated rendered templates!`;
   } else if (!isStrategicPrompt && (lower.startsWith('follow-up demo explorers') || lower === 'dispatch follow-ups' || lower === 'send follow ups')) {
     // 1. Fetch demo explorers from D1 database
     const rows = await env.DB.prepare(
@@ -538,15 +538,15 @@ async function handleAgentChatCommand(request, env, origin) {
 
       for (const lead of engagedLeads) {
         const contactGreeting = (lead.contact_first_name && lead.contact_first_name !== 'General Manager' && lead.contact_first_name !== 'info') ? lead.contact_first_name : 'General Manager';
-        const previewUrl = `https://clubphotohub.com/book-demo?club=${encodeURIComponent(lead.club_name)}`;
+        const previewUrl = `https://clubphotohub.com/preview/${encodeURIComponent(lead.lead_code || lead.club_name.toLowerCase().replace(/[^a-z0-9]/g, '-'))}`;
 
         if (env.MAILERSEND_API_TOKEN) {
           try {
             await sendMail(env, {
               to: lead.contact_email,
-              subject: `Following up: Custom preview for ${lead.club_name}`,
-              text: `Hi ${contactGreeting === 'General Manager' ? 'General Manager & Team' : contactGreeting},\n\nI hope you liked what you saw! Following up on my note earlier regarding private member photo sharing.\n\nWe can build out a custom, branded sample preview for ${lead.club_name} so your team can evaluate it risk-free.\n\nYou can request a sample preview in 10 seconds here:\n👉 ${previewUrl}\n\nOr simply reply to this email with "yes" and I'll set up a preview for ${lead.club_name}.\n\nMayank Saxena\nFounder, Club PhotoHub\nmayank.saxena@xtide.io`,
-              html: clubPhotoHubEmail({ eyebrow: '', title: `Custom preview for ${lead.club_name}`, intro: `Hi ${contactGreeting === 'General Manager' ? 'General Manager & Team' : contactGreeting},\n\nI hope you liked what you saw! Following up on my note earlier regarding private member photo sharing. We can build out a custom, branded sample preview for ${lead.club_name} so your team can evaluate it risk-free.`, actionLabel: `Request Preview for ${lead.club_name}`, actionUrl: previewUrl })
+              subject: `Re: Roster security & self-funding photo hub for ${lead.club_name}`,
+              text: `Hi ${contactGreeting},\n\nFollowing up on my note regarding ${lead.club_name}'s private photo gallery.\n\n🔒 Roster-Level Security: Access is strictly validated against ${lead.club_name}'s official member roster (Member # + Last Name).\n\n💰 How The Software Pays For Itself: Private Event Vaults feature is included FREE for early partner clubs. Your catering team can bill $80–$200 per private wedding, tournament, or social event directly on the member's event invoice with $0 transaction fees to us.\n\nYou can test ${lead.club_name}'s live workspace preview here:\n👉 ${previewUrl}\n\nBest regards,\nMayank Saxena\nmayank.saxena@xtide.io`,
+              html: clubPhotoHubEmail({ eyebrow: 'Sample Workspace Preview', title: `Custom preview for ${lead.club_name}`, intro: `Hi ${contactGreeting},<br/><br/>Following up on my note regarding ${lead.club_name}'s private photo gallery.<br/><br/><strong>🔒 Roster-Level Security:</strong> Access is strictly validated against ${lead.club_name}'s official member roster (Member # + Last Name). No public link leaks, no outsider snoopers, and zero personal Google account sign-ins required.<br/><br/><strong>💰 How The Software Pays For Itself:</strong> Private Event Vaults feature is included FREE for early partner clubs. Your catering team can bill $80–$200 per private wedding, tournament, or social event directly on the member's event invoice with $0 transaction fees to us.`, actionLabel: `Explore ${lead.club_name} Preview →`, actionUrl: previewUrl })
             });
             emailsSent++;
           } catch (e) {
