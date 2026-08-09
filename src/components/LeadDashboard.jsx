@@ -79,6 +79,9 @@ export default function LeadDashboard() {
   const [dbSearchQuery, setDbSearchQuery] = useState('');
   const [dbStatusFilter, setDbStatusFilter] = useState('all');
 
+  const leads = useMemo(() => state.data?.leads || [], [state.data]);
+  const recentEvents = useMemo(() => state.data?.recentEvents || [], [state.data]);
+
   const dbFilteredLeads = useMemo(() => {
     let list = leads;
     if (dbStatusFilter !== 'all') {
@@ -125,9 +128,6 @@ export default function LeadDashboard() {
   const visitors = metrics.site_view?.visitors || 0;
   const workspaces = metrics.workspace_created?.visitors || 0;
   const conversion = visitors ? ((workspaces / visitors) * 100).toFixed(1) : '0.0';
-
-  const leads = useMemo(() => state.data?.leads || [], [state.data]);
-  const recentEvents = useMemo(() => state.data?.recentEvents || [], [state.data]);
 
   const calculateEngagementScore = useCallback(lead => {
     let score = (lead.clicksCount || 0) * 15;
