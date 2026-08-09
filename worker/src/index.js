@@ -558,10 +558,10 @@ async function handleAgentChatCommand(request, env, origin) {
       const leadId = `lead_${randomToken(12)}`;
       try {
         await env.DB.prepare(`
-          INSERT INTO sales_leads (id, lead_code, club_name, organization_type, contact_first_name, contact_last_name, contact_email, created_at, status, clicks_count, notes, last_seen_at, last_clicked_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'outreach_sent', 0, 'Sourced via Hunter AI Agent', ?, ?)
+          INSERT INTO sales_leads (id, lead_code, club_name, organization_type, contact_first_name, contact_last_name, contact_email, first_seen_at, last_seen_at, status, clicks_count, notes)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'new', 0, 'Sourced via Hunter AI Agent')
           ON CONFLICT(contact_email, club_name) DO UPDATE SET last_seen_at = excluded.last_seen_at
-        `).bind(leadId, code, cand.clubName, cand.orgType, cand.firstName, cand.lastName, cand.email, now, now, now).run();
+        `).bind(leadId, code, cand.clubName, cand.orgType, cand.firstName, cand.lastName, cand.email, now, now).run();
 
         insertedClubs.push(`• **${cand.clubName}** (${cand.firstName} ${cand.lastName} — \`${cand.email}\`)`);
         leadsAdded++;
