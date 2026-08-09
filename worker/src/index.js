@@ -359,12 +359,12 @@ const outreachEmailTemplate = ({ clubName, firstName = '', organizationType = 'P
 
   return {
     subject: `Private member photo sharing for ${escapedClub}`,
-    text: `Hi ${recipientName},\n\nI’m reaching out from Club PhotoHub where we help private clubs elevate member tournament engagement and photo delivery. We created Club PhotoHub to give private clubs a dedicated, secure platform for member event galleries.\n\nYou can request a custom sample preview for ${escapedClub} in 10 seconds here:\n👉 ${trackUrl}\n\nOr simply reply to this email with "yes" and I'll set up a branded preview workspace for ${escapedClub}.\n\nMayank Saxena\nFounder, Club PhotoHub\nmayank.saxena@xtide.io`,
+    text: `Hi ${recipientName},\n\nI’m reaching out from Club PhotoHub where we help private clubs elevate member tournament engagement and photo delivery. We created Club PhotoHub to give private clubs a dedicated, secure platform for member event galleries.\n\nYou can explore the live platform and see how it works for ${escapedClub} here:\n👉 ${trackUrl}\n\nOr simply reply to this email with "yes" and I'll set up a branded preview workspace for ${escapedClub}.\n\nMayank Saxena\nFounder, Club PhotoHub\nmayank.saxena@xtide.io`,
     html: clubPhotoHubEmail({
       eyebrow: '',
       title: `Private Member Photo Sharing for ${escapedClub}`,
       intro: `Hi ${recipientName},\n\nI’m reaching out from Club PhotoHub where we help private clubs elevate member tournament engagement and photo delivery. We created Club PhotoHub to give private clubs a dedicated, secure platform for member event galleries.`,
-      actionLabel: `Request Preview for ${escapedClub}`,
+      actionLabel: `Explore Club PhotoHub`,
       actionUrl: trackUrl
     })
   };
@@ -448,7 +448,8 @@ async function handleAgentChatCommand(request, env, origin) {
   if (!isStrategicPrompt && (lower.includes('test template') || lower.includes('outlook') || lower === 'send test templates to outlook')) {
     toolAction = 'TEST_EMAIL_SEQUENCE_DISPATCH';
     const recipient = 'saxenamayank92@outlook.com';
-    const previewUrl = `https://clubphotohub.com/book-demo?club=Heritage%20Oaks%20Country%20Club`;
+    const mainWebsiteUrl = `https://clubphotohub.com/?demo=1&lead=heritage-oaks`;
+    const bookDemoUrl = `https://clubphotohub.com/book-demo?club=Heritage%20Oaks%20Country%20Club&lead=heritage-oaks`;
 
     const templates = [
       {
@@ -456,16 +457,16 @@ async function handleAgentChatCommand(request, env, origin) {
         eyebrow: ``,
         title: `Private Member Photo Sharing for Heritage Oaks Country Club`,
         intro: `Hi Mayank,\n\nI’m reaching out from Club PhotoHub where we help private clubs elevate member tournament engagement and photo delivery. We created Club PhotoHub to give private clubs a dedicated, secure platform for member event galleries.`,
-        actionLabel: `Request Preview for Heritage Oaks Country Club`,
-        actionUrl: previewUrl
+        actionLabel: `Explore Club PhotoHub`,
+        actionUrl: mainWebsiteUrl
       },
       {
         subject: `Following up: Custom preview for Heritage Oaks Country Club`,
         eyebrow: ``,
         title: `Custom Preview for Heritage Oaks Country Club`,
-        intro: `Hi Mayank,\n\nI hope you liked what you saw! Following up on my note earlier regarding private member photo sharing. We set up a custom sample preview styled with Heritage Oaks Country Club's branding so your team can evaluate it risk-free.`,
-        actionLabel: `View Custom Preview`,
-        actionUrl: previewUrl
+        intro: `Hi Mayank,\n\nI hope you liked what you saw! Following up on my note earlier regarding private member photo sharing. We can build out a custom, branded sample preview for Heritage Oaks Country Club so your team can evaluate it risk-free.`,
+        actionLabel: `Request Preview for Heritage Oaks Country Club`,
+        actionUrl: bookDemoUrl
       }
     ];
 
@@ -1205,7 +1206,6 @@ export default {
         return json({ club: club ? publicClub(club) : null }, 200, origin);
       }
       if (path === '/analytics/track' && request.method === 'POST') {
-        if (!await withinRateLimit(request, env.SEARCH_RATE_LIMITER, 'lead-event')) return rateLimited(origin);
         return trackLeadEvent(request, env, origin);
       }
       if (path === '/onboarding/start' && request.method === 'POST') {
