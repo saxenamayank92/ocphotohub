@@ -472,7 +472,7 @@ export default function AdminPortal({
       {/* Mobile Hamburger Admin Bar */}
       <div className="admin-mobile-header-bar">
         <div className="admin-mobile-active-info">
-          <ActiveTabIcon size={18} className="admin-mobile-active-icon" />
+          <ActiveTabIcon size={16} className="admin-mobile-active-icon" />
           <span className="admin-mobile-active-title">{currentTabObj.label}</span>
         </div>
         <button
@@ -481,42 +481,40 @@ export default function AdminPortal({
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           aria-label="Toggle Admin Navigation Menu"
         >
-          {mobileMenuOpen ? <X size={16} /> : <Menu size={16} />}
-          <span>Menu</span>
-          <ChevronDown size={14} className={`admin-mobile-chevron ${mobileMenuOpen ? 'open' : ''}`} />
+          {mobileMenuOpen ? <X size={15} /> : <Menu size={15} />}
+          <span>Admin Menu</span>
+          <ChevronDown size={13} className={`admin-mobile-chevron ${mobileMenuOpen ? 'open' : ''}`} />
         </button>
-      </div>
 
-      {/* Mobile Slide-down Dropdown Menu */}
-      {mobileMenuOpen && (
-        <div className="admin-mobile-menu-modal-overlay" onClick={() => setMobileMenuOpen(false)}>
-          <div className="admin-mobile-menu-dropdown animate-fade-in" onClick={e => e.stopPropagation()}>
-            <div className="admin-mobile-menu-header">
-              <span>Admin Management Views</span>
-              <button type="button" onClick={() => setMobileMenuOpen(false)}>✕</button>
-            </div>
-            <div className="admin-mobile-menu-list">
+        {/* Inline Mobile Top Popover Menu */}
+        {mobileMenuOpen && (
+          <div className="admin-mobile-popover-menu animate-fade-in">
+            <div className="admin-mobile-popover-list">
               {subTabs.map(tab => {
                 const IconComp = tab.icon;
                 return (
                   <button
                     key={tab.id}
                     type="button"
-                    className={`admin-mobile-menu-item ${activeSubTab === tab.id ? 'active' : ''}`}
+                    className={`admin-mobile-popover-item ${activeSubTab === tab.id ? 'active' : ''}`}
                     onClick={() => {
                       setActiveSubTab(tab.id);
                       setMobileMenuOpen(false);
                     }}
                   >
-                    <IconComp size={18} />
+                    <IconComp size={16} />
                     <span>{tab.label}</span>
-                    {activeSubTab === tab.id && <CheckCircle2 size={16} className="active-check" />}
+                    {activeSubTab === tab.id && <CheckCircle2 size={15} className="active-check" />}
                   </button>
                 );
               })}
             </div>
           </div>
-        </div>
+        )}
+      </div>
+
+      {mobileMenuOpen && (
+        <div className="admin-mobile-popover-backdrop" onClick={() => setMobileMenuOpen(false)} />
       )}
 
       {/* Desktop Sidebar Navigation */}
