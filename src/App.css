@@ -4351,3 +4351,148 @@
     min-height: 42px;
   }
 }
+
+/* --- MOBILE ADMIN HAMBURGER NAVIGATION --- */
+.admin-mobile-header-bar {
+  display: none;
+}
+
+@media (max-width: 860px) {
+  .admin-mobile-header-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    background: #ffffff;
+    border: 1px solid var(--club-gray);
+    border-radius: 14px;
+    margin-bottom: 14px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    width: 100%;
+  }
+
+  .admin-mobile-active-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 800;
+    font-size: 13.5px;
+    color: var(--club-navy);
+    overflow: hidden;
+  }
+
+  .admin-mobile-active-icon {
+    color: #2563eb;
+    flex-shrink: 0;
+  }
+
+  .admin-mobile-active-title {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .admin-mobile-hamburger-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    background: var(--club-navy);
+    color: #ffffff;
+    border: none;
+    border-radius: 99px;
+    font-size: 12px;
+    font-weight: 800;
+    cursor: pointer;
+    flex-shrink: 0;
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.2);
+  }
+
+  .admin-mobile-chevron {
+    transition: transform 0.2s ease;
+  }
+
+  .admin-mobile-chevron.open {
+    transform: rotate(180deg);
+  }
+
+  .desktop-only-sidebar {
+    display: none !important;
+  }
+
+  .admin-mobile-menu-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: rgba(15, 23, 42, 0.65);
+    backdrop-filter: blur(6px);
+    display: flex;
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .admin-mobile-menu-dropdown {
+    background: #ffffff;
+    width: 100%;
+    border-top-left-radius: 24px;
+    border-top-right-radius: 24px;
+    padding: 20px 16px 32px 16px;
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.25);
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+
+  .admin-mobile-menu-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--club-gray);
+    margin-bottom: 14px;
+    font-weight: 800;
+    font-size: 15px;
+    color: var(--club-navy);
+  }
+
+  .admin-mobile-menu-header button {
+    background: none;
+    border: none;
+    font-size: 20px;
+    color: #64748b;
+    cursor: pointer;
+  }
+
+  .admin-mobile-menu-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .admin-mobile-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 13px 16px;
+    border-radius: 14px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    background: #f8fafc;
+    color: #334155;
+    font-size: 14px;
+    font-weight: 700;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .admin-mobile-menu-item.active {
+    background: #eff6ff;
+    border-color: #3b82f6;
+    color: #1d4ed8;
+    font-weight: 800;
+  }
+
+  .admin-mobile-menu-item .active-check {
+    margin-left: auto;
+    color: #2563eb;
+  }
+}

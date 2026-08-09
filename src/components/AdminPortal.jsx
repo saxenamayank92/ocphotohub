@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   Users, Image as ImageIcon, BarChart3, Heart,
-  Building2, Trash2, RefreshCw, Upload, FileSpreadsheet, Key, X, FileText, UserPlus, Edit2, Search, HardDrive, Shield, CheckCircle2, ShieldAlert, Crown, Lock
+  Building2, Trash2, RefreshCw, Upload, FileSpreadsheet, Key, X, FileText, UserPlus, Edit2, Search, HardDrive, Shield, CheckCircle2, ShieldAlert, Crown, Lock, Menu, ChevronDown
 } from 'lucide-react';
 import PhotoGallery from './PhotoGallery';
 import { resolveApiUrl } from '../api';
@@ -27,6 +27,19 @@ export default function AdminPortal({
   addToast
 }) {
   const [activeSubTab, setActiveSubTab] = useState('gallery'); // 'gallery' | 'clubs' | 'dashboard' | 'members' | 'moderation' | 'cloud'
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const subTabs = [
+    { id: 'gallery', label: 'Member Gallery Feed', icon: ImageIcon },
+    { id: 'clubs', label: 'Club Setup & Branding', icon: Building2 },
+    { id: 'dashboard', label: 'Overview & Analytics', icon: BarChart3 },
+    { id: 'members', label: 'Member & Staff Directory', icon: Users },
+    { id: 'moderation', label: 'Moderate Photos', icon: Shield },
+    { id: 'cloud', label: 'Storage Usage', icon: HardDrive },
+  ];
+
+  const currentTabObj = subTabs.find(t => t.id === activeSubTab) || subTabs[0];
+  const ActiveTabIcon = currentTabObj.icon;
 
   // Club settings state
   const [clubName, setClubName] = useState(club.name || '');
@@ -456,8 +469,58 @@ export default function AdminPortal({
   return (
     <div className="admin-portal-layout animate-fade-in">
       
-      {/* Sidebar Navigation */}
-      <div className="admin-sidebar">
+      {/* Mobile Hamburger Admin Bar */}
+      <div className="admin-mobile-header-bar">
+        <div className="admin-mobile-active-info">
+          <ActiveTabIcon size={18} className="admin-mobile-active-icon" />
+          <span className="admin-mobile-active-title">{currentTabObj.label}</span>
+        </div>
+        <button
+          type="button"
+          className="admin-mobile-hamburger-btn"
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          aria-label="Toggle Admin Navigation Menu"
+        >
+          {mobileMenuOpen ? <X size={16} /> : <Menu size={16} />}
+          <span>Menu</span>
+          <ChevronDown size={14} className={`admin-mobile-chevron ${mobileMenuOpen ? 'open' : ''}`} />
+        </button>
+      </div>
+
+      {/* Mobile Slide-down Dropdown Menu */}
+      {mobileMenuOpen && (
+        <div className="admin-mobile-menu-modal-overlay" onClick={() => setMobileMenuOpen(false)}>
+          <div className="admin-mobile-menu-dropdown animate-fade-in" onClick={e => e.stopPropagation()}>
+            <div className="admin-mobile-menu-header">
+              <span>Admin Management Views</span>
+              <button type="button" onClick={() => setMobileMenuOpen(false)}>✕</button>
+            </div>
+            <div className="admin-mobile-menu-list">
+              {subTabs.map(tab => {
+                const IconComp = tab.icon;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    className={`admin-mobile-menu-item ${activeSubTab === tab.id ? 'active' : ''}`}
+                    onClick={() => {
+                      setActiveSubTab(tab.id);
+                      setMobileMenuOpen(false);
+                    }}
+                  >
+                    <IconComp size={18} />
+                    <span>{tab.label}</span>
+                    {activeSubTab === tab.id && <CheckCircle2 size={16} className="active-check" />}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Desktop Sidebar Navigation */}
+      <div className="admin-sidebar desktop-only-sidebar">
         <div className="admin-sidebar-header">
           <div className="sidebar-logo-box">
             {club.logoUrl ? (
@@ -475,24 +538,18 @@ export default function AdminPortal({
         </div>
 
         <div className="admin-sidebar-nav-list">
-          <button className={`admin-menu-btn ${activeSubTab === 'gallery' ? 'active' : ''}`} onClick={() => setActiveSubTab('gallery')}>
-            <ImageIcon size={16} /> Member Gallery Feed
-          </button>
-          <button className={`admin-menu-btn ${activeSubTab === 'clubs' ? 'active' : ''}`} onClick={() => setActiveSubTab('clubs')}>
-            <Building2 size={16} /> Club Setup & Branding
-          </button>
-          <button className={`admin-menu-btn ${activeSubTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveSubTab('dashboard')}>
-            <BarChart3 size={16} /> Overview & Analytics
-          </button>
-          <button className={`admin-menu-btn ${activeSubTab === 'members' ? 'active' : ''}`} onClick={() => setActiveSubTab('members')}>
-            <Users size={16} /> Member & Staff Directory
-          </button>
-          <button className={`admin-menu-btn ${activeSubTab === 'moderation' ? 'active' : ''}`} onClick={() => setActiveSubTab('moderation')}>
-            <Shield size={16} /> Moderate Photos
-          </button>
-          <button className={`admin-menu-btn ${activeSubTab === 'cloud' ? 'active' : ''}`} onClick={() => setActiveSubTab('cloud')}>
-            <HardDrive size={16} /> Storage Usage
-          </button>
+          {subTabs.map(tab => {
+            const IconComp = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                className={`admin-menu-btn ${activeSubTab === tab.id ? 'active' : ''}`}
+                onClick={() => setActiveSubTab(tab.id)}
+              >
+                <IconComp size={16} /> {tab.label}
+              </button>
+            );
+          })}
         </div>
 
         {!demoMode && (
