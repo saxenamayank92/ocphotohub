@@ -920,7 +920,7 @@ export default function LeadDashboard() {
                 👉 Custom Workspace Preview: <code>https://clubphotohub.com/preview/{encodeURIComponent(previewLead.leadCode || previewLead.id)}</code>
               </div>
               <div className="offer-preview">
-                <strong>💡 Self-Funding Software:</strong> Private Event Vaults feature is included <strong>FREE</strong> for early partner clubs. By offering private 30-day photo vaults to members hosting weddings & galas at {previewLead.clubName} ($80–$200 on event invoices), the software completely pays for itself while generating new catering margin.
+                <strong>💡 Self-Funding Software:</strong> Private Event Vaults feature is included <strong>FREE</strong> for early partner clubs. By offering private 30-day photo vaults to members hosting weddings, tournaments & social events at {previewLead.clubName} ($80–$200 on event invoices), the software completely pays for itself while generating new catering margin.
               </div>
               <p>Would love to hear your thoughts on whether this fits {previewLead.clubName}'s 2026 member engagement goals.</p>
               <p>Best regards,<br /><strong>Mayank Saxena</strong><br />Founder, Club PhotoHub</p>
