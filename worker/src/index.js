@@ -707,14 +707,40 @@ Respond directly, helpfully, and with high professional energy as an executive A
           `*Would you like me to dispatch the next 20 target clubs right now? Just click the **🚀 Dispatch Next 20** chip above or reply \`target next 20 clubs\`!*`;
 
       } else if (lower.includes('gemini') || lower.includes('check api') || lower.includes('api key') || lower.includes('working')) {
-        toolAction = 'GEMINI_STATUS_AUDIT';
-        const hasKey = Boolean(apiKey);
-        replyText = `⚙️ **Hunter AI Engine & Gemini LLM Status Audit**\n\n` +
-          `• **Gemini API Key Bound**: ${hasKey ? '🟢 Active & Ready' : '⚠️ Not detected in environment or input modal.'}\n` +
-          `• **MailerSend Binding**: ${env.MAILERSEND_API_TOKEN ? '🟢 Active (Live Email Delivery)' : '✉️ Fallback (1-click compose links)'}\n` +
-          `• **D1 Sales Database**: 🟢 Active (${(await env.DB.prepare("SELECT COUNT(*) as count FROM sales_leads").first())?.count || 177} Total Private Clubs)\n` +
-          `• **Anti-Spam Suppression**: 🟢 Active (${(await env.DB.prepare("SELECT COUNT(*) as count FROM suppression_list").first())?.count || 66} Locked Contacts)\n\n` +
-          (hasKey ? `Gemini LLM reasoning is live! Ask me any custom strategy question.` : `💡 *To enable deep Gemini LLM reasoning for custom responses, click **Agent Settings** in the top right corner and paste your Gemini API Key!*`);
+        toolAction = 'GEMINI_LIVE_TEST';
+        if (!apiKey) {
+          replyText = `⚙️ **Gemini API Key Status**: ⚠️ **No API Key Found** in Worker secrets (\`env.GEMINI_API_KEY\`) or request body.\n\nTo enable live Gemini AI LLM reasoning:\n1. Click **Agent Settings** in the top right corner of Hunter's console.\n2. Paste your Gemini API key (starts with \`AIzaSy...\`).\n3. Click **Save Settings**!`;
+        } else {
+          try {
+            const startTime = Date.now();
+            const testRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents: [{ parts: [{ text: "Hello! Confirm in 1 concise sentence that you are online and working as Hunter AI Sales Agent for Club PhotoHub." }] }]
+              })
+            });
+
+            const duration = Date.now() - startTime;
+            if (testRes.ok) {
+              const testData = await testRes.json();
+              const reply = testData?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+              replyText = `🟢 **Gemini AI API is 100% LIVE and WORKING!** (Responded in ${duration}ms)\n\n` +
+                `**Live LLM Response from Gemini**: "${reply.trim()}"\n\n` +
+                `• **Model**: \`gemini-1.5-flash\`\n` +
+                `• **Endpoint**: Google Generative AI API v1beta\n` +
+                `• **Latency**: ${duration}ms\n` +
+                `• **HTTP Status**: 200 OK`;
+            } else {
+              const errBody = await testRes.text();
+              replyText = `❌ **Gemini API Test Response** (HTTP ${testRes.status})\n\n` +
+                `**Error Details**: \`${errBody.slice(0, 300)}\`\n\n` +
+                `*Tip: Check if your GEMINI_API_KEY is valid or enter a custom key in Agent Settings!*`;
+            }
+          } catch (e) {
+            replyText = `❌ **Gemini API Connection Failed**: ${e.message}`;
+          }
+        }
 
       } else if (lower.includes('database') || lower.includes('20 clubs') || lower.includes('outlook') || lower.includes('target')) {
         toolAction = 'STRATEGIC_CAMPAIGN_CONFIGURED';
