@@ -604,16 +604,18 @@ export default function AdminPortal({
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
                 <DollarSign size={22} style={{ color: '#fbbf24' }} />
                 <h3 style={{ margin: 0, fontSize: '17px', fontWeight: '800', color: '#fbbf24' }}>
-                  Your Club Sets the Price. 100% Offline Billing.
+                  Flexible Pricing — 100% Dependent on Your Club's Strategy
                 </h3>
               </div>
               <p style={{ margin: '0 0 16px', fontSize: '13.5px', color: '#cbd5e1', lineHeight: '1.6' }}>
-                Charge your members <strong>$250 – $750+</strong> directly on their monthly banquet invoice or catering statement. <strong>Club PhotoHub charges $0 transaction fees</strong> and handles zero billing. It's 100% new event margin for your club.
+                You have complete freedom over event pricing. While standalone consumer event platforms typically charge <strong>$250 to $600+ per single wedding</strong>, your club can bundle Private Event Vaults into catering packages or bill <strong>$350 – $750+</strong> directly on the member's monthly banquet invoice.
+                <br /><br />
+                <strong>Club PhotoHub charges $0 per-event transaction fees</strong> and handles zero billing. 100% of the event revenue stays directly with your club.
               </p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', fontSize: '12.5px', color: '#94a3b8', borderTop: '1px solid rgba(255, 255, 255, 0.1)', paddingTop: '14px' }}>
-                <span>✓ <strong>$0 Platform Fee</strong> per event</span>
-                <span>✓ <strong>Offline Billing</strong> on club statement</span>
-                <span>✓ <strong>Unlimited Photos & Downloads</strong></span>
+                <span>✓ <strong>Industry Benchmark:</strong> External vendors charge $250–$600/event</span>
+                <span>✓ <strong>Offline Billing:</strong> Direct on club account or banquet invoice</span>
+                <span>✓ <strong>$0 Transaction Fee:</strong> Keep 100% of event margin</span>
               </div>
             </div>
 
