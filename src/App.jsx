@@ -496,22 +496,54 @@ export default function App() {
 
   return (
     <div className="app-container">
-      <Header user={currentUser} club={currentClub || clubBrand} isAdmin={isAdmin} activeTab={activeTab} setActiveTab={setActiveTab} onLogout={handleLogout} />
-      {(demoMode || isPreviewMode) && (
-        <div className="demo-mode-banner">
-          <div className="demo-banner-copy">
-            <span><Sparkles size={14} /> Concept Preview for <strong>{currentClub?.name || 'Your Club'} Leadership</strong></span>
-            {isPreviewMode && (
-              <button type="button" className="preview-banner-claim-btn" onClick={() => setClaimModalOpen(true)}>
-                Claim Workspace →
-              </button>
-            )}
+      {isPreviewMode ? (
+        <div className="preview-top-bar">
+          <div className="preview-bar-left">
+            <img src={platformBrand.mark} alt="Club PhotoHub" className="preview-bar-logo" />
+            <span className="preview-bar-title">{currentClub?.name || 'Club'}</span>
           </div>
-          <div className="demo-view-switcher" role="tablist" aria-label="Demo view">
-            <button type="button" role="tab" aria-selected={!demoAdminView} className={!demoAdminView ? 'active' : ''} onClick={() => handleDemoViewChange('member')}>Member view</button>
-            <button type="button" role="tab" aria-selected={demoAdminView} className={demoAdminView ? 'active' : ''} onClick={() => handleDemoViewChange('admin')}>Admin view</button>
+          <div className="preview-view-toggle" role="tablist" aria-label="Preview View Toggle">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={!demoAdminView}
+              className={!demoAdminView ? 'active' : ''}
+              onClick={() => handleDemoViewChange('member')}
+            >
+              Member view
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={demoAdminView}
+              className={demoAdminView ? 'active' : ''}
+              onClick={() => handleDemoViewChange('admin')}
+            >
+              Admin view
+            </button>
+          </div>
+          <div className="preview-bar-right">
+            <button type="button" className="preview-claim-cta" onClick={() => setClaimModalOpen(true)}>
+              Claim Workspace <span className="desktop-only-inline">for {currentClub?.name}</span> →
+            </button>
           </div>
         </div>
+      ) : (
+        <>
+          <Header user={currentUser} club={currentClub || clubBrand} isAdmin={isAdmin} activeTab={activeTab} setActiveTab={setActiveTab} onLogout={handleLogout} />
+          {demoMode && (
+            <div className="demo-mode-banner">
+              <div className="demo-banner-copy">
+                <span><Sparkles size={14} /> Exploring the interactive Demo Club</span>
+                <a href="/book-demo">See this for your club →</a>
+              </div>
+              <div className="demo-view-switcher" role="tablist" aria-label="Demo view">
+                <button type="button" role="tab" aria-selected={!demoAdminView} className={!demoAdminView ? 'active' : ''} onClick={() => handleDemoViewChange('member')}>Member view</button>
+                <button type="button" role="tab" aria-selected={demoAdminView} className={demoAdminView ? 'active' : ''} onClick={() => handleDemoViewChange('admin')}>Admin view</button>
+              </div>
+            </div>
+          )}
+        </>
       )}
       {!demoMode && trialDaysLeft !== null && currentUser?.role === 'owner' && <div className={`trial-status-banner ${trialDaysLeft === 0 ? 'expired' : ''}`}><span>{trialDaysLeft > 0 ? `${trialDaysLeft} days left in your free trial` : 'Your trial has ended. This workspace is now read-only.'}</span><a href="/pricing#pricing-links">Choose a plan</a></div>}
       <main className="content-wrapper">
@@ -523,7 +555,7 @@ export default function App() {
           {activeTab === 'account' && <AccountSettings user={currentUser} club={currentClub || clubBrand} isAdmin={isAdmin} demoMode={demoMode} onDeleteAccount={handleDeleteAccount} onDeleteOrganization={handleDeleteOrganization} addToast={addToast} />}
         </Suspense>
       </main>
-      <MobileBottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
+      {(!isPreviewMode || !demoAdminView) && <MobileBottomNav activeTab={activeTab} setActiveTab={setActiveTab} />}
       <div className="toast-container">
         {toasts.map(toast => <div key={toast.id} className={`toast ${toast.type}`}>
           {toast.type === 'success' && <ShieldCheck size={16} />}
