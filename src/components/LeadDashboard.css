@@ -867,6 +867,8 @@
   .form-row-2 {
     grid-template-columns: 1fr;
   }
+}
+
 /* ==========================================================================
    70% LEFT / 30% RIGHT SPLIT DASHBOARD LAYOUT
    ========================================================================== */
@@ -874,18 +876,20 @@
   display: flex;
   gap: 24px;
   align-items: flex-start;
+  max-width: 1600px;
+  margin: 0 auto;
   width: 100%;
 }
 
 .lead-dashboard-main-col {
-  flex: 0 0 68%;
-  max-width: 68%;
+  flex: 0 0 66%;
+  max-width: 66%;
   min-width: 0;
 }
 
 .lead-dashboard-agent-col {
-  flex: 0 0 32%;
-  max-width: 32%;
+  flex: 0 0 34%;
+  max-width: 34%;
   min-width: 0;
   position: sticky;
   top: 24px;
