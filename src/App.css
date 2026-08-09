@@ -22,6 +22,46 @@
 .demo-banner-copy > span,
 .demo-banner-copy > a { display: inline-flex; align-items: center; gap: 6px; }
 .demo-mode-banner a { padding: 5px 9px; border-radius: 999px; color: var(--club-green-dark); background: #fff; font-weight: 750; text-decoration: none; }
+.preview-banner-claim-btn { padding: 5px 12px; border-radius: 999px; color: #0f172a; background: #fbbf24; font-weight: 800; border: none; cursor: pointer; transition: transform 0.15s ease; }
+.preview-banner-claim-btn:hover { transform: scale(1.04); background: #f59e0b; }
+
+/* Claim Modal Overlay */
+.preview-claim-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.preview-claim-modal {
+  background: #ffffff;
+  border-radius: 20px;
+  max-width: 460px;
+  width: 100%;
+  padding: 32px;
+  position: relative;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
+  text-align: center;
+}
+
+.preview-modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: #f1f5f9;
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-weight: bold;
+  color: #64748b;
+  cursor: pointer;
+}
 
 .demo-explorer-conversion-bar {
   position: fixed;

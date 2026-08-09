@@ -32,25 +32,90 @@ export default function App() {
   const pathSlugCandidate = window.location.pathname.match(/^\/([a-z0-9][a-z0-9-]{0,59})\/?$/i)?.[1]?.toLowerCase() || null;
   const directPathSlug = pathSlugCandidate === 'app' ? null : pathSlugCandidate;
   const directClubId = directPathSlug;
+  // Dynamic Club Preview Matching
+  const previewMatch = typeof window !== 'undefined' && window.location.pathname.match(/^\/preview\/([a-z0-9-]+)\/?$/i);
+  const previewClubCode = previewMatch ? previewMatch[1] : null;
+  const isPreviewMode = Boolean(previewClubCode);
+
+  const formatClubNameFromSlug = (slug) => {
+    if (!slug) return 'Your Private Club';
+    return slug
+      .split('-')
+      .map(word => {
+        if (word === 's') return "'s";
+        return word.charAt(0).toUpperCase() + word.slice(1);
+      })
+      .join(' ')
+      .replace(/\s+'s/g, "'s")
+      .replace(/\b(And|&)\b/gi, '&');
+  };
+
   const queryParams = new URLSearchParams(window.location.search);
-  // The bundled sample club is also available in the native shell. This gives
-  // prospective clubs and App Review a complete, credential-free walkthrough
-  // without changing real club sign-in or data access.
   const demoMode = queryParams.get('demo') === '1';
-  const initialDemoAdmin = demoMode && queryParams.get('demoView') === 'admin';
+  const initialDemoAdmin = (demoMode || isPreviewMode) && queryParams.get('demoView') === 'admin';
   const [demoAdminView, setDemoAdminView] = useState(initialDemoAdmin);
-  const [currentUser, setCurrentUser] = useState(initialDemoAdmin ? demoAdminUser : (demoMode ? demoUser : null));
+  const [currentUser, setCurrentUser] = useState(initialDemoAdmin ? demoAdminUser : ((demoMode || isPreviewMode) ? demoUser : null));
   const [isAdmin, setIsAdmin] = useState(initialDemoAdmin);
   const [activeTab, setActiveTab] = useState(initialDemoAdmin ? 'admin' : 'gallery');
-  const [members, setMembers] = useState(demoMode ? demoMembers : []);
-  const [photos, setPhotos] = useState(demoMode ? demoPhotos : []);
+  const [members, setMembers] = useState((demoMode || isPreviewMode) ? demoMembers : []);
+  const [photos, setPhotos] = useState((demoMode || isPreviewMode) ? demoPhotos : []);
   const [toasts, setToasts] = useState([]);
   const [cloudActive, setCloudActive] = useState(false);
   const [clubs, setClubs] = useState(cloudApiEnabled ? [] : [clubBrand]);
-  const [currentClub, setCurrentClub] = useState(demoMode ? demoClub : null);
+  const [currentClub, setCurrentClub] = useState(() => {
+    if (isPreviewMode) {
+      const defaultName = formatClubNameFromSlug(previewClubCode);
+      return {
+        id: previewClubCode,
+        name: defaultName,
+        subtitle: `${defaultName.toUpperCase()} - PRIVATE GALLERY`,
+        logo: '/club-photo-hub-mark.svg',
+        organizationType: 'Private Club'
+      };
+    }
+    if (demoMode) return demoClub;
+    return null;
+  });
   const [startupError, setStartupError] = useState('');
   const [cameraFiles, setCameraFiles] = useState(null);
   const [showClubOnboarding, setShowClubOnboarding] = useState(() => new URLSearchParams(window.location.search).get('onboard') === 'club');
+  const [claimModalOpen, setClaimModalOpen] = useState(false);
+  const [claimSubmitted, setClaimSubmitted] = useState(false);
+  const [claimForm, setClaimForm] = useState({ name: '', email: '', phone: '' });
+
+  useEffect(() => {
+    if (!previewClubCode) return;
+    const fetchLeadDetails = async () => {
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL || 'https://pictide-api.summer-wind-c5c6.workers.dev';
+        const res = await fetch(`${apiUrl}/api/leads/preview?code=${encodeURIComponent(previewClubCode)}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.lead) {
+            const rawClubName = data.lead.club_name ? data.lead.club_name.split('(')[0].trim() : formatClubNameFromSlug(previewClubCode);
+            const leadDomain = data.lead.contact_email ? data.lead.contact_email.split('@')[1] : null;
+            setCurrentClub({
+              id: data.lead.lead_code || previewClubCode,
+              name: rawClubName,
+              subtitle: `${rawClubName.toUpperCase()} - PRIVATE GALLERY`,
+              logo: leadDomain ? `https://logo.clearbit.com/${leadDomain}` : '/club-photo-hub-mark.svg',
+              organizationType: data.lead.organization_type || 'Private Club'
+            });
+            if (data.lead.contact_first_name && data.lead.contact_first_name !== 'General') {
+              setClaimForm(prev => ({
+                ...prev,
+                name: `${data.lead.contact_first_name} ${data.lead.contact_last_name || ''}`.trim(),
+                email: data.lead.contact_email || ''
+              }));
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to load lead preview:', err);
+      }
+    };
+    fetchLeadDetails();
+  }, [previewClubCode]);
   const trialDaysLeft = currentClub?.planStatus === 'trialing' && currentClub.trialEndsAt
     ? Math.max(0, Math.ceil((Date.parse(currentClub.trialEndsAt) - Date.now()) / (24 * 60 * 60 * 1000)))
     : null;
@@ -425,16 +490,6 @@ export default function App() {
 
   if (startupError) return <div className="login-screen"><div className="login-card startup-error-card" role="alert"><ShieldCheck size={42} /><h1>Club PhotoHub is taking a moment</h1><p>{startupError}</p><button type="button" className="btn-primary login-btn" onClick={() => window.location.reload()}>Try again</button></div></div>;
 
-  const previewMatch = typeof window !== 'undefined' && window.location.pathname.match(/^\/preview\/([a-z0-9-]+)\/?$/i);
-  if (previewMatch) {
-    const ClubPreviewPage = lazy(() => import('./components/ClubPreviewPage'));
-    return (
-      <Suspense fallback={<div className="preview-page-root" style={{ padding: 40, textAlign: 'center', color: '#fbbf24' }}>Loading Custom Club Preview...</div>}>
-        <ClubPreviewPage clubCode={previewMatch[1]} />
-      </Suspense>
-    );
-  }
-
   if (!currentUser) {
     if (showClubOnboarding) return <ClubOnboarding onStart={startClubOnboarding} onComplete={handleCompleteClubOnboarding} onCancel={() => { setShowClubOnboarding(false); window.history.replaceState({}, '', '/app'); }} />;
     return <Login clubs={clubs} directClubId={directClubId} members={members} onSearchClubs={searchCloudClubs} onLoginSuccess={handleLoginSuccess} onCloudLogin={handleCloudLogin} onCloudCheckMember={checkCloudMember} onCloudRequestRegistrationCode={requestRegistrationCode} onCloudRegister={handleCloudRegister} onRequestPasswordReset={requestCloudPasswordReset} onCompletePasswordReset={completeCloudPasswordReset} onRequestAdminPasswordReset={requestAdminPasswordReset} onCompleteAdminPasswordReset={completeAdminPasswordReset} onRegisterPassword={handleRegisterPassword} onCreateClub={() => { setShowClubOnboarding(true); window.history.replaceState({}, '', '/app?onboard=club'); }} onOpenDemo={() => { const demoUrl = new URL(window.location.href); demoUrl.searchParams.set('demo', '1'); demoUrl.searchParams.delete('demoView'); if (typeof window !== 'undefined' && window.history?.pushState) { window.history.pushState({}, '', `${demoUrl.pathname}${demoUrl.search}`); } setCurrentUser(demoUser); setCurrentClub(demoClub); setIsAdmin(false); setActiveTab('gallery'); setMembers(demoMembers); setPhotos(demoPhotos); }} firebaseEnabled={cloudApiEnabled || import.meta.env.DEV} />;
@@ -443,25 +498,31 @@ export default function App() {
   return (
     <div className="app-container">
       <Header user={currentUser} club={currentClub || clubBrand} isAdmin={isAdmin} activeTab={activeTab} setActiveTab={setActiveTab} onLogout={handleLogout} />
-      {demoMode && <div className="demo-mode-banner">
+      {(demoMode || isPreviewMode) && <div className="demo-mode-banner">
         <div className="demo-banner-copy">
-          <span><Sparkles size={15} /> Exploring the interactive Demo Club</span>
-          <a href="/book-demo">See this for your club →</a>
+          <span><Sparkles size={15} /> {isPreviewMode ? <>Private Concept Preview Exclusively Prepared for <strong>{currentClub?.name || 'Your Club'} Leadership</strong></> : <>Exploring the interactive Demo Club</>}</span>
+          {isPreviewMode ? (
+            <button type="button" className="preview-banner-claim-btn" onClick={() => setClaimModalOpen(true)}>
+              Claim Workspace for {currentClub?.name} →
+            </button>
+          ) : (
+            <a href="/book-demo">See this for your club →</a>
+          )}
         </div>
         <div className="demo-view-switcher" role="tablist" aria-label="Demo view">
           <button type="button" role="tab" aria-selected={!demoAdminView} className={!demoAdminView ? 'active' : ''} onClick={() => handleDemoViewChange('member')}>Member view</button>
           <button type="button" role="tab" aria-selected={demoAdminView} className={demoAdminView ? 'active' : ''} onClick={() => handleDemoViewChange('admin')}>Admin view</button>
         </div>
       </div>}
-      {demoMode && (
+      {(demoMode || isPreviewMode) && (
         <div className="demo-explorer-conversion-bar">
           <div className="demo-explorer-copy">
-            <strong>Imagine this with your club's branding.</strong>
-            <span>We'll build a private sample workspace with your club's colors & logo.</span>
+            <strong>{isPreviewMode ? `Evaluating ${currentClub?.name}'s Private Gallery Workspace` : "Imagine this with your club's branding."}</strong>
+            <span>{isPreviewMode ? 'Ready to activate a 30-day trial for your members & staff?' : "We'll build a private sample workspace with your club's colors & logo."}</span>
           </div>
-          <a href="/book-demo" className="demo-explorer-cta">
-            Show me my club's version <ArrowRight size={16} />
-          </a>
+          <button type="button" className="demo-explorer-cta" onClick={() => isPreviewMode ? setClaimModalOpen(true) : window.location.assign('/book-demo')}>
+            {isPreviewMode ? `Claim ${currentClub?.name} Workspace` : "Show me my club's version"} <ArrowRight size={16} />
+          </button>
         </div>
       )}
       {!demoMode && trialDaysLeft !== null && currentUser?.role === 'owner' && <div className={`trial-status-banner ${trialDaysLeft === 0 ? 'expired' : ''}`}><span>{trialDaysLeft > 0 ? `${trialDaysLeft} days left in your free trial` : 'Your trial has ended. This workspace is now read-only.'}</span><a href="/pricing#pricing-links">Choose a plan</a></div>}
@@ -483,6 +544,54 @@ export default function App() {
           <span>{toast.message}</span>
         </div>)}
       </div>
+
+      {claimModalOpen && (
+        <div className="preview-claim-modal-overlay" onClick={() => setClaimModalOpen(false)}>
+          <div className="preview-claim-modal" onClick={e => e.stopPropagation()}>
+            <button type="button" className="preview-modal-close" onClick={() => setClaimModalOpen(false)}>✕</button>
+            {claimSubmitted ? (
+              <div className="preview-claim-success">
+                <ShieldCheck size={48} style={{ color: '#10b981', margin: '0 auto 16px auto' }} />
+                <h2 style={{ fontSize: '1.4rem', color: '#0f172a', marginBottom: 8 }}>Workspace Claimed!</h2>
+                <p style={{ color: '#64748b', fontSize: '0.92rem', marginBottom: 24, lineHeight: 1.5 }}>
+                  Thank you! Mayank Saxena will reach out directly to set up your custom workspace domain for {currentClub?.name}.
+                </p>
+                <button type="button" className="btn-primary" onClick={() => setClaimModalOpen(false)} style={{ width: '100%', padding: '12px 20px', borderRadius: 99, background: '#0f172a', color: '#fff', border: 'none', fontWeight: 700, cursor: 'pointer' }}>
+                  Explore Gallery
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                setClaimSubmitted(true);
+                addToast(`Claim request sent for ${currentClub?.name}! We'll contact you shortly.`, 'success');
+              }}>
+                <h2 style={{ fontSize: '1.4rem', color: '#0f172a', marginBottom: 6, fontWeight: 800 }}>Activate {currentClub?.name} Workspace</h2>
+                <p style={{ color: '#64748b', fontSize: '0.9rem', marginBottom: 20 }}>
+                  Start your 30-day trial for {currentClub?.name} members, staff & board of directors.
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14, textAlign: 'left' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#334155', marginBottom: 4 }}>Your Full Name</label>
+                    <input type="text" required value={claimForm.name} onChange={e => setClaimForm({ ...claimForm, name: e.target.value })} placeholder="John Smith" style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: '0.95rem' }} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#334155', marginBottom: 4 }}>Executive / Business Email</label>
+                    <input type="email" required value={claimForm.email} onChange={e => setClaimForm({ ...claimForm, email: e.target.value })} placeholder="gm@graniteclub.com" style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: '0.95rem' }} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#334155', marginBottom: 4 }}>Phone (Optional)</label>
+                    <input type="tel" value={claimForm.phone} onChange={e => setClaimForm({ ...claimForm, phone: e.target.value })} placeholder="(416) 555-0199" style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: '0.95rem' }} />
+                  </div>
+                  <button type="submit" style={{ width: '100%', marginTop: 8, padding: '12px 20px', borderRadius: 99, background: '#0f172a', color: '#fbbf24', border: 'none', fontWeight: 800, fontSize: '0.95rem', cursor: 'pointer' }}>
+                    Activate 30-Day Free Trial →
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
