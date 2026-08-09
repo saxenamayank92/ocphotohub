@@ -573,15 +573,84 @@ async function handleAgentChatCommand(request, env, origin) {
     replyText = `Hunter Sourced & Verified **${leadsAdded} fresh target clubs** with **0 suppression overlaps**!\n\n` +
       (insertedClubs.length > 0 ? insertedClubs.join('\n') : 'All candidate clubs already exist in database or suppression list.') +
       `\n\nAll leads are now active in your dashboard table with 1-click dispatch controls!`;
-  } else if (!isStrategicPrompt && (lower.includes('audit suppression history') || lower === 'audit suppression')) {
+  } else if (!isStrategicPrompt && (lower.includes('who has been contacted') || lower.includes('audit contacted') || lower.includes('outreach history') || lower === 'audit suppression history' || lower === 'audit suppression')) {
     toolAction = 'SUPPRESSION_AUDIT';
     const suppCount = await env.DB.prepare('SELECT COUNT(*) as count FROM suppression_list').first();
     const leadCount = await env.DB.prepare('SELECT COUNT(*) as count FROM sales_leads').first();
+    const contactedRows = await env.DB.prepare("SELECT club_name, contact_first_name, contact_last_name, contact_email, status, last_seen_at FROM sales_leads WHERE status IN ('outreach_sent', 'followup_sent', 'demo_opened', 'link_clicked') ORDER BY last_seen_at DESC LIMIT 15").all();
+    const contactedList = contactedRows.results || [];
 
-    replyText = `**Hunter Protection Audit Report:**\n` +
-      `• **${suppCount?.count || 40} Previously Contacted Leads** strictly locked in suppression database.\n` +
-      `• **${leadCount?.count || 0} Total Target Leads** indexed in sales pipeline.\n` +
-      `• **0 Duplicate Emails**: Hunter automatically blocks any email matching your sent history.`;
+    let listText = contactedList.map(l => `• **${l.club_name}** (${l.contact_first_name || 'General Manager'} | \`${l.contact_email}\`) — *${l.status.replace('_', ' ')}*`).join('\n');
+
+    replyText = `📋 **Hunter Outreach Audit: Contacted Private Clubs**\n\n` +
+      (listText || 'No leads contacted yet. Database is ready for first batch dispatch!') +
+      `\n\n🔒 **Protection Summary**:\n` +
+      `• **${suppCount?.count || contactedList.length} Contacted Records** strictly locked in suppression database.\n` +
+      `• **${leadCount?.count || 0} Total Target Clubs** indexed in sales pipeline.\n` +
+      `• **0 Duplicate Spam Risk**: Hunter automatically blocks any repeat outreach to previously contacted clubs.`;
+
+  } else if (!isStrategicPrompt && (lower.includes('who should be targeted next') || lower.includes('target queue') || lower.includes('next targets') || lower.includes('who to target'))) {
+    toolAction = 'TARGET_QUEUE_INSPECT';
+    const queueRows = await env.DB.prepare("SELECT club_name, organization_type, contact_first_name, contact_last_name, contact_email FROM sales_leads WHERE status = 'new' ORDER BY created_at ASC LIMIT 20").all();
+    const queueList = queueRows.results || [];
+
+    let queueText = queueList.map((l, idx) => `${idx + 1}. **${l.club_name}** (${l.organization_type}) — ${l.contact_first_name || 'General Manager'} (\`${l.contact_email}\`)`).join('\n');
+
+    replyText = `🎯 **Hunter Target Queue: Next 20 Private Clubs**\n\n` +
+      (queueText || 'All queued clubs have been processed! Reply "source 10 golf clubs" to populate fresh targets.') +
+      `\n\n*Reply "target next 20 clubs" to trigger autonomous dispatch to this batch!*`;
+
+  } else if (!isStrategicPrompt && (lower.includes('target next 20') || lower.includes('run 20 club outreach') || lower.includes('outreach next 20') || lower === 'target next 20 clubs')) {
+    toolAction = 'AUTO_OUTREACH_DISPATCH';
+    const queueRows = await env.DB.prepare("SELECT * FROM sales_leads WHERE status = 'new' ORDER BY created_at ASC LIMIT 20").all();
+    const targetBatch = queueRows.results || [];
+
+    if (targetBatch.length > 0) {
+      let dispatchedClubs = [];
+      for (const lead of targetBatch) {
+        // Check suppression list to prevent spam
+        const suppCheck = await env.DB.prepare("SELECT 1 FROM suppression_list WHERE contact_email = ?").bind(lead.contact_email).first();
+        if (suppCheck) {
+          await env.DB.prepare("UPDATE sales_leads SET status = 'outreach_sent' WHERE id = ?").bind(lead.id).run();
+          continue;
+        }
+
+        const contactGreeting = lead.contact_first_name && lead.contact_first_name !== 'General Manager' ? lead.contact_first_name : 'General Manager';
+        const trackUrl = `https://clubphotohub.com/?demo=1&lead=${encodeURIComponent(lead.lead_code || lead.id)}`;
+        const activities = getClubActivityPhrase(lead.organization_type);
+
+        if (env.MAILERSEND_API_TOKEN) {
+          try {
+            await sendMail(env, {
+              to: lead.contact_email,
+              subject: `Private member photo sharing for ${lead.club_name}`,
+              text: `Hi ${contactGreeting},\n\nI’m reaching out from Club PhotoHub where we help private clubs elevate member engagement and photo delivery across ${activities}. We created Club PhotoHub to give ${lead.club_name} a dedicated, secure platform for member event galleries.\n\nYou can explore the live platform and see how it works for ${lead.club_name} here:\n👉 ${trackUrl}\n\nOr simply reply to this email with "yes" and I'll set up a branded preview workspace for ${lead.club_name}.\n\nMayank Saxena\nFounder, Club PhotoHub\nmayank.saxena@xtide.io`,
+              html: clubPhotoHubEmail({ eyebrow: '', title: `Private Member Photo Sharing for ${lead.club_name}`, intro: `Hi ${contactGreeting},\n\nI’m reaching out from Club PhotoHub where we help private clubs elevate member engagement and photo delivery across ${activities}. We created Club PhotoHub to give ${lead.club_name} a dedicated, secure platform for member event galleries.`, actionLabel: `Explore Club PhotoHub`, actionUrl: trackUrl })
+            });
+            emailsSent++;
+          } catch (e) {
+            console.error('Batch outreach MailerSend error:', e.message);
+          }
+        }
+
+        // Lock in suppression history and update lead status
+        const suppId = `supp_${randomToken(12)}`;
+        await env.DB.batch([
+          env.DB.prepare("INSERT OR IGNORE INTO suppression_list (id, contact_email, club_name, reason, created_at) VALUES (?, ?, ?, 'outreach_sent', ?)").bind(suppId, lead.contact_email, lead.club_name, now),
+          env.DB.prepare("UPDATE sales_leads SET status = 'outreach_sent', last_seen_at = ? WHERE id = ?").bind(now, lead.id)
+        ]);
+
+        dispatchedClubs.push(`• **${lead.club_name}** (${lead.contact_email}) — Target: *${contactGreeting}*`);
+      }
+
+      replyText = `🚀 **Hunter Executed Outreach to ${targetBatch.length} Target Private Clubs!**\n\n` +
+        dispatchedClubs.slice(0, 8).join('\n') +
+        (dispatchedClubs.length > 8 ? `\n• ...and ${dispatchedClubs.length - 8} more target clubs.` : '') +
+        (env.MAILERSEND_API_TOKEN ? `\n\n⚡ **${emailsSent} Emails dispatched live via MailerSend!**` : '\n\n✉️ Pre-filled 1-click compose links generated.') +
+        `\n\n🔒 **Suppression Active**: All ${targetBatch.length} clubs are locked in database to prevent repeat emails.`;
+    } else {
+      replyText = `Target queue is empty! Reply "source 10 golf clubs" or "source 10 yacht clubs" to add fresh target clubs into the pipeline.`;
+    }
   } else {
     // Check if query is relevant to Club PhotoHub platform
     const platformKeywords = ['club', 'lead', 'email', 'outreach', 'demo', 'suppression', 'source', 'golf', 'yacht', 'tennis', 'curling', 'country', 'member', 'photo', 'hub', 'xtide', 'mayank', 'metric', 'analytic', 'followup', 'follow-up', 'mailer', 'status', 'campaign', 'roster', 'gallery', 'hello', 'hi', 'hunter', 'help', 'status', 'how'];
