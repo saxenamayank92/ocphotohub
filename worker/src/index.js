@@ -525,7 +525,7 @@ async function handleAgentChatCommand(request, env, origin) {
         subject: `[Test 1/3] Private member photo sharing for Heritage Oaks Country Club`,
         eyebrow: `Initial Cold Outreach Template`,
         title: `Private Member Photo Sharing for Heritage Oaks Country Club`,
-        intro: `Hi Mayank,\n\nI’m reaching out from The Oakville Club where we recently reviewed how private member photo sharing elevates tournament engagement and member satisfaction. We created Club PhotoHub to give private clubs a dedicated, secure platform for member event galleries.`,
+        intro: `Hi Mayank,\n\nI’m reaching out from Club PhotoHub where we help private clubs elevate member tournament engagement and photo delivery. We created Club PhotoHub to give private clubs a dedicated, secure platform for member event galleries.`,
         actionLabel: `Request Preview for Heritage Oaks Country Club`,
         actionUrl: previewUrl
       },
@@ -553,7 +553,7 @@ async function handleAgentChatCommand(request, env, origin) {
           await sendMail(env, {
             to: recipient,
             subject: t.subject,
-            text: `${t.intro}\n\n👉 ${t.actionUrl}\n\nMayank Saxena\nFood & Beverage, The Oakville Club\nmayank.saxena@xtide.io`,
+            text: `${t.intro}\n\n👉 ${t.actionUrl}\n\nMayank Saxena\nFounder, Club PhotoHub\nmayank.saxena@xtide.io`,
             html: clubPhotoHubEmail({ eyebrow: t.eyebrow, title: t.title, intro: t.intro, actionLabel: t.actionLabel, actionUrl: t.actionUrl })
           });
           emailsSent++;
@@ -564,7 +564,7 @@ async function handleAgentChatCommand(request, env, origin) {
     }
 
     replyText = `🚀 **Dispatched ${emailsSent} Test Email Templates Live via MailerSend!**\n\n` +
-      `• **Sender**: Mayank Saxena (Food & Beverage, The Oakville Club)\n` +
+      `• **Sender**: Mayank Saxena (Founder, Club PhotoHub)\n` +
       `• **Recipient**: \`${recipient}\`\n` +
       `• **Template 1**: Initial Cold Outreach\n` +
       `• **Template 2**: 4-Day Engaged Follow-Up\n` +
@@ -590,7 +590,7 @@ async function handleAgentChatCommand(request, env, origin) {
             await sendMail(env, {
               to: lead.contact_email,
               subject: `Follow-up: Custom preview for ${lead.club_name}`,
-              text: `Hi ${contactGreeting === 'General Manager' ? 'General Manager & Team' : contactGreeting},\n\nFollowing up on my note earlier regarding private member photo sharing.\n\nWe just introduced custom sample previews where we set up a private workspace using ${lead.club_name}'s branding and event categories so you can see exactly how your members would experience it.\n\nYou can request a sample preview in 10 seconds here:\n👉 ${previewUrl}\n\nOr simply reply to this email with "yes" and I'll build out a preview for ${lead.club_name}.\n\nMayank Saxena\nFood & Beverage, The Oakville Club\nmayank.saxena@xtide.io`,
+              text: `Hi ${contactGreeting === 'General Manager' ? 'General Manager & Team' : contactGreeting},\n\nFollowing up on my note earlier regarding private member photo sharing.\n\nWe just introduced custom sample previews where we set up a private workspace using ${lead.club_name}'s branding and event categories so you can see exactly how your members would experience it.\n\nYou can request a sample preview in 10 seconds here:\n👉 ${previewUrl}\n\nOr simply reply to this email with "yes" and I'll build out a preview for ${lead.club_name}.\n\nMayank Saxena\nFounder, Club PhotoHub\nmayank.saxena@xtide.io`,
               html: clubPhotoHubEmail({ eyebrow: 'Sample Workspace Preview', title: `Custom preview for ${lead.club_name}`, intro: `Following up on my note earlier regarding private member photo sharing. We set up custom sample previews styled with ${lead.club_name}'s branding so your team can evaluate it risk-free.`, actionLabel: `Request Preview for ${lead.club_name}`, actionUrl: previewUrl })
             });
             emailsSent++;
@@ -690,7 +690,7 @@ User request: "${prompt}". Respond concisely in markdown formatting.`
           `1. **🇨🇦🇺🇸 US & Canada Club Database**: Hunter is indexing private Golf, Yacht, Racquet, Tennis, and Dining clubs targeting General Managers, Marketing Directors, and Membership Engagement Managers.\n` +
           `2. **📅 Daily Outreach Cadence**: Scheduled for **20 new target clubs per day** during optimal morning dispatch windows.\n` +
           `3. **⏳ 4-Day Engagement Follow-Up**: Any prospect opening a demo or clicking a link receives a custom sample preview follow-up after **4 days**.\n` +
-          `4. **✉️ Sender Identity**: Configured for **Mayank Saxena, Food & Beverage at The Oakville Club** (\`mayank.saxena@xtide.io\`).\n` +
+          `4. **✉️ Sender Identity**: Configured for **Mayank Saxena, Founder at Club PhotoHub** (\`mayank.saxena@xtide.io\`).\n` +
           `5. **🚀 Test Email Sequence**: Ready to dispatch test email templates directly to \`saxenamayank92@outlook.com\`!\n\n` +
           `*To start the test dispatch to your inbox now, reply "send test templates to outlook"!*`;
       } else {
