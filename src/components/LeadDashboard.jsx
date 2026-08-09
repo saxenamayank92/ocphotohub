@@ -914,7 +914,7 @@ export default function LeadDashboard() {
             <div className="email-preview-body">
               <p>Hi {previewLead.firstName || 'General Manager'},</p>
               <p>Right now, after major tournaments and galas at {previewLead.clubName}, photos end up scattered across member group chats, raw Google Drive folders, or public social media.</p>
-              <p>Unlike <strong>Google Photos or Dropbox</strong> — which require personal Gmail sign-ins, leak raw public links, and offer zero privacy — <strong>Club PhotoHub integrates directly with {previewLead.clubName}'s official member roster</strong> so only verified members can access your private gallery.</p>
+              <p>Unlike <strong>Google Photos or Dropbox</strong>, which require personal Gmail sign-ins, leak raw public links, and offer zero privacy, <strong>Club PhotoHub integrates directly with {previewLead.clubName}'s official member roster</strong> so only verified members can access your private gallery.</p>
               <p>I put together a live interactive concept preview for your executive team to test:</p>
               <div className="cta-preview-btn">
                 👉 Custom Workspace Preview: <code>https://clubphotohub.com/preview/{encodeURIComponent(previewLead.leadCode || previewLead.id)}</code>
