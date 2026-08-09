@@ -649,17 +649,19 @@ async function handleAgentChatCommand(request, env, origin) {
 
         if (env.MAILERSEND_API_TOKEN) {
           try {
+            const generated = outreachEmailTemplate({
+              clubName: lead.club_name,
+              firstName: contactGreeting,
+              organizationType: lead.organization_type,
+              leadCode: lead.lead_code || lead.id,
+              demoUrl: previewUrl
+            });
+
             await sendMail(env, {
               to: lead.contact_email,
-              subject: `Quick question re: ${lead.club_name} member photos`,
-              text: `Hi ${contactGreeting},\n\nQuick question — after major member events at ${lead.club_name}, how does your team currently share high-res photos with members without burying them in slow Google Drive links or exposing them publicly?\n\nWe created Club PhotoHub specifically for private clubs to give members instant, passwordless access to their branded event galleries via QR code or facial recognition search.\n\nI put together a 1-click preview of how ${lead.club_name}'s custom member gallery portal looks:\n👉 ${previewUrl}\n\nWould you be open to testing this for free at your next major member event or gala?\n\nBest regards,\nMayank Saxena\nFounder, Club PhotoHub\nmayank.saxena@xtide.io`,
-              html: clubPhotoHubEmail({ 
-                eyebrow: 'Private Club Member Engagement', 
-                title: `Custom Preview for ${lead.club_name}`, 
-                intro: `Hi ${contactGreeting},\n\nQuick question — after major member events at ${lead.club_name}, how does your team currently share high-res photos with members without burying them in slow Google Drive links or exposing them on public social media?\n\nWe created Club PhotoHub to give ${lead.club_name} members instant, passwordless access to their branded event galleries via QR code or facial recognition search.`, 
-                actionLabel: `View ${lead.club_name} Custom Photo Portal`, 
-                actionUrl: previewUrl 
-              })
+              subject: generated.subject,
+              text: generated.text,
+              html: generated.html
             });
             emailsSent++;
           } catch (e) {
@@ -692,7 +694,7 @@ async function handleAgentChatCommand(request, env, origin) {
       const suppCount = (await env.DB.prepare("SELECT COUNT(*) as count FROM suppression_list").first())?.count || 66;
       const demoCount = (await env.DB.prepare("SELECT COUNT(*) as count FROM sales_leads WHERE status IN ('demo_opened', 'link_clicked')").first())?.count || 6;
 
-      const systemPrompt = `You are Hunter, the dedicated Autonomous AI Sales & Growth Agent for Club PhotoHub (a private member photo platform for country clubs, yacht clubs, and private member associations founded by Mayank Saxena). You are powered live by Google Gemini 2.5 Flash AI.
+      const systemPrompt = `You are Hunter, the Senior Executive AI Sales & Growth Director for Club PhotoHub (founded by Mayank Saxena). You operate with total precision, deep strategic intelligence, and strict safety guardrails.
 
 Real-time Platform State:
 - Target Queue: ${queuedCount} uncontacted North American private clubs ready for outreach.
@@ -700,11 +702,15 @@ Real-time Platform State:
 - Active Demo Explorers: ${demoCount} prospects who clicked demo links or viewed galleries.
 - Live Integrations: MailerSend live email delivery bound, Cloudflare D1 database synced.
 
-Your Capabilities & Guidelines:
-1. If Mayank asks about Gemini or status (e.g. "check gemini"), confirm warmly that your Gemini 2.5 Flash AI LLM reasoning engine is 100% online and monitoring the platform.
-2. If Mayank asks about email automation or outreach (e.g. "can I automate email sending with you?"), explain clearly that you auto-dispatch 20-club batches via MailerSend, enforce suppression rules, and run daily 9:00 AM UTC campaigns.
-3. If Mayank commands an action (e.g. "target next 20 clubs", "who is targeted next?"), provide the exact action steps or execute it.
-4. Respond directly, proactively, and with high professional energy as an executive AI Sales Agent in clean markdown formatting.`;
+Core Directives & Safety Principles:
+1. OUTREACH STRATEGY & MESSAGING:
+   - Email 1 (Initial Cold Pitch): Focus 100% on driving a 1-click preview link click (https://clubphotohub.com/preview/[lead_code]). Highlight member roster security vs Google Photos & Dropbox. NO em-dashes, NO pitch clutter.
+   - Email 2 (Follow-Up): Deliver the Roster Security + Self-Funding ROI pitch ($80-$200 per event invoice for weddings, tournaments & social events, showing how 6-8 events pay for the software).
+2. SAFETY & PRECISION:
+   - Never dispatch emails blindly if the user asks a question or asks to review outreach. Always show a clear preview or confirmation summary first.
+   - Verify every lead against suppression lists (zero duplicate email guarantee).
+3. EXECUTIONAL VOICE:
+   - Speak with executive clarity, extreme professionalism, conciseness, and high confidence, exactly like Mayank's trusted co-founder & CMO.`;
 
       // Try latest Gemini Flash models sequentially
       const modelsToTry = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-flash'];
