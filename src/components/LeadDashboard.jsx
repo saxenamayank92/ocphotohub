@@ -74,6 +74,35 @@ export default function LeadDashboard() {
   const [bulkInput, setBulkInput] = useState('');
   const [bulkProgress, setBulkProgress] = useState(null);
 
+  // Full Database CRM Modal state
+  const [showDatabaseModal, setShowDatabaseModal] = useState(false);
+  const [dbSearchQuery, setDbSearchQuery] = useState('');
+  const [dbStatusFilter, setDbStatusFilter] = useState('all');
+
+  const dbFilteredLeads = useMemo(() => {
+    let list = leads;
+    if (dbStatusFilter !== 'all') {
+      if (dbStatusFilter === 'contacted') {
+        list = list.filter(l => l.status === 'outreach_sent' || l.status === 'followup_sent' || l.status === 'demo_opened' || l.status === 'link_clicked');
+      } else if (dbStatusFilter === 'ready') {
+        list = list.filter(l => l.status === 'new');
+      } else if (dbStatusFilter === 'hot') {
+        list = list.filter(l => l.status === 'demo_opened' || l.status === 'link_clicked' || (l.clicksCount && l.clicksCount > 0));
+      }
+    }
+    if (dbSearchQuery.trim()) {
+      const q = dbSearchQuery.toLowerCase().trim();
+      list = list.filter(l =>
+        l.clubName?.toLowerCase().includes(q) ||
+        l.email?.toLowerCase().includes(q) ||
+        l.firstName?.toLowerCase().includes(q) ||
+        l.lastName?.toLowerCase().includes(q) ||
+        l.organizationType?.toLowerCase().includes(q)
+      );
+    }
+    return list;
+  }, [leads, dbStatusFilter, dbSearchQuery]);
+
   const load = useCallback(async (isInitial = false) => {
     if (isInitial) setState(previous => ({ ...previous, loading: true, error: '' }));
     try {
@@ -375,6 +404,27 @@ export default function LeadDashboard() {
     <div className={`lead-dashboard-split-layout mobile-tab-${mobileTab}`}>
       {/* LEFT COLUMN (70% AREA) */}
       <div className="lead-dashboard-main-col">
+        {/* Dedicated Interactive Private Club Database Card */}
+        <div className="database-card-banner" onClick={() => setShowDatabaseModal(true)}>
+          <div className="database-card-content">
+            <div className="database-card-badge">
+              <Building2 size={20} />
+              <span>NORTH AMERICA PRIVATE CLUB CRM</span>
+            </div>
+            <h3>🇨🇦🇺🇸 Private Club Lead Database ({leads.length} Potential Clients)</h3>
+            <p>Click to open the full database directory. View contact status checkmarks (✅), GM/Marketing Manager profiles, state/province filters, and 1-click email controls.</p>
+            <div className="database-card-stats">
+              <span className="stat-pill total">🌐 {leads.length} Potential Clients</span>
+              <span className="stat-pill contacted">✅ {leads.filter(l => l.status === 'outreach_sent' || l.status === 'followup_sent' || l.status === 'demo_opened' || l.status === 'link_clicked').length} Contacted</span>
+              <span className="stat-pill ready">🎯 {leads.filter(l => l.status === 'new').length} Ready to Target</span>
+              <span className="stat-pill hot">🔥 {leads.filter(l => l.status === 'demo_opened' || l.status === 'link_clicked' || (l.clicksCount && l.clicksCount > 0)).length} Hot Prospects</span>
+            </div>
+          </div>
+          <button className="btn-open-database">
+            Open Full Database Directory <ExternalLink size={16} />
+          </button>
+        </div>
+
         <section className="lead-cards">
       {order.map(key => <article key={key}>
         <span>{labels[key]}</span>
@@ -1032,6 +1082,130 @@ export default function LeadDashboard() {
                 <p className="lead-empty">No tracked actions recorded yet for this lead.</p>
               )}
             </div>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Exhaustive Private Club Database CRM Modal */}
+    {showDatabaseModal && (
+      <div className="lead-modal-backdrop" onClick={() => setShowDatabaseModal(false)}>
+        <div className="lead-modal-content modal-xl" onClick={e => e.stopPropagation()}>
+          <div className="lead-modal-header">
+            <div>
+              <h3><Building2 size={22} /> 🇨🇦🇺🇸 North America Private Club Database ({leads.length} Potential Clients)</h3>
+              <p>Complete directory of target Golf, Yacht, Racquet, Ski, and City Clubs with executive contact profiles and status checkmarks (✅)</p>
+            </div>
+            <button onClick={() => setShowDatabaseModal(false)} className="btn-close-modal"><X size={20} /></button>
+          </div>
+
+          <div className="db-modal-toolbar">
+            <div className="db-filter-pills">
+              <button className={`db-pill ${dbStatusFilter === 'all' ? 'active' : ''}`} onClick={() => setDbStatusFilter('all')}>
+                🌐 All Potential Clients ({leads.length})
+              </button>
+              <button className={`db-pill contacted ${dbStatusFilter === 'contacted' ? 'active' : ''}`} onClick={() => setDbStatusFilter('contacted')}>
+                ✅ Contacted ({leads.filter(l => l.status === 'outreach_sent' || l.status === 'followup_sent' || l.status === 'demo_opened' || l.status === 'link_clicked').length})
+              </button>
+              <button className={`db-pill ready ${dbStatusFilter === 'ready' ? 'active' : ''}`} onClick={() => setDbStatusFilter('ready')}>
+                🎯 Ready to Target ({leads.filter(l => l.status === 'new').length})
+              </button>
+              <button className={`db-pill hot ${dbStatusFilter === 'hot' ? 'active' : ''}`} onClick={() => setDbStatusFilter('hot')}>
+                🔥 Hot Prospects ({leads.filter(l => l.status === 'demo_opened' || l.status === 'link_clicked' || (l.clicksCount && l.clicksCount > 0)).length})
+              </button>
+            </div>
+
+            <div className="db-search-box">
+              <Search size={16} />
+              <input
+                type="text"
+                placeholder="Search by club, city, state, or email..."
+                value={dbSearchQuery}
+                onChange={e => setDbSearchQuery(e.target.value)}
+              />
+              {dbSearchQuery && <button onClick={() => setDbSearchQuery('')}><X size={14} /></button>}
+            </div>
+          </div>
+
+          <div className="db-modal-table-wrap">
+            <table className="db-modal-table">
+              <thead>
+                <tr>
+                  <th>Contacted Status</th>
+                  <th>Private Club Name</th>
+                  <th>Organization Type</th>
+                  <th>Target Decision Maker</th>
+                  <th>Contact Email</th>
+                  <th>Last Engaged</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {dbFilteredLeads.map(lead => {
+                  const isContacted = ['outreach_sent', 'followup_sent', 'demo_opened', 'link_clicked', 'workspace_created'].includes(lead.status);
+
+                  return (
+                    <tr key={lead.id} className={isContacted ? 'row-contacted' : 'row-queued'}>
+                      <td>
+                        {isContacted ? (
+                          <span className="db-status-badge contacted">
+                            <Check size={14} /> ✅ Contacted
+                          </span>
+                        ) : lead.status === 'workspace_created' ? (
+                          <span className="db-status-badge customer">
+                            🎉 Active Customer
+                          </span>
+                        ) : (
+                          <span className="db-status-badge ready">
+                            🎯 Ready to Target
+                          </span>
+                        )}
+                      </td>
+                      <td>
+                        <strong>{lead.clubName}</strong>
+                        {lead.notes && <small className="db-notes">{lead.notes}</small>}
+                      </td>
+                      <td>
+                        <span className="db-org-tag">{lead.organizationType}</span>
+                      </td>
+                      <td>
+                        <div className="db-contact-name">
+                          <strong>{lead.firstName || 'General'} {lead.lastName || 'Manager'}</strong>
+                        </div>
+                      </td>
+                      <td>
+                        {lead.email ? (
+                          <a href={`mailto:${lead.email}`} className="db-email-link">{lead.email}</a>
+                        ) : (
+                          <span className="db-no-email">No email</span>
+                        )}
+                      </td>
+                      <td>
+                        <small>{formatTimeAgo(lead.lastClickedAt || lead.lastSeenAt)}</small>
+                      </td>
+                      <td>
+                        {lead.email ? (
+                          <button
+                            className="btn-db-outreach"
+                            onClick={() => {
+                              setShowDatabaseModal(false);
+                              setPreviewLead(lead);
+                            }}
+                          >
+                            <Send size={12} /> Send Email
+                          </button>
+                        ) : null}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="modal-actions" style={{ justifyContent: 'space-between', padding: '16px 24px' }}>
+            <span style={{ fontSize: 13, color: '#697874' }}>Showing <strong>{dbFilteredLeads.length}</strong> of <strong>{leads.length}</strong> total private club records</span>
+            <button onClick={() => setShowDatabaseModal(false)} className="btn-cancel">Close Directory</button>
           </div>
         </div>
       </div>
