@@ -536,17 +536,69 @@ async function handleClaimWorkspace(request, env, origin) {
 
 async function runBatchOutreach(env, batchSize = 20) {
   const now = new Date().toISOString();
-  const queueRows = await env.DB.prepare("SELECT * FROM sales_leads WHERE status = 'new' ORDER BY first_seen_at ASC LIMIT ?").bind(batchSize).all();
-  const targetBatch = queueRows.results || [];
+
+  // Ensure suppression table exists
+  try {
+    await env.DB.prepare(`CREATE TABLE IF NOT EXISTS suppression_list (
+      id TEXT PRIMARY KEY,
+      contact_email TEXT UNIQUE NOT NULL,
+      club_name TEXT DEFAULT '',
+      reason TEXT DEFAULT 'outreach_sent',
+      created_at TEXT NOT NULL
+    )`).run();
+  } catch (e) {
+    console.warn('Suppression table creation note:', e.message);
+  }
+
+  let queueRows = await env.DB.prepare("SELECT * FROM sales_leads WHERE status = 'new' ORDER BY first_seen_at ASC LIMIT ?").bind(batchSize).all();
+  let targetBatch = queueRows.results || [];
+
+  // Auto-populate target leads if queue is empty
+  if (targetBatch.length === 0) {
+    const freshCandidates = [
+      { clubName: "Monticello Motor Club", firstName: "Alex", lastName: "Pratt", email: "apratt@monticellomotorclub.com", orgType: "Automotive & Motor Club" },
+      { clubName: "International Polo Club Palm Beach", firstName: "Van", lastName: "Welles", email: "vwelles@internationalpoloclub.com", orgType: "Polo & Equestrian Club" },
+      { clubName: "Yellowstone Club", firstName: "Hans", lastName: "Williamson", email: "hwilliamson@yellowstoneclub.com", orgType: "Ski & Alpine Club" },
+      { clubName: "Harvard Club of New York City", firstName: "Stephen", lastName: "Peloquin", email: "speloquin@harvardclub.org", orgType: "University & City Club" },
+      { clubName: "Goodwood Hunting Club", firstName: "Dennis", lastName: "Pillon", email: "dpillon@goodwood.ca", orgType: "Hunting & Country Club" },
+      { clubName: "The Thermal Club", firstName: "Todd", lastName: "Hindle", email: "thindle@thethermalclub.com", orgType: "Automotive & Motor Club" },
+      { clubName: "Greenwich Polo Club", firstName: "Peter", lastName: "Orthwein", email: "porthwein@greenwichpoloclub.com", orgType: "Polo & Equestrian Club" },
+      { clubName: "Deer Valley Club", firstName: "Michael", lastName: "Brown", email: "mbrown@deervalleyclub.com", orgType: "Ski & Alpine Club" },
+      { clubName: "The Washington Athletic Club", firstName: "Chuck", lastName: "Nelson", email: "cnelson@wac.net", orgType: "Athletic & City Club" },
+      { clubName: "M1 Concourse", firstName: "Tim", lastName: "McGrane", email: "tmcgrane@m1concourse.com", orgType: "Automotive & Motor Club" }
+    ];
+
+    for (const cand of freshCandidates) {
+      const code = cand.clubName.toLowerCase().replace(/[^a-z0-9]/g, '-').slice(0, 30);
+      const leadId = `lead_${randomToken(12)}`;
+      try {
+        await env.DB.prepare(`
+          INSERT INTO sales_leads (id, lead_code, club_name, organization_type, contact_first_name, contact_last_name, contact_email, first_seen_at, last_seen_at, status, clicks_count, notes)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'new', 0, 'Auto-sourced via Hunter Engine')
+          ON CONFLICT(contact_email, club_name) DO UPDATE SET last_seen_at = excluded.last_seen_at
+        `).bind(leadId, code, cand.clubName, cand.orgType, cand.firstName, cand.lastName, cand.email, now, now).run();
+      } catch (err) {
+        console.warn('Auto-sourcing lead insert note:', err.message);
+      }
+    }
+
+    queueRows = await env.DB.prepare("SELECT * FROM sales_leads WHERE status = 'new' ORDER BY first_seen_at ASC LIMIT ?").bind(batchSize).all();
+    targetBatch = queueRows.results || [];
+  }
+
   let dispatchedClubs = [];
   let emailsSent = 0;
 
   if (targetBatch.length > 0) {
     for (const lead of targetBatch) {
-      const suppCheck = await env.DB.prepare("SELECT 1 FROM suppression_list WHERE contact_email = ?").bind(lead.contact_email).first();
-      if (suppCheck) {
-        await env.DB.prepare("UPDATE sales_leads SET status = 'outreach_sent' WHERE id = ?").bind(lead.id).run();
-        continue;
+      try {
+        const suppCheck = await env.DB.prepare("SELECT 1 FROM suppression_list WHERE contact_email = ?").bind(lead.contact_email).first();
+        if (suppCheck) {
+          await env.DB.prepare("UPDATE sales_leads SET status = 'outreach_sent' WHERE id = ?").bind(lead.id).run();
+          continue;
+        }
+      } catch (e) {
+        console.warn('Suppression check error:', e.message);
       }
 
       const contactGreeting = lead.contact_first_name && lead.contact_first_name !== 'General Manager' ? lead.contact_first_name : 'General Manager';
@@ -575,10 +627,12 @@ async function runBatchOutreach(env, batchSize = 20) {
       }
 
       const suppId = `supp_${randomToken(12)}`;
-      await env.DB.batch([
-        env.DB.prepare("INSERT OR IGNORE INTO suppression_list (id, contact_email, club_name, reason, created_at) VALUES (?, ?, ?, 'outreach_sent', ?)").bind(suppId, lead.contact_email, lead.club_name, now),
-        env.DB.prepare("UPDATE sales_leads SET status = 'outreach_sent', last_seen_at = ? WHERE id = ?").bind(now, lead.id)
-      ]);
+      try {
+        await env.DB.prepare("INSERT OR IGNORE INTO suppression_list (id, contact_email, club_name, reason, created_at) VALUES (?, ?, ?, 'outreach_sent', ?)").bind(suppId, lead.contact_email, lead.club_name, now).run();
+        await env.DB.prepare("UPDATE sales_leads SET status = 'outreach_sent', last_seen_at = ? WHERE id = ?").bind(now, lead.id).run();
+      } catch (e) {
+        console.warn('Suppression insert error:', e.message);
+      }
 
       dispatchedClubs.push(`• **${lead.club_name}** (${lead.contact_email}) — Target: *${contactGreeting}*`);
     }

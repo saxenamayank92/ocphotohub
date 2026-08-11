@@ -150,6 +150,14 @@ CREATE TABLE IF NOT EXISTS sales_leads (
   last_seen_at TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS suppression_list (
+  id TEXT PRIMARY KEY,
+  contact_email TEXT UNIQUE NOT NULL,
+  club_name TEXT DEFAULT '',
+  reason TEXT DEFAULT 'outreach_sent',
+  created_at TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS platform_login_codes (
   email TEXT PRIMARY KEY,
   code_hash TEXT NOT NULL,
