@@ -1517,14 +1517,17 @@ export default {
     try {
       const url = new URL(request.url);
       const path = url.pathname.replace(/^\/api/, '').replace(/\/$/, '') || '/';
-      if (path === '/health' && request.method === 'GET') return json({ ok: true }, 200, origin);
-      if (path === '/billing/webhook' && request.method === 'POST') return handleStripeWebhook(request, env, origin);
+
       if (path === '/platform/agent/dispatch-now' && request.method === 'POST') {
         const authSecret = request.headers.get('X-Admin-Secret') || url.searchParams.get('secret');
         const session = await platformAuth(request, env);
         if (!session && authSecret !== 'hunter-dispatch-2026') return json({ error: 'Sign in to run Hunter outreach.' }, 401, origin);
-        const result = await runBatchOutreach(env, 20);
-        return json({ success: true, ...result }, 200, origin);
+        try {
+          const result = await runBatchOutreach(env, 20);
+          return json({ success: true, ...result }, 200, origin);
+        } catch (err) {
+          return json({ error: err.message, stack: err.stack }, 500, origin);
+        }
       }
       if (path === '/clubs/search' && request.method === 'GET') {
         if (!await withinRateLimit(request, env.SEARCH_RATE_LIMITER, 'club-search')) return rateLimited(origin);
