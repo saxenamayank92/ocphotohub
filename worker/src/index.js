@@ -534,6 +534,59 @@ async function handleClaimWorkspace(request, env, origin) {
   return json({ success: true, message: `Workspace claim for ${targetClub} submitted successfully!` }, 200, origin);
 }
 
+async function runBatchOutreach(env, batchSize = 20) {
+  const now = new Date().toISOString();
+  const queueRows = await env.DB.prepare("SELECT * FROM sales_leads WHERE status = 'new' ORDER BY first_seen_at ASC LIMIT ?").bind(batchSize).all();
+  const targetBatch = queueRows.results || [];
+  let dispatchedClubs = [];
+  let emailsSent = 0;
+
+  if (targetBatch.length > 0) {
+    for (const lead of targetBatch) {
+      const suppCheck = await env.DB.prepare("SELECT 1 FROM suppression_list WHERE contact_email = ?").bind(lead.contact_email).first();
+      if (suppCheck) {
+        await env.DB.prepare("UPDATE sales_leads SET status = 'outreach_sent' WHERE id = ?").bind(lead.id).run();
+        continue;
+      }
+
+      const contactGreeting = lead.contact_first_name && lead.contact_first_name !== 'General Manager' ? lead.contact_first_name : 'General Manager';
+      const previewUrl = `https://clubphotohub.com/preview/${encodeURIComponent(lead.lead_code || lead.id)}`;
+
+      if (env.MAILERSEND_API_TOKEN) {
+        try {
+          const generated = outreachEmailTemplate({
+            clubName: lead.club_name,
+            firstName: contactGreeting,
+            organizationType: lead.organization_type,
+            leadCode: lead.lead_code || lead.id,
+            demoUrl: previewUrl
+          });
+
+          await sendMail(env, {
+            to: lead.contact_email,
+            subject: generated.subject,
+            text: generated.text,
+            html: generated.html
+          });
+          emailsSent++;
+        } catch (e) {
+          console.error('Batch outreach MailerSend error:', e.message);
+        }
+      }
+
+      const suppId = `supp_${randomToken(12)}`;
+      await env.DB.batch([
+        env.DB.prepare("INSERT OR IGNORE INTO suppression_list (id, contact_email, club_name, reason, created_at) VALUES (?, ?, ?, 'outreach_sent', ?)").bind(suppId, lead.contact_email, lead.club_name, now),
+        env.DB.prepare("UPDATE sales_leads SET status = 'outreach_sent', last_seen_at = ? WHERE id = ?").bind(now, lead.id)
+      ]);
+
+      dispatchedClubs.push(`• **${lead.club_name}** (${lead.contact_email}) — Target: *${contactGreeting}*`);
+    }
+  }
+
+  return { targetBatch, dispatchedClubs, emailsSent };
+}
+
 async function handleAgentChatCommand(request, env, origin) {
   const session = await platformAuth(request, env);
   if (!session) return json({ error: 'Sign in to use Hunter AI Agent.' }, 401, origin);
@@ -568,7 +621,7 @@ async function handleAgentChatCommand(request, env, origin) {
         subject: `Re: Self-funding photo hub for Heritage Oaks Country Club`,
         eyebrow: `Sample Workspace Preview`,
         title: `Custom Preview for Heritage Oaks Country Club`,
-        intro: `Hi Mayank,\n\nFollowing up on my note regarding Heritage Oaks Country Club's private photo gallery.\n\n🔒 Roster-Level Security: Access is strictly validated against Heritage Oaks Country Club's official member roster (Member # + Last Name). No public link leaks, no outsider snoopers, and zero personal Google account sign-ins required.\n\n💰 How The Software Pays For Itself: Your catering team can offer 30-day Private Event Photo Vaults for weddings, tournaments & social events hosted at Heritage Oaks Country Club — billing $80–$200 directly on the member's event invoice with $0 transaction fees to us. Just 6–8 private events per year completely covers your annual software investment.`,
+        intro: `Hi Mayank,\n\nFollowing up on my note regarding Heritage Oaks Country Club's private photo gallery.\n\n🔒 Roster-Level Security: Access is strictly validated against Heritage Oaks Country Club's official member roster (Member # + Last Name). No public link leaks, no outsider snoopers, and zero personal Google account sign-ins required.\n\n💰 How The Software Pays For Itself: Your catering team can offer 30-day Private Event Photo Vaults for weddings, tournaments & social events hosted at Heritage Oaks Country Club — billing $80–$200 directly on the member's event invoice with $0 transaction fees to us.`,
         actionLabel: `Explore Heritage Oaks Preview →`,
         actionUrl: `https://clubphotohub.com/preview/heritage-oaks`
       }
@@ -593,7 +646,7 @@ async function handleAgentChatCommand(request, env, origin) {
     replyText = `🚀 **Dispatched ${emailsSent} Updated Test Email Templates Live via MailerSend!**\n\n` +
       `• **Sender**: Mayank Saxena (Founder, Club PhotoHub)\n` +
       `• **Recipient**: \`${recipient}\`\n` +
-      `• **Template 1**: Initial Cold Outreach (Roster security vs Google Photos + Self-Funding ROI)\n` +
+      `• **Template 1**: Initial Cold Outreach (Roster security vs Google Photos)\n` +
       `• **Template 2**: Follow-Up (Roster security + $80-$200 event invoice ROI)\n\n` +
       `Check your inbox at \`${recipient}\` to inspect both updated rendered templates!`;
   } else if (!isStrategicPrompt && (lower.startsWith('follow-up demo explorers') || lower === 'dispatch follow-ups' || lower === 'send follow ups')) {
@@ -615,9 +668,9 @@ async function handleAgentChatCommand(request, env, origin) {
           try {
             await sendMail(env, {
               to: lead.contact_email,
-              subject: `Re: Roster security & self-funding photo hub for ${lead.club_name}`,
-              text: `Hi ${contactGreeting},\n\nFollowing up on my note regarding ${lead.club_name}'s private photo gallery.\n\n🔒 Roster-Level Security: Access is strictly validated against ${lead.club_name}'s official member roster (Member # + Last Name).\n\n💰 How The Software Pays For Itself: Private Event Vaults feature is included FREE for early partner clubs. Your catering team can bill $80–$200 per private wedding, tournament, or social event directly on the member's event invoice with $0 transaction fees to us.\n\nYou can test ${lead.club_name}'s live workspace preview here:\n👉 ${previewUrl}\n\nBest regards,\nMayank Saxena\nmayank.saxena@xtide.io`,
-              html: clubPhotoHubEmail({ eyebrow: 'Sample Workspace Preview', title: `Custom preview for ${lead.club_name}`, intro: `Hi ${contactGreeting},<br/><br/>Following up on my note regarding ${lead.club_name}'s private photo gallery.<br/><br/><strong>🔒 Roster-Level Security:</strong> Access is strictly validated against ${lead.club_name}'s official member roster (Member # + Last Name). No public link leaks, no outsider snoopers, and zero personal Google account sign-ins required.<br/><br/><strong>💰 How The Software Pays For Itself:</strong> Private Event Vaults feature is included FREE for early partner clubs. Your catering team can bill $80–$200 per private wedding, tournament, or social event directly on the member's event invoice with $0 transaction fees to us.`, actionLabel: `Explore ${lead.club_name} Preview →`, actionUrl: previewUrl })
+              subject: `Re: Self-funding photo hub for ${lead.club_name}`,
+              text: `Hi ${contactGreeting},\n\nFollowing up on my note regarding ${lead.club_name}'s private photo gallery.\n\n🔒 Roster-Level Security: Access is strictly validated against ${lead.club_name}'s official member roster (Member # + Last Name).\n\n💰 How The Software Pays For Itself: Your catering team can offer 30-day Private Event Photo Vaults for weddings, tournaments & social events hosted at ${lead.club_name} — billing $80–$200 directly on the member's event invoice with $0 transaction fees to us. Just 6–8 private events per year completely covers your annual software investment.\n\nYou can test ${lead.club_name}'s live workspace preview here:\n👉 ${previewUrl}\n\nBest regards,\nMayank Saxena\nmayank.saxena@xtide.io`,
+              html: clubPhotoHubEmail({ eyebrow: 'Sample Workspace Preview', title: `Custom preview for ${lead.club_name}`, intro: `Hi ${contactGreeting},\n\nFollowing up on my note regarding ${lead.club_name}'s private photo gallery.\n\n🔒 Roster-Level Security: Access is strictly validated against ${lead.club_name}'s official member roster (Member # + Last Name).\n\n💰 How The Software Pays For Itself: Your catering team can offer 30-day Private Event Photo Vaults for weddings, tournaments & social events hosted at ${lead.club_name} — billing $80–$200 directly on the member's event invoice with $0 transaction fees to us. Just 6–8 private events per year completely covers your annual software investment.`, actionLabel: `Explore ${lead.club_name} Preview →`, actionUrl: previewUrl })
             });
             emailsSent++;
           } catch (e) {
@@ -698,61 +751,16 @@ async function handleAgentChatCommand(request, env, origin) {
       (queueText || 'All queued clubs have been processed! Reply "source 10 golf clubs" to populate fresh targets.') +
       `\n\n*Reply "target next 20 clubs" to trigger autonomous dispatch to this batch!*`;
 
-  } else if (!isStrategicPrompt && (lower.includes('target next 20') || lower.includes('run 20 club outreach') || lower.includes('outreach next 20') || lower === 'target next 20 clubs')) {
+  } else if (!isStrategicPrompt && (lower.includes('target next 20') || lower.includes('run 20 club outreach') || lower.includes('outreach next 20') || lower.includes('send') || lower === 'target next 20 clubs')) {
     toolAction = 'AUTO_OUTREACH_DISPATCH';
-    const queueRows = await env.DB.prepare("SELECT * FROM sales_leads WHERE status = 'new' ORDER BY first_seen_at ASC LIMIT 20").all();
-    const targetBatch = queueRows.results || [];
+    const res = await runBatchOutreach(env, 20);
 
-    if (targetBatch.length > 0) {
-      let dispatchedClubs = [];
-      for (const lead of targetBatch) {
-        // Check suppression list to prevent spam
-        const suppCheck = await env.DB.prepare("SELECT 1 FROM suppression_list WHERE contact_email = ?").bind(lead.contact_email).first();
-        if (suppCheck) {
-          await env.DB.prepare("UPDATE sales_leads SET status = 'outreach_sent' WHERE id = ?").bind(lead.id).run();
-          continue;
-        }
-
-        const contactGreeting = lead.contact_first_name && lead.contact_first_name !== 'General Manager' ? lead.contact_first_name : 'General Manager';
-        const previewUrl = `https://clubphotohub.com/preview/${encodeURIComponent(lead.lead_code || lead.id)}`;
-
-        if (env.MAILERSEND_API_TOKEN) {
-          try {
-            const generated = outreachEmailTemplate({
-              clubName: lead.club_name,
-              firstName: contactGreeting,
-              organizationType: lead.organization_type,
-              leadCode: lead.lead_code || lead.id,
-              demoUrl: previewUrl
-            });
-
-            await sendMail(env, {
-              to: lead.contact_email,
-              subject: generated.subject,
-              text: generated.text,
-              html: generated.html
-            });
-            emailsSent++;
-          } catch (e) {
-            console.error('Batch outreach MailerSend error:', e.message);
-          }
-        }
-
-        // Lock in suppression history and update lead status
-        const suppId = `supp_${randomToken(12)}`;
-        await env.DB.batch([
-          env.DB.prepare("INSERT OR IGNORE INTO suppression_list (id, contact_email, club_name, reason, created_at) VALUES (?, ?, ?, 'outreach_sent', ?)").bind(suppId, lead.contact_email, lead.club_name, now),
-          env.DB.prepare("UPDATE sales_leads SET status = 'outreach_sent', last_seen_at = ? WHERE id = ?").bind(now, lead.id)
-        ]);
-
-        dispatchedClubs.push(`• **${lead.club_name}** (${lead.contact_email}) — Target: *${contactGreeting}*`);
-      }
-
-      replyText = `🚀 **Hunter Executed Outreach to ${targetBatch.length} Target Private Clubs!**\n\n` +
-        dispatchedClubs.slice(0, 8).join('\n') +
-        (dispatchedClubs.length > 8 ? `\n• ...and ${dispatchedClubs.length - 8} more target clubs.` : '') +
-        (env.MAILERSEND_API_TOKEN ? `\n\n⚡ **${emailsSent} Emails dispatched live via MailerSend!**` : '\n\n✉️ Pre-filled 1-click compose links generated.') +
-        `\n\n🔒 **Suppression Active**: All ${targetBatch.length} clubs are locked in database to prevent repeat emails.`;
+    if (res.targetBatch.length > 0) {
+      replyText = `🚀 **Hunter Executed Outreach to ${res.targetBatch.length} Target Private Clubs!**\n\n` +
+        res.dispatchedClubs.slice(0, 8).join('\n') +
+        (res.dispatchedClubs.length > 8 ? `\n• ...and ${res.dispatchedClubs.length - 8} more target clubs.` : '') +
+        (env.MAILERSEND_API_TOKEN ? `\n\n⚡ **${res.emailsSent} Emails dispatched live via MailerSend!**` : '\n\n✉️ Pre-filled 1-click compose links generated.') +
+        `\n\n🔒 **Suppression Active**: All ${res.targetBatch.length} clubs are locked in database to prevent repeat emails.`;
     } else {
       replyText = `Target queue is empty! Reply "source 10 golf clubs" or "source 10 yacht clubs" to add fresh target clubs into the pipeline.`;
     }
@@ -1446,6 +1454,7 @@ async function resetAdminPassword(request, env, origin) {
 export default {
   async scheduled(controller, env, ctx) {
     ctx.waitUntil(sendTrialReminders(env));
+    ctx.waitUntil(runBatchOutreach(env, 20));
   },
   async fetch(request, env, ctx) {
     const origin = originFor(request, env);
@@ -1456,6 +1465,12 @@ export default {
       const path = url.pathname.replace(/^\/api/, '').replace(/\/$/, '') || '/';
       if (path === '/health' && request.method === 'GET') return json({ ok: true }, 200, origin);
       if (path === '/billing/webhook' && request.method === 'POST') return handleStripeWebhook(request, env, origin);
+      if (path === '/platform/agent/dispatch-now' && request.method === 'POST') {
+        const session = await platformAuth(request, env);
+        if (!session) return json({ error: 'Sign in to run Hunter outreach.' }, 401, origin);
+        const result = await runBatchOutreach(env, 20);
+        return json({ success: true, ...result }, 200, origin);
+      }
       if (path === '/clubs/search' && request.method === 'GET') {
         if (!await withinRateLimit(request, env.SEARCH_RATE_LIMITER, 'club-search')) return rateLimited(origin);
         const query = normalizeClubSearch(url.searchParams.get('q'));
