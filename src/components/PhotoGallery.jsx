@@ -4,13 +4,13 @@ import { Capacitor } from '@capacitor/core';
 import { Directory, Filesystem } from '@capacitor/filesystem';
 import {
   Heart, Trash2, X, ChevronLeft, Image as ImageIcon,
-  Download, Search, LayoutGrid, ListFilter, Play
+  Download, Search, LayoutGrid, ListFilter, Play, Flag, UserX
 } from 'lucide-react';
 import { photoDownloadName } from '../brand';
 import { fetchAuthenticatedPhoto, fetchAuthenticatedPhotoBlob, resolveApiUrl } from '../api';
 import StoryShowcase from './StoryShowcase';
 
-export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhoto, onDeletePhoto, addToast }) {
+export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhoto, onDeletePhoto, onReportPhoto, onBlockMember, addToast }) {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [showOnlyMine, setShowOnlyMine] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -206,6 +206,21 @@ export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhot
         handleCloseLightbox();
       }
     }
+  };
+
+  const handleReportClick = async (event, photo) => {
+    event?.stopPropagation();
+    const reason = window.prompt('Why are you reporting this photo?', 'Objectionable or abusive content');
+    if (!reason?.trim()) return;
+    try { await onReportPhoto(photo.id, reason.trim()); }
+    catch (error) { addToast(error.message || 'Could not submit the report.', 'error'); }
+  };
+
+  const handleBlockClick = async (event, photo) => {
+    event?.stopPropagation();
+    if (!window.confirm(`Block ${photo.uploaderName || 'this member'}? Their content will be removed from your feed immediately and Club PhotoHub will be notified.`)) return;
+    try { await onBlockMember(photo.uploaderId, photo.id, 'Abusive user blocked from photo'); }
+    catch (error) { addToast(error.message || 'Could not block this member.', 'error'); }
   };
 
   const hasLiked = (photo) => photo.heartUsers?.includes(currentUser?.memberNumber);
@@ -430,6 +445,10 @@ export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhot
                         <button type="button" className="feed-action" onClick={e => handleDownload(e, photo)} title="Download photo" disabled={downloadingPhotoId === photo.id} aria-label="Download photo">
                           <Download size={22} />
                         </button>
+                        {!isOwner && !isAdmin && <>
+                          <button type="button" className="feed-action" onClick={e => handleReportClick(e, photo)} title="Report objectionable content" aria-label="Report photo"><Flag size={20} /></button>
+                          <button type="button" className="feed-action" onClick={e => handleBlockClick(e, photo)} title="Block abusive user" aria-label={`Block ${photo.uploaderName || 'member'}`}><UserX size={20} /></button>
+                        </>}
                         {canDelete && (
                           <button type="button" className="feed-action feed-delete" onClick={(e) => handleDeleteClick(e, photo.id)} title="Delete photo">
                             <Trash2 size={21} />
@@ -537,6 +556,10 @@ export default function PhotoGallery({ photos, currentUser, isAdmin, onHeartPhot
                           <button type="button" className="feed-action" onClick={e => handleDownload(e, photo)} aria-label="Download photo" disabled={downloadingPhotoId === photo.id}>
                             <Download size={22} />
                           </button>
+                          {!isOwner && !isAdmin && <>
+                            <button type="button" className="feed-action" onClick={e => handleReportClick(e, photo)} aria-label="Report photo"><Flag size={20} /></button>
+                            <button type="button" className="feed-action" onClick={e => handleBlockClick(e, photo)} aria-label={`Block ${photo.uploaderName || 'member'}`}><UserX size={20} /></button>
+                          </>}
                           {canDelete && (
                             <button type="button" className="feed-action feed-delete" onClick={e => handleDeleteClick(e, photo.id)} aria-label="Delete photo">
                               <Trash2 size={21} />

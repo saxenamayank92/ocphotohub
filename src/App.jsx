@@ -17,7 +17,8 @@ import {
   requestCloudPasswordReset, completeCloudPasswordReset, checkCloudMember,
   searchCloudClubs, resolveCloudClub, requestRegistrationCode, updateCloudMember, startClubOnboarding,
   completeClubOnboarding, updateCurrentClub, requestAdminPasswordReset,
-  completeAdminPasswordReset, deleteCloudAccount, deleteCloudOrganization, registerCloudPushToken, resolveApiUrl
+  completeAdminPasswordReset, deleteCloudAccount, deleteCloudOrganization, registerCloudPushToken, resolveApiUrl,
+  reportCloudPhoto, blockCloudMember
 } from './api';
 import { clubBrand, platformBrand } from './brand';
 import { initializeNativeApp, registerPushNotifications, setNativeStatusBarForApp } from './services/pushNotifications';
@@ -458,6 +459,28 @@ export default function App() {
     }
   };
 
+  const handleReportPhoto = async (photoId, reason) => {
+    if (demoMode || isPreviewMode || !cloudActive) {
+      addToast('Report submitted. Club PhotoHub and your organization administrator have been notified.', 'success');
+      return;
+    }
+    await reportCloudPhoto(photoId, reason);
+    addToast('Report submitted. Club PhotoHub and your organization administrator have been notified.', 'success');
+  };
+
+  const handleBlockMember = async (memberNumber, photoId, reason) => {
+    if (!memberNumber || memberNumber === currentUser?.memberNumber) return;
+    const previousPhotos = photos;
+    setPhotos(items => items.filter(photo => photo.uploaderId !== memberNumber));
+    try {
+      if (!demoMode && !isPreviewMode && cloudActive) await blockCloudMember(memberNumber, photoId, reason);
+      addToast('Member blocked. Their content was removed from your feed and Club PhotoHub was notified.', 'success');
+    } catch (error) {
+      setPhotos(previousPhotos);
+      throw error;
+    }
+  };
+
   const handleResetDatabase = async () => {
     if (cloudActive) {
       await resetCloudData();
@@ -545,10 +568,10 @@ export default function App() {
           )}
         </>
       )}
-      {!demoMode && trialDaysLeft !== null && currentUser?.role === 'owner' && <div className={`trial-status-banner ${trialDaysLeft === 0 ? 'expired' : ''}`}><span>{trialDaysLeft > 0 ? `${trialDaysLeft} days left in your free trial` : 'Your trial has ended. This workspace is now read-only.'}</span><a href="/pricing#pricing-links">Choose a plan</a></div>}
+      {!demoMode && trialDaysLeft !== null && currentUser?.role === 'owner' && <div className={`trial-status-banner ${trialDaysLeft === 0 ? 'expired' : ''}`}><span>{trialDaysLeft > 0 ? `${trialDaysLeft} days left in your free trial` : 'Your trial has ended. This workspace is now read-only.'}</span>{Capacitor.isNativePlatform() ? <span>Billing is managed outside the iOS app.</span> : <a href="/pricing#pricing-links">Choose a plan</a>}</div>}
       <main className="content-wrapper">
         <Suspense fallback={<div className="panel-loading" role="status"><div className="spinner" /><span>Loading…</span></div>}>
-          {activeTab === 'gallery' && <PhotoGallery photos={photos} currentUser={currentUser} isAdmin={isAdmin} onHeartPhoto={handleHeartPhoto} onDeletePhoto={handleDeletePhoto} addToast={addToast} />}
+          {activeTab === 'gallery' && <PhotoGallery photos={photos} currentUser={currentUser} isAdmin={isAdmin} onHeartPhoto={handleHeartPhoto} onDeletePhoto={handleDeletePhoto} onReportPhoto={handleReportPhoto} onBlockMember={handleBlockMember} addToast={addToast} />}
           {activeTab === 'upload' && <PhotoUpload user={currentUser} initialFiles={cameraFiles} onInitialFilesConsumed={() => setCameraFiles(null)} onUploadSuccess={handleUploadPhoto} addToast={addToast} />}
           {activeTab === 'profile' && <MemberProfile user={currentUser} club={currentClub || clubBrand} photos={photos} onLogout={handleLogout} />}
           {activeTab === 'admin' && isAdmin && <AdminPortal user={currentUser} club={currentClub || clubBrand} members={members} photos={photos} onUpdateClub={handleUpdateClub} onAddMember={handleAddMember} onAddMembers={handleAddMembers} onUpdateMember={handleUpdateMember} onDeleteMember={handleDeleteMember} onSetMemberPassword={handleSetMemberPassword} onDeletePhoto={handleDeletePhoto} onUpdatePhoto={handleUpdatePhoto} onHeartPhoto={handleHeartPhoto} firebaseConfig={cloudActive ? { provider: 'managed' } : null} onResetDatabase={handleResetDatabase} demoMode={demoMode || isPreviewMode} addToast={addToast} />}

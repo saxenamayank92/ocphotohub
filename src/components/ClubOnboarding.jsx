@@ -30,6 +30,7 @@ export default function ClubOnboarding({ onStart, onComplete, onCancel }) {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [working, setWorking] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   const beginVerification = async event => {
     event.preventDefault(); setError(''); setMessage('');
@@ -55,11 +56,12 @@ export default function ClubOnboarding({ onStart, onComplete, onCancel }) {
 
   const finishOnboarding = async event => {
     event.preventDefault(); setError('');
+    if (!termsAccepted) return setError('You must agree to the Terms of Service before creating an account.');
     if (!/^\d{6}$/.test(code)) return setError('Enter the 6-digit code from your email.');
     if (password.length < 10) return setError('Use a password of at least 10 characters.');
     if (password !== confirmPassword) return setError('Passwords do not match.');
     setWorking(true);
-    try { await onComplete({ signupId, code, password }); }
+    try { await onComplete({ signupId, code, password, termsAccepted }); }
     catch (requestError) { setError(requestError.message || 'We could not create the club account.'); setWorking(false); }
   };
 
@@ -104,6 +106,7 @@ export default function ClubOnboarding({ onStart, onComplete, onCancel }) {
       <Field id="onboardCode" label="6-digit verification code" icon={ShieldCheck} inputMode="numeric" pattern="[0-9]{6}" maxLength={6} placeholder="000000" value={code} onChange={event => setCode(event.target.value.replace(/\D/g, ''))} required />
       <Field id="onboardPassword" label="Create administrator password" icon={KeyRound} type="password" placeholder="At least 10 characters" value={password} onChange={event => setPassword(event.target.value)} minLength={10} required />
       <Field id="onboardConfirmPassword" label="Confirm password" icon={KeyRound} type="password" value={confirmPassword} onChange={event => setConfirmPassword(event.target.value)} minLength={10} required />
+      <label className="terms-agreement"><input type="checkbox" checked={termsAccepted} onChange={event => setTermsAccepted(event.target.checked)} required /><span>I agree to the <a href="/terms" target="_blank" rel="noreferrer">Terms of Service</a>, including the zero-tolerance policy for objectionable content and abusive users.</span></label>
       <button className="btn-gold login-btn" disabled={working}>{working ? 'Creating workspace…' : 'Start my 30-day free trial'}</button>
       <p className="onboarding-trial-note"><Check size={15} /> No credit card required. Full access for 30 days.</p>
       <button type="button" className="btn-text" onClick={() => { setStep(1); setCode(''); setPassword(''); setConfirmPassword(''); setMessage(''); }}>Change club details</button>

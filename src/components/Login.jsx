@@ -106,6 +106,12 @@ export default function Login({
   const [adminPassword, setAdminPassword] = useState('');
   const [error, setError] = useState('');
   const [infoMessage, setInfoMessage] = useState('');
+  const [termsAccepted, setTermsAccepted] = useState(false);
+
+  const termsAgreement = <label className="terms-agreement">
+    <input type="checkbox" checked={termsAccepted} onChange={event => setTermsAccepted(event.target.checked)} required />
+    <span>I agree to the <a href="/terms" target="_blank" rel="noreferrer">Terms of Service</a>, including the zero-tolerance policy for objectionable content and abusive users.</span>
+  </label>;
 
   React.useEffect(() => {
     if (directClubId && clubs.length > 0) {
@@ -205,6 +211,7 @@ export default function Login({
 
   const handleMemberSubmit = async event => {
     event.preventDefault(); clearMessages();
+    if (!termsAccepted) return setError('You must agree to the Terms of Service before signing in or creating an account.');
     const effectiveClubId = clubId || (clubs.length === 1 ? clubs[0]?.id : directClubId) || 'your-club-demo';
     if (effectiveClubId === 'your-club-demo' && onOpenDemo) {
       onOpenDemo();
@@ -221,7 +228,7 @@ export default function Login({
         return;
       }
       if (!password) return setError('Enter your password.');
-      try { await onCloudLogin({ mode: 'member', clubId: effectiveClubId, lastName: lastName.trim(), memberNumber: memberNumber.trim(), password }); }
+      try { await onCloudLogin({ mode: 'member', clubId: effectiveClubId, lastName: lastName.trim(), memberNumber: memberNumber.trim(), password, termsAccepted }); }
       catch (cloudError) {
         if (cloudError.code === 'NEEDS_REGISTRATION') { setRegisteredMember({ lastName: lastName.trim(), memberNumber: memberNumber.trim() }); setIsRegistering(true); return; }
         setError(cloudError.message || 'Invalid credentials.');
@@ -247,12 +254,13 @@ export default function Login({
 
   const handleRegisterSubmit = async event => {
     event.preventDefault(); clearMessages();
+    if (!termsAccepted) return setError('You must agree to the Terms of Service before creating an account.');
     if (newPassword.length < (firebaseEnabled ? 10 : 6)) return setError(`Password must be at least ${firebaseEnabled ? 10 : 6} characters.`);
     if (newPassword !== confirmPassword) return setError('Passwords do not match.');
     if (firebaseEnabled) {
       if (!codeSent || !/^\d{6}$/.test(code)) return setError('Enter the 6-digit code sent to your roster email.');
       try {
-        const result = await onCloudRegister({ clubId, lastName, memberNumber, email, code, password: newPassword });
+        const result = await onCloudRegister({ clubId, lastName, memberNumber, email, code, password: newPassword, termsAccepted });
         onLoginSuccess(result.user, result.role === 'admin');
       } catch (cloudError) { setError(cloudError.message || 'Registration could not be completed.'); }
       return;
@@ -263,9 +271,10 @@ export default function Login({
 
   const handleAdminSubmit = async event => {
     event.preventDefault(); clearMessages();
+    if (!termsAccepted) return setError('You must agree to the Terms of Service before signing in.');
     if (!clubId || !adminEmail || !adminPassword) return setError('Choose a club and enter both admin credentials.');
     if (firebaseEnabled) {
-      try { await onCloudLogin({ mode: 'admin', clubId, email: adminEmail.trim(), password: adminPassword }); }
+      try { await onCloudLogin({ mode: 'admin', clubId, email: adminEmail.trim(), password: adminPassword, termsAccepted }); }
       catch (cloudError) { setError(cloudError.message || 'Invalid credentials.'); }
     } else if ((adminEmail === 'admin' || adminEmail === 'admin@example.com') && adminPassword === '1907') {
       onLoginSuccess({ firstName: 'Club', lastName: 'Management', memberNumber: 'admin' }, true);
@@ -325,6 +334,7 @@ export default function Login({
               <Field id="memberNumber" label="Member Number" icon={User} placeholder="e.g. 1001" value={memberNumber} onChange={event => { setMemberNumber(event.target.value); setShowPassword(false); }} disabled={showPassword} required />
               <Field id="lastName" label="Last Name" icon={User} placeholder="e.g. Smith" value={lastName} onChange={event => { setLastName(event.target.value); setShowPassword(false); }} disabled={showPassword} required />
               {showPassword && <Field id="password" label="Password" icon={Lock} type="password" placeholder="Enter your password" value={password} onChange={event => setPassword(event.target.value)} autoFocus required />}
+              {termsAgreement}
               <button className="btn-primary login-btn" style={{ height: '48px', borderRadius: '12px', fontSize: '15px', fontWeight: '700', marginTop: '4px' }}>
                 {showPassword ? 'Sign In to App' : 'Continue'}
               </button>
@@ -345,6 +355,7 @@ export default function Login({
               {(!firebaseEnabled || codeSent) && <>
                 <Field id="newPassword" label="Create password" icon={KeyRound} type="password" placeholder="At least 10 characters" value={newPassword} onChange={event => setNewPassword(event.target.value)} required />
                 <Field id="confirmPassword" label="Confirm password" icon={KeyRound} type="password" placeholder="Repeat your password" value={confirmPassword} onChange={event => setConfirmPassword(event.target.value)} required />
+                {termsAgreement}
                 <button className="btn-gold login-btn">Create account & sign in</button>
               </>}
               <button type="button" className="btn-text" onClick={resetMemberFlow}>Back to sign in</button>
@@ -399,6 +410,7 @@ export default function Login({
       {(!firebaseEnabled || codeSent) && <>
         <Field id="newPassword" label="Create password" icon={KeyRound} type="password" placeholder="At least 10 characters" value={newPassword} onChange={event => setNewPassword(event.target.value)} required />
         <Field id="confirmPassword" label="Confirm password" icon={KeyRound} type="password" placeholder="Repeat your password" value={confirmPassword} onChange={event => setConfirmPassword(event.target.value)} required />
+        {termsAgreement}
         <button className="btn-gold login-btn">Create account & sign in</button>
       </>}
       <button type="button" className="btn-text" onClick={resetMemberFlow}>Back to sign in</button>
@@ -407,12 +419,14 @@ export default function Login({
       <Field id="memberNumber" label="Member number" icon={User} placeholder="e.g. 1001" value={memberNumber} onChange={event => { setMemberNumber(event.target.value); setShowPassword(false); }} disabled={showPassword} required />
       <Field id="lastName" label="Last name" icon={User} placeholder="e.g. Smith" value={lastName} onChange={event => { setLastName(event.target.value); setShowPassword(false); }} disabled={showPassword} required />
       {showPassword && <Field id="password" label="Password" icon={Lock} type="password" placeholder="Enter your password" value={password} onChange={event => setPassword(event.target.value)} autoFocus required />}
+      {termsAgreement}
       <button className="btn-primary login-btn">{showPassword ? 'Sign in' : 'Continue'}</button>
       {showPassword && <><button type="button" className="btn-text" onClick={() => { setAdminResetMode(false); setResetMode(true); }}>Forgot password?</button><button type="button" className="btn-text" onClick={resetMemberFlow}>Use different details</button></>}
     </form> : <form className="login-form" onSubmit={handleAdminSubmit}>
       {!directClubId && <ClubPicker {...clubPickerProps} />}
       <Field id="adminEmail" label="Admin email" icon={User} type="email" placeholder="admin@yourclub.com" value={adminEmail} onChange={event => setAdminEmail(event.target.value)} required />
       <Field id="adminPassword" label="Password" icon={Lock} type="password" value={adminPassword} onChange={event => setAdminPassword(event.target.value)} required />
+      {termsAgreement}
       <button className="btn-gold login-btn">Open admin portal</button>
       {firebaseEnabled && <button type="button" className="btn-text" onClick={() => { setAdminResetMode(true); setResetMode(true); setError(''); }}>Forgot administrator password?</button>}
     </form>}

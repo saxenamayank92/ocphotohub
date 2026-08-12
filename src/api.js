@@ -256,6 +256,18 @@ export const toggleCloudHeart = (photoId, memberNumber) => request(`/photos/${en
   body: JSON.stringify({ memberNumber })
 });
 
+export const reportCloudPhoto = (photoId, reason) => request(`/photos/${encodeURIComponent(photoId)}/report`, {
+  method: 'POST',
+  headers: { 'X-CSRF-Token': csrfToken },
+  body: JSON.stringify({ reason })
+});
+
+export const blockCloudMember = (memberNumber, photoId, reason) => request(`/members/${encodeURIComponent(memberNumber)}/block`, {
+  method: 'POST',
+  headers: { 'X-CSRF-Token': csrfToken },
+  body: JSON.stringify({ photoId, reason })
+});
+
 export const resetCloudData = () => request('/reset', { method: 'POST', headers: { 'X-CSRF-Token': csrfToken } });
 
 export const deleteCloudAccount = () => request('/account', { method: 'DELETE', headers: { 'X-CSRF-Token': csrfToken } }).finally(() => { setCsrfToken(''); });

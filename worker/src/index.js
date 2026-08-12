@@ -334,6 +334,20 @@ async function sendMail(env, { to, subject, text, html, fromName = 'Club PhotoHu
   if (!response.ok) throw new Error(`MailerSend rejected the message (${response.status}).`);
 }
 
+const notifyAbuseReport = async (env, { clubName, reporter, reported, photoId, reason, action }) => {
+  const recipient = env.FOUNDER_EMAIL || env.ADMIN_EMAIL;
+  if (!recipient || !env.MAILERSEND_API_TOKEN || !env.MAIL_FROM) {
+    console.error('Abuse report saved but developer email delivery is not configured.', { photoId, action });
+    return;
+  }
+  await sendMail(env, {
+    to: recipient,
+    subject: `[UGC safety] ${action === 'block' ? 'User blocked' : 'Photo reported'} in ${clubName}`,
+    text: `Action: ${action}\nClub: ${clubName}\nReporter: ${reporter}\nReported member: ${reported}\nPhoto: ${photoId}\nReason: ${reason}`,
+    html: clubPhotoHubEmail({ eyebrow: 'UGC safety report', title: action === 'block' ? 'A member blocked another user' : 'A photo was reported', intro: `Club: ${clubName}\nReporter: ${reporter}\nReported member: ${reported}\nPhoto: ${photoId}`, details: `Reason: ${reason}`, securityNote: false })
+  });
+};
+
 const emailEscape = value => escapeHtml(String(value ?? ''));
 const clubPhotoHubEmail = ({ eyebrow = '', title, intro, code, details, actionLabel, actionUrl, secondaryActionLabel, secondaryActionUrl, signature, securityNote = true }) => {
   const codeMarkup = code
@@ -1062,7 +1076,15 @@ async function bootstrap(request, env) {
     session.role === 'admin'
       ? env.DB.prepare('SELECT member_number AS memberNumber, last_name AS lastName, first_name AS firstName, email, registered_at AS registeredAt, role FROM members WHERE club_id = ? ORDER BY member_number').bind(session.club_id).all()
       : Promise.resolve({ results: [] }),
-    env.DB.prepare('SELECT * FROM photos WHERE club_id = ? ORDER BY created_at DESC').bind(session.club_id).all()
+    env.DB.prepare(`SELECT * FROM photos
+      WHERE club_id = ?
+      AND NOT EXISTS (
+        SELECT 1 FROM member_blocks
+        WHERE member_blocks.club_id = photos.club_id
+          AND member_blocks.blocker_member_number = ? COLLATE NOCASE
+          AND member_blocks.blocked_member_number = photos.uploader_id COLLATE NOCASE
+      )
+      ORDER BY created_at DESC`).bind(session.club_id, session.member_number).all()
   ]);
   const photos = await Promise.all(photosResult.results.map(async photo => {
     const likes = await env.DB.prepare('SELECT member_number FROM photo_likes WHERE club_id = ? AND photo_id = ? ORDER BY member_number').bind(session.club_id, photo.id).all();
@@ -1073,6 +1095,7 @@ async function bootstrap(request, env) {
 
 async function login(request, env, origin) {
   const body = await request.json();
+  if (body.termsAccepted !== true) return json({ error: 'Agree to the Terms of Service before signing in.' }, 400, origin);
   const club = await getClub(env, body.clubId);
   if (!club) return json({ error: 'Select a valid club.' }, 400, origin);
   let memberNumber;
@@ -1329,6 +1352,7 @@ async function startClubOnboarding(request, env, origin) {
 
 async function completeClubOnboarding(request, env, origin) {
   const body = await request.json();
+  if (body.termsAccepted !== true) return json({ error: 'Agree to the Terms of Service before creating an account.' }, 400, origin);
   if (!body.signupId || !/^\d{6}$/.test(String(body.code || '')) || typeof body.password !== 'string' || body.password.length < 10) {
     return json({ error: 'Enter the 6-digit code and a password of at least 10 characters.' }, 400, origin);
   }
@@ -1414,6 +1438,7 @@ async function requestRegistrationCode(request, env, origin) {
 
 async function registerMember(request, env, origin) {
   const body = await request.json();
+  if (body.termsAccepted !== true) return json({ error: 'Agree to the Terms of Service before creating an account.' }, 400, origin);
   const club = await getClub(env, body.clubId);
   const memberNumber = String(body.memberNumber || '').trim();
   const email = normalize(body.email);
@@ -1854,6 +1879,26 @@ export default {
         return json({ ok: true }, 200, origin);
       }
       const memberMatch = path.match(/^\/members\/([^/]+)$/);
+      const blockMemberMatch = path.match(/^\/members\/([^/]+)\/block$/);
+      if (blockMemberMatch && request.method === 'POST') {
+        const session = await requireAuth(request, env);
+        if (!session) return json({ error: 'Unauthorized.' }, 401, origin);
+        const blockedMemberNumber = decodeURIComponent(blockMemberMatch[1]);
+        if (!blockedMemberNumber || normalize(blockedMemberNumber) === normalize(session.member_number)) return json({ error: 'You cannot block your own account.' }, 400, origin);
+        const body = await request.json();
+        const photoId = cleanText(body.photoId, 100);
+        const reason = cleanText(body.reason || 'Abusive user blocked', 500);
+        const photo = await env.DB.prepare('SELECT uploader_id FROM photos WHERE club_id = ? AND id = ?').bind(session.club_id, photoId).first();
+        if (!photo || normalize(photo.uploader_id) !== normalize(blockedMemberNumber)) return json({ error: 'The reported photo or member could not be found.' }, 404, origin);
+        const reportId = randomToken(16);
+        const createdAt = new Date().toISOString();
+        await env.DB.batch([
+          env.DB.prepare('INSERT OR REPLACE INTO member_blocks (club_id, blocker_member_number, blocked_member_number, created_at) VALUES (?, ?, ?, ?)').bind(session.club_id, session.member_number, blockedMemberNumber, createdAt),
+          env.DB.prepare("INSERT INTO content_reports (id, club_id, reporter_member_number, reported_member_number, photo_id, reason, action, created_at, status) VALUES (?, ?, ?, ?, ?, ?, 'block', ?, 'open')").bind(reportId, session.club_id, session.member_number, blockedMemberNumber, photoId, reason, createdAt)
+        ]);
+        ctx?.waitUntil(notifyAbuseReport(env, { clubName: session.clubName || session.club_id, reporter: session.member_number, reported: blockedMemberNumber, photoId, reason, action: 'block' }).catch(error => console.error('Abuse block notification failed:', error.message)));
+        return json({ blockedMemberNumber }, 200, origin);
+      }
       if (memberMatch && request.method === 'PATCH') {
         const session = await requireAuth(request, env, 'admin');
         if (!session) return json({ error: 'Forbidden.' }, 403, origin);
@@ -1966,6 +2011,23 @@ export default {
         const likes = await env.DB.prepare('SELECT member_number FROM photo_likes WHERE club_id = ? AND photo_id = ? ORDER BY member_number').bind(session.club_id, photoId).all();
         await env.DB.prepare('UPDATE photos SET hearts = ? WHERE club_id = ? AND id = ?').bind(likes.results.length, session.club_id, photoId).run();
         return json({ hearts: likes.results.length, heartUsers: likes.results.map(like => like.member_number) }, 200, origin);
+      }
+      const reportMatch = path.match(/^\/photos\/([^/]+)\/report$/);
+      if (reportMatch && request.method === 'POST') {
+        const session = await requireAuth(request, env);
+        if (!session) return json({ error: 'Unauthorized.' }, 401, origin);
+        const photoId = decodeURIComponent(reportMatch[1]);
+        const body = await request.json();
+        const reason = cleanText(body.reason, 500);
+        if (!reason) return json({ error: 'Select or enter a reason for this report.' }, 400, origin);
+        const photo = await env.DB.prepare('SELECT uploader_id FROM photos WHERE club_id = ? AND id = ?').bind(session.club_id, photoId).first();
+        if (!photo) return json({ error: 'Photo not found.' }, 404, origin);
+        if (normalize(photo.uploader_id) === normalize(session.member_number)) return json({ error: 'You cannot report your own photo.' }, 400, origin);
+        const reportId = randomToken(16);
+        const createdAt = new Date().toISOString();
+        await env.DB.prepare("INSERT INTO content_reports (id, club_id, reporter_member_number, reported_member_number, photo_id, reason, action, created_at, status) VALUES (?, ?, ?, ?, ?, ?, 'report', ?, 'open')").bind(reportId, session.club_id, session.member_number, photo.uploader_id, photoId, reason, createdAt).run();
+        ctx?.waitUntil(notifyAbuseReport(env, { clubName: session.clubName || session.club_id, reporter: session.member_number, reported: photo.uploader_id, photoId, reason, action: 'report' }).catch(error => console.error('Abuse report notification failed:', error.message)));
+        return json({ reportId, status: 'received' }, 201, origin);
       }
       const photoMatch = path.match(/^\/photos\/([^/]+)$/);
       if (photoMatch && request.method === 'PATCH') {

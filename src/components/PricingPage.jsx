@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { ArrowRight, Check, HardDrive, ShieldCheck, Sparkles, Tag } from 'lucide-react';
 import { platformBrand } from '../brand';
 import { createBillingCheckout, getBillingStatus } from '../api';
+import { Capacitor } from '@capacitor/core';
 import './PricingPage.css';
 
 const storageOptions = [
@@ -21,6 +22,7 @@ function CheckoutButton({ children, secondary = false, disabled = false, onClick
 const formatDate = value => value ? new Intl.DateTimeFormat(undefined, { month: 'long', day: 'numeric', year: 'numeric' }).format(new Date(value)) : '';
 
 export default function PricingPage() {
+  const isNativeApp = Capacitor.isNativePlatform();
   const [billingInterval, setBillingInterval] = useState('monthly');
   const [billing, setBilling] = useState({ loading: true, authenticated: false, owner: false, planStatus: '' });
   const [checkoutPending, setCheckoutPending] = useState('');
@@ -51,6 +53,20 @@ export default function PricingPage() {
     }
   };
 
+  if (isNativeApp) return (
+    <div className="pricing-page">
+      <main>
+        <section className="pricing-hero">
+          <span className="pricing-eyebrow"><ShieldCheck size={15} /> Organization-managed access</span>
+          <h1>Your club provides Club PhotoHub.</h1>
+          <p>Members do not purchase accounts, subscriptions, storage, or content in the iOS app. Access is provided through an eligible organization’s existing Club PhotoHub workspace.</p>
+          <div className="pricing-founding-callout"><ShieldCheck size={16} /><span>Plan purchasing and billing are managed outside the app by an authorized organization owner.</span></div>
+          <a className="marketing-nav-cta" href="/app">Return to member sign in <ArrowRight size={16} /></a>
+        </section>
+      </main>
+    </div>
+  );
+
   return (
     <div className="pricing-page">
       <header className="marketing-nav pricing-marketing-nav">
@@ -74,10 +90,11 @@ export default function PricingPage() {
           <h1>Give your club a home for its moments.</h1>
           <p>Start with the complete Club PhotoHub experience for 30 days. No credit card required, no public social profile, and no surprise member fees.</p>
 
-          <div className="pricing-founding-callout">
+          {!isNativeApp && <div className="pricing-founding-callout">
             <Tag size={16} />
             <span>Founding Club Offer: Save 20% on monthly or annual base plans with promo code <strong className="promo-code">FOUNDING20</strong></span>
-          </div>
+          </div>}
+          {isNativeApp && <div className="pricing-founding-callout"><ShieldCheck size={16} /><span>Club PhotoHub is an organization-funded service. Plan purchasing and billing are managed by authorized club owners outside the iOS app.</span></div>}
         </section>
 
         <section className="pricing-plan-grid" id="pricing-links">
@@ -102,13 +119,13 @@ export default function PricingPage() {
                 '20% Founding Club discount with FOUNDING20'
               ].map(item => <li key={item}><Check size={16} /> {item}</li>)}
             </ul>
-            {!billing.authenticated && <a className="pricing-checkout-button" href="/app?onboard=club">Start 30-day free trial <ArrowRight size={16} /></a>}
+            {!isNativeApp && !billing.authenticated && <a className="pricing-checkout-button" href="/app?onboard=club">Start 30-day free trial <ArrowRight size={16} /></a>}
             {activeTrial && <div className="pricing-account-status"><strong>Your free trial is active.</strong><span>It ends automatically on {formatDate(billing.trialEndsAt)}.</span></div>}
             {activePlan && <div className="pricing-account-status active"><strong>Your base plan is active.</strong><span>Storage add-ons can now be attached to this organization.</span></div>}
             {!billing.authenticated && <small>No credit card required. Choose a paid plan when the trial ends.</small>}
-            <CheckoutButton secondary disabled={billing.loading || checkoutPending === 'plan' || activePlan || (billing.authenticated && !billing.owner)} onClick={() => beginCheckout({ type: 'plan', interval: billingInterval })}>
+            {!isNativeApp && <CheckoutButton secondary disabled={billing.loading || checkoutPending === 'plan' || activePlan || (billing.authenticated && !billing.owner)} onClick={() => beginCheckout({ type: 'plan', interval: billingInterval })}>
               {activePlan ? 'Current plan active' : checkoutPending === 'plan' ? 'Opening secure checkout…' : `Start ${isAnnual ? 'annual' : 'monthly'} plan`}
-            </CheckoutButton>
+            </CheckoutButton>}
             {billing.authenticated && !billing.owner && <small>Only an organization owner can start or change a plan.</small>}
             {billingError && <p className="pricing-billing-error" role="alert">{billingError}</p>}
           </article>
@@ -122,13 +139,13 @@ export default function PricingPage() {
                 <div className="storage-option" key={option.gb}>
                   <div><strong>+{option.gb} GB</strong><span>{option.copy}</span></div>
                   <div className="storage-option-price"><strong>{option.price}</strong><span>/ month</span><small>monthly add-on</small></div>
-                  <CheckoutButton
+                  {!isNativeApp && <CheckoutButton
                     secondary
                     disabled={billing.loading || !billing.owner || !activePlan || Boolean(checkoutPending) || billing.hasStorageSubscription}
                     onClick={() => beginCheckout({ type: 'storage', gb: option.gb })}
                   >
                     {billing.storageAddonGb === option.gb ? 'Current add-on' : checkoutPending === `storage-${option.gb}` ? 'Opening checkout…' : 'Add storage'}
-                  </CheckoutButton>
+                  </CheckoutButton>}
                 </div>
               ))}
             </div>

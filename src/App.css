@@ -901,6 +901,20 @@
   gap: 8px;
 }
 
+.terms-agreement {
+  display: flex !important;
+  align-items: flex-start;
+  gap: 10px;
+  color: var(--club-gray-dark) !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  line-height: 1.45;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+.terms-agreement input { width: 18px; height: 18px; flex: 0 0 18px; margin-top: 1px; accent-color: var(--club-green); }
+.terms-agreement a { color: var(--club-green-dark); font-weight: 800; }
+
 .admin-toggle-link {
   text-align: center;
   margin-top: 24px;

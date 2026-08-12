@@ -261,9 +261,9 @@ export function TermsPage() {
         <h2>3. Accounts and security</h2>
         <p>You must provide accurate information, protect credentials and promptly report suspected unauthorized access. Accounts may not be shared with people who are not authorized by the organization. Administrators must remove members whose access is no longer appropriate.</p>
         <h2>4. Photos and acceptable use</h2>
-        <p>You retain ownership of content you upload and grant Club PhotoHub the limited rights needed to store, process, display and deliver it within your organization’s workspace. You must have permission to upload the content. Illegal, abusive, infringing, deceptive or privacy-invasive content is prohibited.</p>
+        <p>You retain ownership of content you upload and grant Club PhotoHub the limited rights needed to store, process, display and deliver it within your organization’s workspace. You must have permission to upload the content. Club PhotoHub has zero tolerance for objectionable content or abusive users. Illegal, threatening, harassing, hateful, sexually explicit, exploitative, infringing, deceptive or privacy-invasive content is prohibited.</p>
         <h2>5. Moderation</h2>
-        <p>Organizations are primarily responsible for moderating their workspaces. Club PhotoHub may restrict or remove content and accounts when reasonably necessary to protect users, comply with law or enforce these terms.</p>
+        <p>Members can report objectionable photos and block abusive users from a photo’s action controls. Blocking immediately removes that user’s content from the blocking member’s feed and notifies Club PhotoHub for review. Organizations are primarily responsible for moderating their workspaces. Club PhotoHub may restrict or remove content and accounts when reasonably necessary to protect users, comply with law or enforce these terms.</p>
         <h2>6. Availability and changes</h2>
         <p>We work to provide a reliable service but do not guarantee uninterrupted availability. Features may change as the product evolves. Material changes affecting paid service will be communicated reasonably in advance where practical.</p>
         <h2>7. Cancellation and data</h2>
