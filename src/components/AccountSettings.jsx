@@ -87,12 +87,12 @@ export default function AccountSettings({
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', padding: '16px', background: 'var(--club-cream)', borderRadius: 'var(--radius-md)', marginBottom: '20px' }}>
           <div>
             <span style={{ fontSize: '11px', color: 'var(--club-gray-dark)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', fontWeight: '700' }}>Current Plan</span>
-            <strong style={{ fontSize: '15px', color: 'var(--club-green-dark)' }}>Club PhotoHub Pro (Monthly)</strong>
+            <strong style={{ fontSize: '15px', color: 'var(--club-green-dark)' }}>Monthly Subscription</strong>
           </div>
           <div>
             <span style={{ fontSize: '11px', color: 'var(--club-gray-dark)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', fontWeight: '700' }}>Status</span>
             <strong style={{ fontSize: '15px', color: '#16a34a' }}>
-              Paid & Active
+              Active
             </strong>
           </div>
           <div>
@@ -103,7 +103,7 @@ export default function AccountSettings({
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
           <div style={{ fontSize: '13px', color: 'var(--club-gray-dark)' }}>
-            Your monthly subscription is active. All trial banners have been cleared.
+            Your monthly subscription is active.
           </div>
           <div>
             <button
