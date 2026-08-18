@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AlertCircle, Building2, Images, KeyRound, Lock, Mail, Search, ShieldCheck, User } from 'lucide-react';
+import { AlertCircle, Building2, FileText, Images, KeyRound, Lock, Mail, Search, ShieldCheck, User } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
 import { platformBrand } from '../brand';
@@ -429,6 +429,30 @@ export default function Login({
       <button className="btn-gold login-btn">Open admin portal</button>
       {firebaseEnabled && <button type="button" className="btn-text" onClick={() => { setAdminResetMode(true); setResetMode(true); setError(''); }}>Forgot administrator password?</button>}
     </form>}
+
+    {directClubId && (
+      <div className="member-guide-login-link" style={{ marginTop: '18px', textAlign: 'center', borderTop: '1px solid rgba(220, 226, 224, 0.6)', paddingTop: '16px' }}>
+        <a
+          href={`/${directClubId}/welcome`}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            fontSize: '13px',
+            fontWeight: '700',
+            color: 'var(--club-green-dark)',
+            textDecoration: 'none',
+            padding: '10px 18px',
+            borderRadius: '24px',
+            background: 'var(--club-cream)',
+            border: '1px solid rgba(200, 167, 107, 0.4)',
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)'
+          }}
+        >
+          <FileText size={16} color="#C8A76B" /> Member Access Guide & PDF Instructions →
+        </a>
+      </div>
+    )}
     {typeof window !== 'undefined' && window.innerWidth <= 768 ? (
       <div className="club-signup-link" style={{ marginTop: '16px' }}>
         <span style={{ fontSize: '11px', color: 'var(--club-gray-dark)', textAlign: 'center', display: 'block', width: '100%' }}>
