@@ -349,14 +349,49 @@ export default function PhotoGallery({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [activeLightboxIndex, sortedPhotos.length]);
 
+  const [heartPopPhotoId, setHeartPopPhotoId] = useState(null);
+  const touchTapTimerRef = useRef({ time: 0, photoId: null });
+
   const handleHeartClick = (e, photoId) => {
     if (e) e.stopPropagation();
-    if (currentUser?.memberNumber === 'admin') return;
     onHeartPhoto(photoId);
   };
 
+  const handleDoubleTapLike = (e, photoId) => {
+    if (e) e.stopPropagation();
+    onHeartPhoto(photoId);
+    setHeartPopPhotoId(photoId);
+    setTimeout(() => {
+      setHeartPopPhotoId(prev => (prev === photoId ? null : prev));
+    }, 750);
+  };
+
+  const handlePhotoTouchStart = (e, photoId) => {
+    const now = Date.now();
+    const DOUBLE_TAP_DELAY = 300;
+    if (touchTapTimerRef.current.photoId === photoId && (now - touchTapTimerRef.current.time) < DOUBLE_TAP_DELAY) {
+      if (e.cancelable) e.preventDefault();
+      handleDoubleTapLike(e, photoId);
+      touchTapTimerRef.current = { time: 0, photoId: null };
+    } else {
+      touchTapTimerRef.current = { time: now, photoId };
+    }
+  };
+
+  const handleWheelZoom = (e, photoId) => {
+    if (e.cancelable) e.preventDefault();
+    if (activeZoomId !== photoId) {
+      setActiveZoomId(photoId);
+    }
+    const zoomFactor = e.deltaY < 0 ? 1.15 : 0.85;
+    setZoomScale(prev => {
+      const nextScale = Math.min(Math.max(prev * zoomFactor, 1), 4);
+      if (nextScale === 1) setPanOffset({ x: 0, y: 0 });
+      return nextScale;
+    });
+  };
+
   const handleAddEmojiReaction = (photoId, emoji) => {
-    if (currentUser?.memberNumber === 'admin') return;
     setReactionsMap(prev => {
       const current = prev[photoId] || {};
       const count = current[emoji] || 0;
@@ -768,10 +803,12 @@ export default function PhotoGallery({
                     className="feed-card-image-wrap" 
                     ref={photo.id === activeZoomId ? activeImageWrapRef : null}
                     onClick={() => { if (zoomScale === 1) handleCardClick(photo); }}
-                    onTouchStart={(e) => { setActiveZoomId(photo.id); handleTouchStart(e); }}
+                    onDoubleClick={(e) => handleDoubleTapLike(e, photo.id)}
+                    onTouchStart={(e) => { setActiveZoomId(photo.id); handleTouchStart(e); handlePhotoTouchStart(e, photo.id); }}
                     onTouchMove={photo.id === activeZoomId ? handleTouchMove : undefined}
                     onTouchEnd={photo.id === activeZoomId ? handleTouchEnd : undefined}
-                    style={{ zIndex: photo.id === activeZoomId && zoomScale > 1 ? 10 : 1, position: 'relative' }}
+                    onWheel={(e) => handleWheelZoom(e, photo.id)}
+                    style={{ zIndex: photo.id === activeZoomId && zoomScale > 1 ? 10 : 1, position: 'relative', touchAction: 'manipulation' }}
                   >
                     <img 
                       src={photoUrls[photo.id] || resolveApiUrl(photo.url) || photo.url || undefined} 
@@ -781,6 +818,11 @@ export default function PhotoGallery({
                       decoding="async" 
                       style={photo.id === activeZoomId && zoomScale > 1 ? { transform: `scale(${zoomScale}) translate(${panOffset.x / zoomScale}px, ${panOffset.y / zoomScale}px)`, transition: isPanning ? 'none' : 'transform 0.25s ease', transformOrigin: 'center' } : undefined}
                     />
+                    {heartPopPhotoId === photo.id && (
+                      <div className="heart-pop-overlay" style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 20, pointerEvents: 'none', animation: 'heartPopAnim 0.7s cubic-bezier(0.17, 0.89, 0.32, 1.28) forwards' }}>
+                        <Heart size={85} fill="#ef4444" color="#ef4444" style={{ filter: 'drop-shadow(0 4px 16px rgba(0,0,0,0.4))' }} />
+                      </div>
+                    )}
                   </div>
 
                   <div className="feed-card-body">
@@ -790,7 +832,6 @@ export default function PhotoGallery({
                           type="button" 
                           className={`feed-action ${userLiked ? 'liked' : ''}`} 
                           onClick={(e) => handleHeartClick(e, photo.id)} 
-                          disabled={isAdmin}
                         >
                           <Heart size={22} fill={userLiked ? 'currentColor' : 'none'} />
                           <span>{photo.hearts || 0}</span>
@@ -908,26 +949,32 @@ export default function PhotoGallery({
                       onMouseMove={index === activeLightboxIndex ? handleMouseMove : undefined} 
                       onMouseUp={index === activeLightboxIndex ? handleMouseUp : undefined} 
                       onMouseLeave={index === activeLightboxIndex ? handleMouseUp : undefined}
-                      onTouchStart={index === activeLightboxIndex ? handleTouchStart : undefined}
+                      onTouchStart={index === activeLightboxIndex ? (e) => { handleTouchStart(e); handlePhotoTouchStart(e, photo.id); } : undefined}
                       onTouchMove={index === activeLightboxIndex ? handleTouchMove : undefined}
                       onTouchEnd={index === activeLightboxIndex ? handleTouchEnd : undefined}
-                      style={{ touchAction: 'none' }}
+                      onWheel={index === activeLightboxIndex ? (e) => handleWheelZoom(e, photo.id) : undefined}
+                      onDoubleClick={(e) => handleDoubleTapLike(e, photo.id)}
+                      style={{ touchAction: 'manipulation', position: 'relative' }}
                     >
                       <img 
                         src={photoUrls[photo.id] || resolveApiUrl(photo.url) || photo.url || undefined}
                         alt={photo.caption} 
                         className="photo-post-image" 
                         loading={index === activeLightboxIndex ? 'eager' : 'lazy'} 
-                        style={index === activeLightboxIndex ? { transform: `scale(${zoomScale}) translate(${panOffset.x / zoomScale}px, ${panOffset.y / zoomScale}px)`, transition: isPanning ? 'none' : 'transform 0.25s ease', cursor: zoomScale > 1 ? (isPanning ? 'grabbing' : 'grab') : 'zoom-in' } : undefined} 
-                        onDoubleClick={index === activeLightboxIndex ? toggleZoom : undefined} 
+                        style={index === activeLightboxIndex ? { transform: `scale(${zoomScale}) translate(${panOffset.x / zoomScale}px, ${panOffset.y / zoomScale}px)`, transition: isPanning ? 'none' : 'transform 0.25s ease', cursor: zoomScale > 1 ? (isPanning ? 'grabbing' : 'grab') : 'default' } : undefined} 
                       />
+                      {heartPopPhotoId === photo.id && (
+                        <div className="heart-pop-overlay" style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 20, pointerEvents: 'none', animation: 'heartPopAnim 0.7s cubic-bezier(0.17, 0.89, 0.32, 1.28) forwards' }}>
+                          <Heart size={95} fill="#ef4444" color="#ef4444" style={{ filter: 'drop-shadow(0 4px 16px rgba(0,0,0,0.4))' }} />
+                        </div>
+                      )}
                     </div>
 
                     <div className="photo-post-body">
                       {/* Action buttons & Emoji Bar */}
                       <div className="photo-post-actions-wrapper">
                         <div className="photo-post-actions">
-                          <button type="button" className={`feed-action ${userLiked ? 'liked' : ''}`} onClick={e => handleHeartClick(e, photo.id)} disabled={isAdmin} aria-label="Like photo">
+                          <button type="button" className={`feed-action ${userLiked ? 'liked' : ''}`} onClick={e => handleHeartClick(e, photo.id)} aria-label="Like photo">
                             <Heart size={22} fill={userLiked ? 'currentColor' : 'none'} />
                             <span>{photo.hearts || 0}</span>
                           </button>

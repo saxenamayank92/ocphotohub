@@ -564,26 +564,19 @@ export default function App() {
   };
 
   const handleHeartPhoto = async photoId => {
-    if (!currentUser) return;
+    const userNum = currentUser?.memberNumber || (isAdmin ? 'admin' : null);
+    if (!userNum) return;
     const photo = photos.find(item => item.id === photoId);
     if (!photo) return;
-    if (demoMode) {
-      const userNum = currentUser.memberNumber;
+    if (demoMode || !cloudActive) {
       const heartUsers = photo.heartUsers || [];
       const hasLiked = heartUsers.includes(userNum);
       const nextUsers = hasLiked ? heartUsers.filter(user => user !== userNum) : [...heartUsers, userNum];
       setPhotos(previous => previous.map(item => item.id === photoId ? { ...item, hearts: nextUsers.length, heartUsers: nextUsers } : item));
+      if (!cloudActive) await savePhoto({ ...photo, hearts: nextUsers.length, heartUsers: nextUsers });
     } else if (cloudActive) {
-      const result = await toggleCloudHeart(photoId, currentUser.memberNumber);
+      const result = await toggleCloudHeart(photoId, userNum);
       setPhotos(prev => prev.map(item => item.id === photoId ? { ...item, ...result } : item));
-    } else {
-      const userNum = currentUser.memberNumber;
-      const heartUsers = photo.heartUsers || [];
-      const hasLiked = heartUsers.includes(userNum);
-      const nextUsers = hasLiked ? heartUsers.filter(user => user !== userNum) : [...heartUsers, userNum];
-      const updated = { ...photo, hearts: nextUsers.length, heartUsers: nextUsers };
-      await savePhoto(updated);
-      setPhotos(prev => prev.map(item => item.id === photoId ? updated : item));
     }
   };
 
