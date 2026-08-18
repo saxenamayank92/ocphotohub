@@ -740,24 +740,16 @@ export default function PhotoGallery({
           /* Grid View Mode */
           <div className="gallery-grid photo-gallery-grid">
             {sortedPhotos.map(photo => {
-              const isSelected = selectedPhotoIds.includes(photo.id);
-
               return (
                 <button 
                   key={photo.id} 
                   type="button" 
-                  className={`photo-card gallery-grid-card ${isSelectMode && isSelected ? 'selected-card' : ''}`}
-                  onClick={(e) => isSelectMode ? handleToggleSelectPhoto(photo.id, e) : handleCardClick(photo)} 
+                  className="photo-card gallery-grid-card"
+                  onClick={() => handleCardClick(photo)} 
                   aria-label={`Open photo from ${photo.uploaderName || 'club member'}`}
-                  style={isSelectMode && isSelected ? { outline: '3px solid var(--club-gold)', outlineOffset: '-3px' } : undefined}
                 >
                   <span className="photo-card-img-wrapper" style={{ position: 'relative' }}>
                     <img src={photoUrls[photo.id] || resolveApiUrl(photo.url) || photo.url || undefined} alt={photo.caption} className="photo-card-img" loading="eager" decoding="async" />
-                    {isSelectMode && (
-                      <span className="photo-select-checkbox" style={{ position: 'absolute', top: '8px', left: '8px', zIndex: 5 }}>
-                        {isSelected ? <CheckCircle2 size={24} color="#C8A76B" fill="#172238" /> : <Square size={22} color="#ffffff" />}
-                      </span>
-                    )}
                     <span className="photo-card-category">{photo.category}</span>
                     <span className="photo-card-hearts"><Heart size={13} fill="currentColor" /> {photo.hearts || 0}</span>
                   </span>
@@ -779,17 +771,11 @@ export default function PhotoGallery({
               const isOwner = currentUser && photo.uploaderId === currentUser.memberNumber;
               const canDelete = isAdmin || isOwner;
               const userLiked = hasLiked(photo);
-              const isSelected = selectedPhotoIds.includes(photo.id);
 
               return (
-                <article key={photo.id} className={`feed-card-item ${isSelectMode && isSelected ? 'selected-card' : ''}`} style={isSelectMode && isSelected ? { outline: '3px solid var(--club-gold)' } : undefined}>
+                <article key={photo.id} className="feed-card-item">
                   <header className="feed-card-header">
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      {isSelectMode && (
-                        <button type="button" onClick={(e) => handleToggleSelectPhoto(photo.id, e)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-                          {isSelected ? <CheckCircle2 size={24} color="#C8A76B" fill="#172238" /> : <Square size={22} color="#61706c" />}
-                        </button>
-                      )}
                       <div className="photo-post-avatar">{(photo.uploaderName || 'C').charAt(0).toUpperCase()}</div>
                       <div className="photo-post-author">
                         <strong>{photo.uploaderName || 'Club Member'}</strong>
@@ -1012,57 +998,6 @@ export default function PhotoGallery({
         </div>,
         document.body
       )}
-      {/* Moderator Floating Batch Action Bar */}
-      {isSelectMode && (
-        <div className="batch-action-floating-bar" style={{ position: 'fixed', bottom: '24px', left: '50%', transform: 'translateX(-50%)', zIndex: 999, background: '#172238', color: '#ffffff', padding: '14px 24px', borderRadius: '16px', boxShadow: '0 12px 36px rgba(0, 0, 0, 0.3)', display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap', border: '1px solid rgba(200, 167, 107, 0.4)' }}>
-          <div className="batch-bar-left" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--club-gold-light)' }}>
-              <CheckSquare size={16} style={{ display: 'inline', verticalAlign: 'text-bottom', marginRight: '4px' }} /> {selectedPhotoIds.length} photo(s) selected
-            </span>
-            <button type="button" className="btn-text" style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: '12px', fontWeight: '600' }} onClick={handleSelectAll}>Select All ({filteredPhotos.length})</button>
-          </div>
-
-          <div className="batch-bar-right" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <select
-                className="select-field"
-                style={{ padding: '6px 12px', fontSize: '12px', background: '#263a5c', color: '#ffffff', border: '1px solid rgba(255, 255, 255, 0.3)' }}
-                value={batchMoveTargetAlbumId}
-                onChange={e => setBatchMoveTargetAlbumId(e.target.value)}
-              >
-                <option value="">Select Target Album...</option>
-                <option value="">Unassigned (General Feed)</option>
-                {albums.map(a => (
-                  <option key={a.id} value={a.id}>📁 {a.name}</option>
-                ))}
-              </select>
-              <button
-                type="button"
-                className="btn-gold-sm"
-                onClick={handleExecuteBatchMove}
-                disabled={selectedPhotoIds.length === 0}
-                style={{ padding: '6px 14px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-              >
-                <MoveRight size={14} /> Move Photos
-              </button>
-            </div>
-
-            <button
-              type="button"
-              style={{ padding: '6px 12px', fontSize: '12px', background: 'rgba(239, 68, 68, 0.2)', color: '#fca5a5', border: '1px solid rgba(239, 68, 68, 0.4)', borderRadius: 'var(--radius-md)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-              onClick={handleExecuteBatchDelete}
-              disabled={selectedPhotoIds.length === 0}
-            >
-              <Trash2 size={14} /> Delete
-            </button>
-
-            <button type="button" onClick={handleClearSelection} style={{ background: 'none', border: 'none', color: 'rgba(255, 255, 255, 0.6)', cursor: 'pointer', padding: '4px' }}>
-              <X size={18} />
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Create Album Modal */}
       {showCreateAlbumModal && (
         <div className="studio-modal-backdrop" onClick={() => setShowCreateAlbumModal(false)}>
