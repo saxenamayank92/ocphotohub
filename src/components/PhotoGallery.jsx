@@ -5,7 +5,7 @@ import { Directory, Filesystem } from '@capacitor/filesystem';
 import {
   Heart, Trash2, X, ChevronLeft, Image as ImageIcon,
   Download, Search, LayoutGrid, ListFilter, Play, Flag, UserX,
-  Folder, FolderPlus, CheckSquare, Square, MoveRight, Plus, ArrowLeft, CheckCircle2, Edit3
+  Folder, FolderPlus, CheckSquare, Square, MoveRight, Plus, ArrowLeft, CheckCircle2, Edit3, Upload, Images
 } from 'lucide-react';
 import { photoDownloadName } from '../brand';
 import { fetchAuthenticatedPhoto, fetchAuthenticatedPhotoBlob, resolveApiUrl } from '../api';
@@ -24,6 +24,7 @@ export default function PhotoGallery({
   onUpdateAlbum,
   onDeleteAlbum,
   onMovePhotosToAlbum,
+  onSelectTab,
   addToast
 }) {
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -41,10 +42,22 @@ export default function PhotoGallery({
   const [editAlbumName, setEditAlbumName] = useState('');
   const [editAlbumDesc, setEditAlbumDesc] = useState('');
 
-  // Moderator Multi-Select & Batch Move State
-  const [isSelectMode, setIsSelectMode] = useState(false);
-  const [selectedPhotoIds, setSelectedPhotoIds] = useState([]);
-  const [batchMoveTargetAlbumId, setBatchMoveTargetAlbumId] = useState('');
+  // Add Photos from Library Modal state
+  const [showLibraryPickerModal, setShowLibraryPickerModal] = useState(false);
+  const [librarySelectedPhotoIds, setLibrarySelectedPhotoIds] = useState([]);
+
+  const handleToggleLibraryPhotoSelect = (photoId) => {
+    setLibrarySelectedPhotoIds(prev =>
+      prev.includes(photoId) ? prev.filter(id => id !== photoId) : [...prev, photoId]
+    );
+  };
+
+  const handleAddLibraryPhotosToAlbum = () => {
+    if (!activeAlbumId || librarySelectedPhotoIds.length === 0) return;
+    onMovePhotosToAlbum(librarySelectedPhotoIds, activeAlbumId);
+    setLibrarySelectedPhotoIds([]);
+    setShowLibraryPickerModal(false);
+  };
 
   const [showStoryShowcase, setShowStoryShowcase] = useState(false);
   const [downloadingPhotoId, setDownloadingPhotoId] = useState(null);
@@ -514,21 +527,6 @@ export default function PhotoGallery({
             </button>
           </div>
 
-          {/* Moderator Multi-Select Toggle */}
-          {isModerator && (
-            <button
-              type="button"
-              className={`select-mode-btn ${isSelectMode ? 'active' : ''}`}
-              onClick={() => {
-                if (isSelectMode) handleClearSelection();
-                else setIsSelectMode(true);
-              }}
-              title="Batch Select & Move Photos"
-            >
-              <CheckSquare size={14} /> {isSelectMode ? 'Cancel Select' : 'Select Photos'}
-            </button>
-          )}
-
           {/* Moderator Create Album Trigger */}
           {isModerator && (
             <button
@@ -576,25 +574,43 @@ export default function PhotoGallery({
             </div>
           </div>
 
-          {isModerator && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <button
-                type="button"
-                className="btn-secondary"
-                style={{ padding: '6px 12px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                onClick={(e) => handleOpenEditAlbum(albums.find(a => a.id === activeAlbumId), e)}
-              >
-                <Edit3 size={14} /> Edit Album
-              </button>
-              <button
-                type="button"
-                style={{ padding: '6px 12px', fontSize: '12px', background: 'rgba(239, 68, 68, 0.1)', color: '#dc2626', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: 'var(--radius-md)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                onClick={(e) => handleDeleteAlbumClick(activeAlbumId, e)}
-              >
-                <Trash2 size={14} /> Delete Album
-              </button>
-            </div>
-          )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              className="btn-gold-sm"
+              onClick={() => onSelectTab?.('upload')}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 14px', fontSize: '13px', fontWeight: '700' }}
+            >
+              <Upload size={14} /> Upload Photos
+            </button>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => { setLibrarySelectedPhotoIds([]); setShowLibraryPickerModal(true); }}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 14px', fontSize: '13px' }}
+            >
+              <Images size={14} /> Add Photos from Library
+            </button>
+            {isModerator && (
+              <>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  style={{ padding: '8px 12px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                  onClick={(e) => handleOpenEditAlbum(albums.find(a => a.id === activeAlbumId), e)}
+                >
+                  <Edit3 size={14} /> Edit
+                </button>
+                <button
+                  type="button"
+                  style={{ padding: '8px 12px', fontSize: '12px', background: 'rgba(239, 68, 68, 0.1)', color: '#dc2626', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: 'var(--radius-md)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                  onClick={(e) => handleDeleteAlbumClick(activeAlbumId, e)}
+                >
+                  <Trash2 size={14} /> Delete
+                </button>
+              </>
+            )}
+          </div>
         </div>
       )}
 
@@ -812,10 +828,34 @@ export default function PhotoGallery({
       ) : (
         <div className="gallery-empty">
           <ImageIcon size={48} />
-          <p className="gallery-empty-text">No photos match your filter</p>
-          <p style={{ color: 'var(--club-gray-dark)', fontSize: '14px' }}>
-            {searchQuery ? `No results for "${searchQuery}". Try clearing your search query.` : (showOnlyMine ? "You haven't uploaded any photos to this category yet." : "Be the first to upload a photo to this category!")}
+          <p className="gallery-empty-text">
+            {activeAlbumId ? 'This album has no photos yet' : 'No photos match your filter'}
           </p>
+          <p style={{ color: 'var(--club-gray-dark)', fontSize: '14px' }}>
+            {activeAlbumId
+              ? `Be the first to add photos to "${albums.find(a => a.id === activeAlbumId)?.name || 'this album'}".`
+              : searchQuery ? `No results for "${searchQuery}". Try clearing your search query.` : (showOnlyMine ? "You haven't uploaded any photos to this category yet." : "Be the first to upload a photo to this category!")}
+          </p>
+          {activeAlbumId && (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', flexWrap: 'wrap', marginTop: '16px' }}>
+              <button
+                type="button"
+                className="btn-gold"
+                onClick={() => onSelectTab?.('upload')}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 20px', fontWeight: '700' }}
+              >
+                <Upload size={16} /> Upload Photos
+              </button>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => { setLibrarySelectedPhotoIds([]); setShowLibraryPickerModal(true); }}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 20px' }}
+              >
+                <Images size={16} /> Add Photos from Library
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -1054,6 +1094,95 @@ export default function PhotoGallery({
                 <button type="submit" className="btn-gold"><Edit3 size={16} /> Save Changes</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Add Photos from Library Modal */}
+      {showLibraryPickerModal && (
+        <div className="studio-modal-backdrop" onClick={() => setShowLibraryPickerModal(false)}>
+          <div className="studio-modal-card" onClick={e => e.stopPropagation()} style={{ maxWidth: '640px', width: '92%' }}>
+            <div className="studio-modal-header">
+              <h3><Images size={18} /> Add Photos from Library</h3>
+              <button type="button" className="studio-close-btn" onClick={() => setShowLibraryPickerModal(false)}><X size={18} /></button>
+            </div>
+            <div className="studio-modal-body" style={{ padding: '20px', maxHeight: '60vh', overflowY: 'auto' }}>
+              <p style={{ fontSize: '13px', color: 'var(--club-gray-dark)', margin: '0 0 16px' }}>
+                Select photos from your club gallery to add to <strong>"{albums.find(a => a.id === activeAlbumId)?.name || 'this album'}"</strong>:
+              </p>
+
+              {photos.filter(p => p.albumId !== activeAlbumId).length > 0 ? (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))', gap: '12px' }}>
+                  {photos.filter(p => p.albumId !== activeAlbumId).map(photo => {
+                    const isSelected = librarySelectedPhotoIds.includes(photo.id);
+                    return (
+                      <div
+                        key={photo.id}
+                        onClick={() => handleToggleLibraryPhotoSelect(photo.id)}
+                        style={{
+                          position: 'relative',
+                          aspectRatio: '1',
+                          borderRadius: '8px',
+                          overflow: 'hidden',
+                          cursor: 'pointer',
+                          border: isSelected ? '3px solid var(--club-gold)' : '2px solid transparent',
+                          boxShadow: isSelected ? '0 0 8px rgba(200, 167, 107, 0.4)' : 'none'
+                        }}
+                      >
+                        <img
+                          src={photoUrls[photo.id] || resolveApiUrl(photo.url) || photo.url}
+                          alt={photo.caption}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
+                        <div style={{
+                          position: 'absolute',
+                          top: '6px',
+                          right: '6px',
+                          background: isSelected ? 'var(--club-gold)' : 'rgba(0,0,0,0.4)',
+                          color: '#ffffff',
+                          borderRadius: '50%',
+                          width: '22px',
+                          height: '22px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}>
+                          {isSelected ? <CheckCircle2 size={16} /> : <Square size={14} />}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div style={{ textAlign: 'center', padding: '32px 16px', background: 'var(--club-cream)', borderRadius: '12px' }}>
+                  <ImageIcon size={36} style={{ color: 'var(--club-gold-dark)', margin: '0 auto 10px', display: 'block' }} />
+                  <p style={{ fontWeight: '700', fontSize: '14px', margin: '0 0 4px', color: 'var(--club-green-dark)' }}>No unassigned photos found</p>
+                  <p style={{ fontSize: '12px', color: 'var(--club-gray-dark)', margin: 0 }}>All photos in your gallery are already in this album, or no photos have been uploaded yet.</p>
+                </div>
+              )}
+            </div>
+            <div className="studio-modal-footer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <button type="button" className="btn-secondary" onClick={() => setShowLibraryPickerModal(false)}>Cancel</button>
+              {photos.filter(p => p.albumId !== activeAlbumId).length > 0 ? (
+                <button
+                  type="button"
+                  className="btn-gold"
+                  disabled={librarySelectedPhotoIds.length === 0}
+                  onClick={handleAddLibraryPhotosToAlbum}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                >
+                  <Plus size={16} /> Add {librarySelectedPhotoIds.length} Photo{librarySelectedPhotoIds.length === 1 ? '' : 's'} to Album
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="btn-gold"
+                  onClick={() => { setShowLibraryPickerModal(false); onSelectTab?.('upload'); }}
+                >
+                  Upload New Photos
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}
