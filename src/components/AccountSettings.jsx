@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AlertTriangle, ShieldCheck, Trash2, UserRound, CreditCard, CheckCircle2, Sparkles, RefreshCw, ExternalLink } from 'lucide-react';
+import { AlertTriangle, ShieldCheck, Trash2, UserRound, CreditCard, CheckCircle2, ExternalLink } from 'lucide-react';
 
 export default function AccountSettings({
   user,
@@ -7,7 +7,6 @@ export default function AccountSettings({
   isAdmin,
   demoMode,
   subscriptionStatus = 'active',
-  onUpdateSubscription,
   onDeleteAccount,
   onDeleteOrganization,
   addToast
@@ -44,7 +43,7 @@ export default function AccountSettings({
         <div><UserRound size={24} /></div>
         <span>
           <strong>{user.firstName} {user.lastName}</strong>
-          <small>{isAdmin ? 'Organization administrator' : `Member ${user.memberNumber}`} · {club?.name || 'Club PhotoHub'}</small>
+          <small>{isAdmin ? 'Organization administrator' : `Member ${user.memberNumber}`} · {club?.name || 'The Oakville Club'}</small>
         </span>
       </div>
 
@@ -52,7 +51,7 @@ export default function AccountSettings({
       <article className="account-card subscription-card" style={{ background: '#ffffff', border: '1px solid rgba(200, 167, 107, 0.4)', borderRadius: 'var(--radius-lg)', padding: '24px', marginBottom: '24px', boxShadow: '0 4px 16px rgba(0, 0, 0, 0.04)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap', marginBottom: '16px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ background: isActive ? 'rgba(34, 197, 94, 0.1)' : 'rgba(200, 167, 107, 0.15)', color: isActive ? '#16a34a' : 'var(--club-gold-dark)', width: '42px', height: '42px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ background: 'rgba(34, 197, 94, 0.1)', color: '#16a34a', width: '42px', height: '42px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <CreditCard size={22} />
             </div>
             <div>
@@ -72,15 +71,15 @@ export default function AccountSettings({
               letterSpacing: '0.05em',
               padding: '5px 12px',
               borderRadius: '20px',
-              background: isActive ? '#dcfce7' : '#fef3c7',
-              color: isActive ? '#15803d' : '#b45309',
-              border: isActive ? '1px solid #bbf7d0' : '1px solid #fde68a',
+              background: '#dcfce7',
+              color: '#15803d',
+              border: '1px solid #bbf7d0',
               display: 'inline-flex',
               alignItems: 'center',
               gap: '5px'
             }}>
-              {isActive ? <CheckCircle2 size={13} /> : <Sparkles size={13} />}
-              {isActive ? 'ACTIVE SUBSCRIPTION' : 'FREE TRIAL'}
+              <CheckCircle2 size={13} />
+              ACTIVE SUBSCRIPTION
             </span>
           </div>
         </div>
@@ -88,44 +87,32 @@ export default function AccountSettings({
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', padding: '16px', background: 'var(--club-cream)', borderRadius: 'var(--radius-md)', marginBottom: '20px' }}>
           <div>
             <span style={{ fontSize: '11px', color: 'var(--club-gray-dark)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', fontWeight: '700' }}>Current Plan</span>
-            <strong style={{ fontSize: '15px', color: 'var(--club-green-dark)' }}>Club PhotoHub Pro (Annual)</strong>
+            <strong style={{ fontSize: '15px', color: 'var(--club-green-dark)' }}>Club PhotoHub Pro (Monthly)</strong>
           </div>
           <div>
             <span style={{ fontSize: '11px', color: 'var(--club-gray-dark)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', fontWeight: '700' }}>Status</span>
-            <strong style={{ fontSize: '15px', color: isActive ? '#16a34a' : '#b45309' }}>
-              {isActive ? 'Paid & Active' : 'Trial Period (4 days left)'}
+            <strong style={{ fontSize: '15px', color: '#16a34a' }}>
+              Paid & Active
             </strong>
           </div>
           <div>
             <span style={{ fontSize: '11px', color: 'var(--club-gray-dark)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', fontWeight: '700' }}>Next Renewal Date</span>
-            <strong style={{ fontSize: '15px', color: 'var(--club-navy)' }}>August 17, 2027</strong>
+            <strong style={{ fontSize: '15px', color: 'var(--club-navy)' }}>September 17, 2026</strong>
           </div>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
           <div style={{ fontSize: '13px', color: 'var(--club-gray-dark)' }}>
-            {isActive ? 'Your annual subscription is active. All trial banners have been cleared.' : 'Paid for your subscription? Click below to activate your subscription and clear trial mode.'}
+            Your monthly subscription is active. All trial banners have been cleared.
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+          <div>
             <button
               type="button"
               className="btn-gold"
               onClick={() => {
-                const nextStatus = isActive ? 'trialing' : 'active';
-                onUpdateSubscription?.(nextStatus);
-              }}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 16px', fontSize: '13px', fontWeight: '700' }}
-            >
-              <RefreshCw size={14} /> {isActive ? 'Revert to Trial View' : 'Confirm Subscription Paid (Activate)'}
-            </button>
-
-            <button
-              type="button"
-              className="btn-secondary"
-              onClick={() => {
                 window.open('https://billing.stripe.com', '_blank');
               }}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 16px', fontSize: '13px' }}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '10px 18px', fontSize: '13px', fontWeight: '700' }}
             >
               <ExternalLink size={14} /> Customer Billing Portal
             </button>
