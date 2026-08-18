@@ -44,7 +44,6 @@ export default function AdminPortal({
     { id: 'members', label: 'Member & Staff Directory', icon: Users },
     { id: 'moderation', label: 'Moderate Photos', icon: Shield },
     { id: 'cloud', label: 'Storage Usage', icon: HardDrive },
-    { id: 'events', label: '📅 Event Schedule & Venues', icon: Calendar },
   ];
 
   const currentTabObj = subTabs.find(t => t.id === activeSubTab) || subTabs[0];
@@ -595,22 +594,7 @@ export default function AdminPortal({
           </div>
         )}
 
-        {/* --- DYNAMIC EVENT SCHEDULE & MULTI-VENUE MANAGER --- */}
-        {activeSubTab === 'events' && (
-          <EventSchedule
-            user={user}
-            club={club}
-            isAdmin={true}
-            events={events}
-            venues={venues}
-            onAddEvent={onAddEvent}
-            onUpdateEvent={onUpdateEvent}
-            onDeleteEvent={onDeleteEvent}
-            onAddVenue={onAddVenue}
-            onResetEvents={onResetEvents}
-            addToast={addToast}
-          />
-        )}
+
 
         {/* --- 1. OVERVIEW / ANALYTICS --- */}
         {activeSubTab === 'dashboard' && (
