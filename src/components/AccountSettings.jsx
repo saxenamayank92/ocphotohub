@@ -110,7 +110,7 @@ export default function AccountSettings({
               type="button"
               className="btn-gold"
               onClick={() => {
-                window.open('https://billing.stripe.com', '_blank');
+                window.open('https://billing.stripe.com/p/login/5kQ4gz3FFbTH76IgC15Vu08', '_blank');
               }}
               style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '10px 18px', fontSize: '13px', fontWeight: '700' }}
             >
