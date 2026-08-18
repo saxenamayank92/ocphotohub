@@ -245,9 +245,30 @@ export default function App() {
     };
     fetchLeadDetails();
   }, [previewClubCode]);
-  const trialDaysLeft = currentClub?.planStatus === 'trialing' && currentClub.trialEndsAt
+  const [subscriptionStatus, setSubscriptionStatus] = useState(() => {
+    try {
+      return localStorage.getItem('oakville_plan_status') || 'active';
+    } catch {
+      return 'active';
+    }
+  });
+
+  const trialDaysLeft = subscriptionStatus !== 'active' && currentClub?.planStatus === 'trialing' && currentClub.trialEndsAt
     ? Math.max(0, Math.ceil((Date.parse(currentClub.trialEndsAt) - Date.now()) / (24 * 60 * 60 * 1000)))
     : null;
+
+  const handleUpdateSubscription = (newStatus) => {
+    setSubscriptionStatus(newStatus);
+    try {
+      localStorage.setItem('oakville_plan_status', newStatus);
+    } catch (e) {}
+    setCurrentClub(prev => prev ? { ...prev, planStatus: newStatus } : prev);
+    if (newStatus === 'active') {
+      addToast('Subscription status set to Active! Trial banner cleared.', 'success');
+    } else {
+      addToast(`Subscription status updated to ${newStatus}`, 'info');
+    }
+  };
 
   const addToast = (message, type = 'success') => {
     const id = Date.now() + Math.random();
@@ -696,7 +717,7 @@ export default function App() {
           {activeTab === 'upload' && <PhotoUpload user={currentUser} albums={albums} initialFiles={cameraFiles} onInitialFilesConsumed={() => setCameraFiles(null)} onUploadSuccess={handleUploadPhoto} addToast={addToast} />}
           {activeTab === 'profile' && <MemberProfile user={currentUser} club={currentClub || clubBrand} photos={photos} onLogout={handleLogout} />}
           {activeTab === 'admin' && isAdmin && <AdminPortal user={currentUser} club={currentClub || clubBrand} members={members} photos={photos} events={events} venues={venues} onAddEvent={handleAddEvent} onUpdateEvent={handleUpdateEvent} onDeleteEvent={handleDeleteEvent} onAddVenue={handleAddVenue} onResetEvents={handleResetEvents} onUpdateClub={handleUpdateClub} onAddMember={handleAddMember} onAddMembers={handleAddMembers} onUpdateMember={handleUpdateMember} onDeleteMember={handleDeleteMember} onSetMemberPassword={handleSetMemberPassword} onDeletePhoto={handleDeletePhoto} onUpdatePhoto={handleUpdatePhoto} onHeartPhoto={handleHeartPhoto} firebaseConfig={cloudActive ? { provider: 'managed' } : null} onResetDatabase={handleResetDatabase} demoMode={demoMode || isPreviewMode} addToast={addToast} />}
-          {activeTab === 'account' && <AccountSettings user={currentUser} club={currentClub || clubBrand} isAdmin={isAdmin} demoMode={demoMode} onDeleteAccount={handleDeleteAccount} onDeleteOrganization={handleDeleteOrganization} addToast={addToast} />}
+          {activeTab === 'account' && <AccountSettings user={currentUser} club={currentClub || clubBrand} isAdmin={isAdmin} demoMode={demoMode} subscriptionStatus={subscriptionStatus} onUpdateSubscription={handleUpdateSubscription} onDeleteAccount={handleDeleteAccount} onDeleteOrganization={handleDeleteOrganization} addToast={addToast} />}
         </Suspense>
       </main>
       {activeTab !== 'admin' && <MobileBottomNav activeTab={activeTab} setActiveTab={setActiveTab} />}
