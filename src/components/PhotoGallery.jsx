@@ -5,7 +5,7 @@ import { Directory, Filesystem } from '@capacitor/filesystem';
 import {
   Heart, Trash2, X, ChevronLeft, Image as ImageIcon,
   Download, Search, LayoutGrid, ListFilter, Play, Flag, UserX,
-  Folder, FolderPlus, CheckSquare, Square, MoveRight, Plus, ArrowLeft, CheckCircle2
+  Folder, FolderPlus, CheckSquare, Square, MoveRight, Plus, ArrowLeft, CheckCircle2, Edit3
 } from 'lucide-react';
 import { photoDownloadName } from '../brand';
 import { fetchAuthenticatedPhoto, fetchAuthenticatedPhotoBlob, resolveApiUrl } from '../api';
@@ -21,6 +21,8 @@ export default function PhotoGallery({
   onReportPhoto,
   onBlockMember,
   onAddAlbum,
+  onUpdateAlbum,
+  onDeleteAlbum,
   onMovePhotosToAlbum,
   addToast
 }) {
@@ -33,6 +35,11 @@ export default function PhotoGallery({
   const [showCreateAlbumModal, setShowCreateAlbumModal] = useState(false);
   const [newAlbumName, setNewAlbumName] = useState('');
   const [newAlbumDesc, setNewAlbumDesc] = useState('');
+
+  // Edit Album Modal State
+  const [editingAlbum, setEditingAlbum] = useState(null);
+  const [editAlbumName, setEditAlbumName] = useState('');
+  const [editAlbumDesc, setEditAlbumDesc] = useState('');
 
   // Moderator Multi-Select & Batch Move State
   const [isSelectMode, setIsSelectMode] = useState(false);
@@ -242,6 +249,35 @@ export default function PhotoGallery({
     setNewAlbumName('');
     setNewAlbumDesc('');
     setShowCreateAlbumModal(false);
+  };
+
+  const handleOpenEditAlbum = (album, e) => {
+    if (e) e.stopPropagation();
+    setEditingAlbum(album);
+    setEditAlbumName(album.name || '');
+    setEditAlbumDesc(album.description || '');
+  };
+
+  const handleEditAlbumSubmit = (e) => {
+    e.preventDefault();
+    if (!editingAlbum || !editAlbumName.trim()) return;
+    onUpdateAlbum?.(editingAlbum.id, {
+      name: editAlbumName.trim(),
+      description: editAlbumDesc.trim()
+    });
+    setEditingAlbum(null);
+  };
+
+  const handleDeleteAlbumClick = (albumId, e) => {
+    if (e) e.stopPropagation();
+    const album = albums.find(a => a.id === albumId);
+    if (window.confirm(`Are you sure you want to delete the album "${album?.name || 'this album'}"? Photos in this album will remain in your club gallery as unassigned.`)) {
+      if (activeAlbumId === albumId) {
+        setActiveAlbumId(null);
+        setLayoutMode('albums');
+      }
+      onDeleteAlbum?.(albumId);
+    }
   };
 
   const categories = ['All', 'General', 'Tennis', 'Golf', 'Dining', 'Clubhouse', 'Events'];
@@ -518,18 +554,40 @@ export default function PhotoGallery({
 
       {/* Active Album Banner */}
       {activeAlbumId && (
-        <div className="album-detail-banner" style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px 20px', background: '#ffffff', borderRadius: 'var(--radius-lg)', border: '1px solid rgba(200, 167, 107, 0.4)', marginBottom: '20px' }}>
-          <button type="button" className="btn-secondary" onClick={() => { setActiveAlbumId(null); setLayoutMode('albums'); }} style={{ padding: '8px 14px', fontSize: '13px' }}>
-            <ArrowLeft size={16} /> Back to Albums
-          </button>
-          <div className="album-detail-info">
-            <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: '20px', color: 'var(--club-green-dark)', margin: 0 }}>
-              📁 {albums.find(a => a.id === activeAlbumId)?.name || 'Album'}
-            </h3>
-            <p style={{ fontSize: '13px', color: 'var(--club-gray-dark)', margin: '2px 0 0' }}>
-              {albums.find(a => a.id === activeAlbumId)?.description || ''} • ({filteredPhotos.length} photo{filteredPhotos.length === 1 ? '' : 's'})
-            </p>
+        <div className="album-detail-banner" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', background: '#ffffff', borderRadius: 'var(--radius-lg)', border: '1px solid rgba(200, 167, 107, 0.4)', marginBottom: '20px', gap: '16px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <button type="button" className="btn-secondary" onClick={() => { setActiveAlbumId(null); setLayoutMode('albums'); }} style={{ padding: '8px 14px', fontSize: '13px' }}>
+              <ArrowLeft size={16} /> Back to Albums
+            </button>
+            <div className="album-detail-info">
+              <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: '20px', color: 'var(--club-green-dark)', margin: 0 }}>
+                📁 {albums.find(a => a.id === activeAlbumId)?.name || 'Album'}
+              </h3>
+              <p style={{ fontSize: '13px', color: 'var(--club-gray-dark)', margin: '2px 0 0' }}>
+                {albums.find(a => a.id === activeAlbumId)?.description || ''} • ({filteredPhotos.length} photo{filteredPhotos.length === 1 ? '' : 's'})
+              </p>
+            </div>
           </div>
+
+          {isModerator && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <button
+                type="button"
+                className="btn-secondary"
+                style={{ padding: '6px 12px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                onClick={(e) => handleOpenEditAlbum(albums.find(a => a.id === activeAlbumId), e)}
+              >
+                <Edit3 size={14} /> Edit Album
+              </button>
+              <button
+                type="button"
+                style={{ padding: '6px 12px', fontSize: '12px', background: 'rgba(239, 68, 68, 0.1)', color: '#dc2626', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: 'var(--radius-md)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                onClick={(e) => handleDeleteAlbumClick(activeAlbumId, e)}
+              >
+                <Trash2 size={14} /> Delete Album
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -589,7 +647,29 @@ export default function PhotoGallery({
                   </span>
                 </div>
                 <div className="album-card-body" style={{ padding: '16px' }}>
-                  <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: '18px', color: 'var(--club-green-dark)', margin: '0 0 6px' }}>📁 {album.name}</h3>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px', marginBottom: '6px' }}>
+                    <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: '18px', color: 'var(--club-green-dark)', margin: 0 }}>📁 {album.name}</h3>
+                    {isModerator && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+                        <button
+                          type="button"
+                          onClick={(e) => handleOpenEditAlbum(album, e)}
+                          title="Edit album name/description"
+                          style={{ background: 'rgba(0,0,0,0.05)', border: 'none', borderRadius: '4px', padding: '4px 6px', cursor: 'pointer', color: 'var(--club-green-dark)' }}
+                        >
+                          <Edit3 size={14} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => handleDeleteAlbumClick(album.id, e)}
+                          title="Delete album"
+                          style={{ background: 'rgba(239,68,68,0.1)', border: 'none', borderRadius: '4px', padding: '4px 6px', cursor: 'pointer', color: '#dc2626' }}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
                   {album.description && <p style={{ fontSize: '13px', color: 'var(--club-gray-dark)', margin: '0 0 10px', lineHeight: '1.4' }}>{album.description}</p>}
                   <span className="album-card-meta" style={{ fontSize: '11px', color: 'var(--club-gold-dark)', fontWeight: '600' }}>Created by {album.createdBy || 'Moderator'}</span>
                 </div>
@@ -924,6 +1004,47 @@ export default function PhotoGallery({
               <div className="studio-modal-footer">
                 <button type="button" className="btn-secondary" onClick={() => setShowCreateAlbumModal(false)}>Cancel</button>
                 <button type="submit" className="btn-gold"><FolderPlus size={16} /> Create Album</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Album Modal */}
+      {editingAlbum && (
+        <div className="studio-modal-backdrop" onClick={() => setEditingAlbum(null)}>
+          <div className="studio-modal-card" onClick={e => e.stopPropagation()} style={{ maxWidth: '440px' }}>
+            <div className="studio-modal-header">
+              <h3><Edit3 size={18} /> Edit Album Details</h3>
+              <button type="button" className="studio-close-btn" onClick={() => setEditingAlbum(null)}><X size={18} /></button>
+            </div>
+            <form onSubmit={handleEditAlbumSubmit}>
+              <div className="studio-modal-body" style={{ gap: '14px', padding: '20px' }}>
+                <div className="form-group" style={{ marginBottom: '14px' }}>
+                  <label style={{ fontWeight: '700', fontSize: '13px', display: 'block', marginBottom: '4px' }}>Album Name</label>
+                  <input
+                    type="text"
+                    className="input-field"
+                    placeholder="e.g. Tennis Gala 2026"
+                    value={editAlbumName}
+                    onChange={e => setEditAlbumName(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label style={{ fontWeight: '700', fontSize: '13px', display: 'block', marginBottom: '4px' }}>Description</label>
+                  <textarea
+                    className="input-field"
+                    placeholder="Album description..."
+                    value={editAlbumDesc}
+                    onChange={e => setEditAlbumDesc(e.target.value)}
+                    rows={3}
+                  />
+                </div>
+              </div>
+              <div className="studio-modal-footer">
+                <button type="button" className="btn-secondary" onClick={() => setEditingAlbum(null)}>Cancel</button>
+                <button type="submit" className="btn-gold"><Edit3 size={16} /> Save Changes</button>
               </div>
             </form>
           </div>

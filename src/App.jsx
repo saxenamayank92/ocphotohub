@@ -105,6 +105,18 @@ export default function App() {
     addToast(`Moved ${photoIds.length} photo(s) to "${albumName}"`, 'success');
   };
 
+  const handleUpdateAlbum = (albumId, updatedData) => {
+    setAlbums(prev => prev.map(a => a.id === albumId ? { ...a, ...updatedData } : a));
+    addToast('Album updated successfully!', 'success');
+  };
+
+  const handleDeleteAlbum = (albumId) => {
+    const target = albums.find(a => a.id === albumId);
+    setAlbums(prev => prev.filter(a => a.id !== albumId));
+    setPhotos(prev => prev.map(p => p.albumId === albumId ? { ...p, albumId: null } : p));
+    addToast(`Album "${target?.name || 'Item'}" deleted`, 'info');
+  };
+
   // Dynamic Event Schedule & Venues Management State
   const [events, setEvents] = useState(() => {
     try {
@@ -687,7 +699,7 @@ export default function App() {
       {!demoMode && trialDaysLeft !== null && currentUser?.role === 'owner' && <div className={`trial-status-banner ${trialDaysLeft === 0 ? 'expired' : ''}`}><span>{trialDaysLeft > 0 ? `${trialDaysLeft} days left in your free trial` : 'Your trial has ended. This workspace is now read-only.'}</span>{Capacitor.isNativePlatform() ? <span>Billing is managed outside the iOS app.</span> : <a href="/pricing#pricing-links">Choose a plan</a>}</div>}
       <main className="content-wrapper">
         <Suspense fallback={<div className="panel-loading" role="status"><div className="spinner" /><span>Loading…</span></div>}>
-          {activeTab === 'gallery' && <PhotoGallery photos={photos} albums={albums} currentUser={currentUser} isAdmin={isAdmin} onHeartPhoto={handleHeartPhoto} onDeletePhoto={handleDeletePhoto} onReportPhoto={handleReportPhoto} onBlockMember={handleBlockMember} onAddAlbum={handleAddAlbum} onMovePhotosToAlbum={handleMovePhotosToAlbum} addToast={addToast} />}
+          {activeTab === 'gallery' && <PhotoGallery photos={photos} albums={albums} currentUser={currentUser} isAdmin={isAdmin} onHeartPhoto={handleHeartPhoto} onDeletePhoto={handleDeletePhoto} onReportPhoto={handleReportPhoto} onBlockMember={handleBlockMember} onAddAlbum={handleAddAlbum} onUpdateAlbum={handleUpdateAlbum} onDeleteAlbum={handleDeleteAlbum} onMovePhotosToAlbum={handleMovePhotosToAlbum} addToast={addToast} />}
           {activeTab === 'events' && <EventSchedule user={currentUser} club={currentClub || clubBrand} isAdmin={isAdmin} events={events} venues={venues} onAddEvent={handleAddEvent} onUpdateEvent={handleUpdateEvent} onDeleteEvent={handleDeleteEvent} onAddVenue={handleAddVenue} onResetEvents={handleResetEvents} addToast={addToast} />}
           {activeTab === 'upload' && <PhotoUpload user={currentUser} albums={albums} initialFiles={cameraFiles} onInitialFilesConsumed={() => setCameraFiles(null)} onUploadSuccess={handleUploadPhoto} addToast={addToast} />}
           {activeTab === 'profile' && <MemberProfile user={currentUser} club={currentClub || clubBrand} photos={photos} onLogout={handleLogout} />}
