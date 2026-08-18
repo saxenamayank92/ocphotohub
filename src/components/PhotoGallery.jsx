@@ -560,12 +560,19 @@ export default function PhotoGallery({
               <ArrowLeft size={16} /> Back to Albums
             </button>
             <div className="album-detail-info">
-              <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: '20px', color: 'var(--club-green-dark)', margin: 0 }}>
-                📁 {albums.find(a => a.id === activeAlbumId)?.name || 'Album'}
-              </h3>
-              <p style={{ fontSize: '13px', color: 'var(--club-gray-dark)', margin: '2px 0 0' }}>
-                {albums.find(a => a.id === activeAlbumId)?.description || ''} • ({filteredPhotos.length} photo{filteredPhotos.length === 1 ? '' : 's'})
-              </p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: '22px', color: 'var(--club-green-dark)', margin: 0 }}>
+                  📁 {albums.find(a => a.id === activeAlbumId)?.name || 'Album'}
+                </h3>
+                <span style={{ background: 'rgba(23, 34, 56, 0.08)', color: 'var(--club-green-dark)', fontSize: '11px', fontWeight: '700', padding: '3px 10px', borderRadius: '12px' }}>
+                  {filteredPhotos.length} photo{filteredPhotos.length === 1 ? '' : 's'}
+                </span>
+              </div>
+              {albums.find(a => a.id === activeAlbumId)?.description && (
+                <p style={{ fontSize: '13px', color: 'var(--club-gray-dark)', margin: '4px 0 0' }}>
+                  {albums.find(a => a.id === activeAlbumId).description}
+                </p>
+              )}
             </div>
           </div>
 
