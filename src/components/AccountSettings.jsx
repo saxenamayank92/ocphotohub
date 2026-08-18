@@ -87,7 +87,7 @@ export default function AccountSettings({
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', padding: '16px', background: 'var(--club-cream)', borderRadius: 'var(--radius-md)', marginBottom: '20px' }}>
           <div>
             <span style={{ fontSize: '11px', color: 'var(--club-gray-dark)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', fontWeight: '700' }}>Current Plan</span>
-            <strong style={{ fontSize: '15px', color: 'var(--club-green-dark)' }}>Monthly Subscription</strong>
+            <strong style={{ fontSize: '15px', color: 'var(--club-green-dark)' }}>Club PhotoHub Base (Monthly)</strong>
           </div>
           <div>
             <span style={{ fontSize: '11px', color: 'var(--club-gray-dark)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', fontWeight: '700' }}>Status</span>
