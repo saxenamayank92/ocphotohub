@@ -106,7 +106,15 @@
       "destination": "/security/index.html"
     },
     {
+      "source": "/oakville-intro",
+      "destination": "/app-shell.html"
+    },
+    {
       "source": "/:clubSlug([a-zA-Z0-9-]+)",
+      "destination": "/app-shell.html"
+    },
+    {
+      "source": "/:clubSlug([a-zA-Z0-9-]+)/:path*",
       "destination": "/app-shell.html"
     }
   ]

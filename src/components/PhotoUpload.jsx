@@ -5,9 +5,10 @@ import {
 } from 'lucide-react';
 import { clubBrand } from '../brand';
 
-export default function PhotoUpload({ user, initialFiles, onInitialFilesConsumed, onUploadSuccess, addToast }) {
-  const [uploadQueue, setUploadQueue] = useState([]); // [{ id, fileName, previewUrl, originalFile, caption, category, aiSuggestions, isGeneratingCaption, filterPreset, brightness, contrast, saturation, vignette }]
+export default function PhotoUpload({ user, albums = [], initialFiles, onInitialFilesConsumed, onUploadSuccess, addToast }) {
+  const [uploadQueue, setUploadQueue] = useState([]); // [{ id, fileName, previewUrl, originalFile, caption, category, albumId, aiSuggestions, isGeneratingCaption, filterPreset, brightness, contrast, saturation, vignette }]
   const [globalCategory, setGlobalCategory] = useState('General');
+  const [selectedAlbumId, setSelectedAlbumId] = useState('');
   const [batchTagText, setBatchTagText] = useState('');
 
   const [isLoading, setIsLoading] = useState(false);
@@ -125,9 +126,9 @@ export default function PhotoUpload({ user, initialFiles, onInitialFilesConsumed
   const handleApplyBatchTag = () => {
     if (!batchTagText.trim()) return;
     const tag = batchTagText.trim();
-    setUploadQueue(prev => prev.map((item, idx) => ({
+    setUploadQueue(prev => prev.map((item) => ({
       ...item,
-      caption: prev.length > 1 ? `${tag} (${idx + 1})` : tag
+      category: tag
     })));
     addToast(`Applied event tag "${tag}" to all ${uploadQueue.length} photo(s)!`, 'success');
     setBatchTagText('');
@@ -473,6 +474,7 @@ export default function PhotoUpload({ user, initialFiles, onInitialFilesConsumed
           fileName: contextFileName,
           caption: item.caption.trim() || `${item.category} moment at the club`,
           category: item.category,
+          albumId: item.albumId || selectedAlbumId || null,
           uploaderName,
           uploaderId,
           createdAt: new Date().toISOString(),
@@ -572,10 +574,11 @@ export default function PhotoUpload({ user, initialFiles, onInitialFilesConsumed
         </div>
       </div>
 
-      {uploadQueue.length === 0 && (
-        <div className="form-group" style={{ marginTop: '20px', maxWidth: '300px', margin: '20px auto 0' }}>
+      {/* Global Category & Album Selectors */}
+      <div className="upload-options-grid" style={{ display: 'grid', gridTemplateColumns: albums.length > 0 ? '1fr 1fr' : '1fr', gap: '16px', marginTop: '20px', maxWidth: '500px', margin: '20px auto 0' }}>
+        <div className="form-group">
           <label htmlFor="globalCat" style={{ textAlign: 'center', display: 'block', fontWeight: '700', fontSize: '12px' }}>
-            Default Category for Uploads
+            Category Tag
           </label>
           <select
             id="globalCat"
@@ -588,7 +591,26 @@ export default function PhotoUpload({ user, initialFiles, onInitialFilesConsumed
             ))}
           </select>
         </div>
-      )}
+
+        {albums.length > 0 && (
+          <div className="form-group">
+            <label htmlFor="globalAlbum" style={{ textAlign: 'center', display: 'block', fontWeight: '700', fontSize: '12px' }}>
+              Add to Album (Optional)
+            </label>
+            <select
+              id="globalAlbum"
+              className="select-field"
+              value={selectedAlbumId}
+              onChange={(e) => setSelectedAlbumId(e.target.value)}
+            >
+              <option value="">No Album (General Feed)</option>
+              {albums.map((album) => (
+                <option key={album.id} value={album.id}>📁 {album.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
+      </div>
 
       {/* Queue & Photo Studio Controls */}
       {uploadQueue.length > 0 && (

@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import {
   Users, Image as ImageIcon, BarChart3, Heart, Sparkles, PartyPopper, QrCode, Calendar, DollarSign,
-  Building2, Trash2, RefreshCw, Upload, FileSpreadsheet, Key, X, FileText, UserPlus, Edit2, Search, HardDrive, Shield, CheckCircle2, ShieldAlert, Crown, Lock, Menu, ChevronDown
+  Building2, Trash2, RefreshCw, Upload, FileSpreadsheet, Key, X, FileText, UserPlus, Edit2, Search, HardDrive, Shield, CheckCircle2, ShieldAlert, Crown, Lock, Menu, ChevronDown, Plus, Check, MapPin
 } from 'lucide-react';
 import PhotoGallery from './PhotoGallery';
+import EventSchedule from './EventSchedule';
 import { resolveApiUrl } from '../api';
 
 const normalizeMemberNumber = num => String(num || '').trim();
@@ -13,6 +14,13 @@ export default function AdminPortal({
   club,
   members,
   photos,
+  events = [],
+  venues = ['Dining Room'],
+  onAddEvent,
+  onUpdateEvent,
+  onDeleteEvent,
+  onAddVenue,
+  onResetEvents,
   onUpdateClub,
   onAddMember,
   onAddMembers,
@@ -26,7 +34,7 @@ export default function AdminPortal({
   demoMode,
   addToast
 }) {
-  const [activeSubTab, setActiveSubTab] = useState('gallery'); // 'gallery' | 'clubs' | 'dashboard' | 'members' | 'moderation' | 'cloud'
+  const [activeSubTab, setActiveSubTab] = useState('gallery'); // 'gallery' | 'clubs' | 'dashboard' | 'members' | 'moderation' | 'cloud' | 'events'
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const subTabs = [
@@ -36,11 +44,13 @@ export default function AdminPortal({
     { id: 'members', label: 'Member & Staff Directory', icon: Users },
     { id: 'moderation', label: 'Moderate Photos', icon: Shield },
     { id: 'cloud', label: 'Storage Usage', icon: HardDrive },
-    { id: 'events', label: '🎉 Private Event Vaults (Coming Soon)', icon: PartyPopper },
+    { id: 'events', label: '📅 Event Schedule & Venues', icon: Calendar },
   ];
 
   const currentTabObj = subTabs.find(t => t.id === activeSubTab) || subTabs[0];
   const ActiveTabIcon = currentTabObj.icon;
+
+
 
   // Club settings state
   const [clubName, setClubName] = useState(club.name || '');
@@ -585,90 +595,21 @@ export default function AdminPortal({
           </div>
         )}
 
-        {/* --- PRIVATE EVENT VAULTS (COMING SOON) --- */}
+        {/* --- DYNAMIC EVENT SCHEDULE & MULTI-VENUE MANAGER --- */}
         {activeSubTab === 'events' && (
-          <div className="animate-fade-in" style={{ padding: '8px 4px' }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '5px 12px', background: 'rgba(251, 191, 36, 0.15)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: '999px', fontSize: '11.5px', fontWeight: '800', color: '#b45309', marginBottom: '14px' }}>
-              <Sparkles size={14} /> UPCOMING FEATURE • 100% OFFLINE BILLING FOR CLUBS
-            </div>
-
-            <h2 className="admin-section-title" style={{ fontSize: '24px', fontWeight: '800', margin: '0 0 6px' }}>
-              🎉 Private Event Photo Vaults (Weddings, Tournaments & Social Events)
-            </h2>
-            <p style={{ fontSize: '13.5px', color: '#475569', lineHeight: '1.5', margin: '0 0 24px' }}>
-              Offer members 30-day private photo vaults for weddings, tournaments, and social events hosted at <strong>{club.name}</strong>.
-            </p>
-
-            {/* Offline Billing Banner Card */}
-            <div style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', borderRadius: '18px', padding: '24px', color: '#ffffff', marginBottom: '28px', boxShadow: '0 12px 30px rgba(15, 23, 42, 0.15)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-                <DollarSign size={22} style={{ color: '#fbbf24' }} />
-                <h3 style={{ margin: 0, fontSize: '17px', fontWeight: '800', color: '#fbbf24' }}>
-                  Flexible Pricing — 100% Dependent on Your Club's Strategy
-                </h3>
-              </div>
-              <p style={{ margin: '0 0 16px', fontSize: '13.5px', color: '#cbd5e1', lineHeight: '1.6' }}>
-                You have complete freedom over event pricing. While standalone consumer event platforms typically charge <strong>$150 to $400+ per single wedding</strong>, your club can bundle Private Event Vaults into catering packages or bill <strong>$80 – $200</strong> directly on the member's <strong>event invoice</strong>.
-                <br /><br />
-                <strong>Club PhotoHub charges $0 per-event transaction fees</strong> and handles zero billing. 100% of the event revenue stays directly with your club.
-              </p>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', fontSize: '12.5px', color: '#94a3b8', borderTop: '1px solid rgba(255, 255, 255, 0.1)', paddingTop: '14px' }}>
-                <span>✓ <strong>Industry Benchmark:</strong> External vendors charge $150–$400/event</span>
-                <span>✓ <strong>Offline Billing:</strong> Direct on event or catering invoice</span>
-                <span>✓ <strong>$0 Transaction Fee:</strong> Keep 100% of event margin</span>
-              </div>
-            </div>
-
-            {/* Feature Highlights Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px', marginBottom: '28px' }}>
-              
-              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '18px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', color: '#2563eb', fontWeight: '800', fontSize: '15px' }}>
-                  <Shield size={18} /> 100% Privacy Isolation
-                </div>
-                <p style={{ fontSize: '13px', color: '#64748b', margin: 0, lineHeight: '1.5' }}>
-                  Event photos are sealed inside an isolated vault. Zero leakage into general club feeds or other member galleries.
-                </p>
-              </div>
-
-              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '18px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', color: '#d97706', fontWeight: '800', fontSize: '15px' }}>
-                  <QrCode size={18} /> QR Table Tents
-                </div>
-                <p style={{ fontSize: '13px', color: '#64748b', margin: 0, lineHeight: '1.5' }}>
-                  Print 1-click QR codes for reception tables. Guests scan with their phone camera and upload instantly — zero app download required.
-                </p>
-              </div>
-
-              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '18px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', color: '#059669', fontWeight: '800', fontSize: '15px' }}>
-                  <Calendar size={18} /> 30-Day Auto-Archiving
-                </div>
-                <p style={{ fontSize: '13px', color: '#64748b', margin: 0, lineHeight: '1.5' }}>
-                  The event vault auto-expires on Day 30. The host receives a 1-click HD ZIP file of all guest photos directly to their email.
-                </p>
-              </div>
-
-            </div>
-
-            {/* Early Access Action */}
-            <div style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '16px', padding: '20px', textAlign: 'center' }}>
-              <h4 style={{ margin: '0 0 6px', fontSize: '15px', fontWeight: '800', color: '#0f172a' }}>
-                Want to offer Event Vaults to {club.name}'s members?
-              </h4>
-              <p style={{ margin: '0 0 14px', fontSize: '13px', color: '#64748b' }}>
-                We are granting early access beta keys to select private country & golf clubs.
-              </p>
-              <button
-                type="button"
-                className="btn-primary"
-                style={{ padding: '10px 20px', borderRadius: '999px', fontSize: '13px', fontWeight: '800' }}
-                onClick={() => addToast && addToast('🎉 Request submitted! Our team will contact your club leadership for early access.', 'success')}
-              >
-                <Sparkles size={16} /> Request Early Access Beta Key
-              </button>
-            </div>
-          </div>
+          <EventSchedule
+            user={user}
+            club={club}
+            isAdmin={true}
+            events={events}
+            venues={venues}
+            onAddEvent={onAddEvent}
+            onUpdateEvent={onUpdateEvent}
+            onDeleteEvent={onDeleteEvent}
+            onAddVenue={onAddVenue}
+            onResetEvents={onResetEvents}
+            addToast={addToast}
+          />
         )}
 
         {/* --- 1. OVERVIEW / ANALYTICS --- */}

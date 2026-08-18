@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, BarChart3, Bot, Building2, Check, Clock, Copy, Edit3, ExternalLink, Lock, Mail, MousePointerClick, Plus, RefreshCw, Search, Send, Sparkles, Trash2, Users, X as XIcon, Zap } from 'lucide-react';
-import { completePlatformLogin, createOutreachLead, deleteOutreachLead, getLeadDashboard, getPlatformSession, requestPlatformLogin, sendOutreachEmail, updateOutreachLead } from '../api';
+import { completePlatformLogin, createOutreachLead, deleteOutreachLead, getLeadDashboard, getPlatformSession, requestPlatformLogin, updateOutreachLead } from '../api';
 import AIAgentConsole from './AIAgentConsole';
 import './LeadDashboard.css';
 import './LeadDashboardLogin.css';
@@ -52,7 +52,7 @@ export default function LeadDashboard() {
     organizationType: 'Golf & Country Club',
     leadCode: '',
     notes: '',
-    sendEmailNow: true
+    sendEmailNow: false
   });
   const [submitting, setSubmitting] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -67,7 +67,6 @@ export default function LeadDashboard() {
   // Email Preview Modal state
   const [previewLead, setPreviewLead] = useState(null);
   const [followupLead, setFollowupLead] = useState(null);
-  const [sendingEmail, setSendingEmail] = useState(false);
 
   // Bulk AI Outreach state
   const [showBulkModal, setShowBulkModal] = useState(false);
@@ -200,23 +199,9 @@ export default function LeadDashboard() {
     if (!newLead.clubName.trim()) return;
     setSubmitting(true);
     try {
-      const created = await createOutreachLead(newLead);
-      if (newLead.sendEmailNow && newLead.email) {
-        try {
-          await sendOutreachEmail({
-            leadId: created.lead?.id,
-            clubName: newLead.clubName,
-            firstName: newLead.firstName,
-            email: newLead.email,
-            organizationType: newLead.organizationType,
-            leadCode: newLead.leadCode || created.lead?.leadCode
-          });
-        } catch (err) {
-          console.warn('Direct outreach send error:', err);
-        }
-      }
+      await createOutreachLead(newLead);
       setShowAddModal(false);
-      setNewLead({ clubName: '', firstName: '', lastName: '', email: '', organizationType: 'Golf & Country Club', leadCode: '', notes: '', sendEmailNow: true });
+      setNewLead({ clubName: '', firstName: '', lastName: '', email: '', organizationType: 'Golf & Country Club', leadCode: '', notes: '', sendEmailNow: false });
       await load();
     } catch (error) {
       alert(error.message || 'Could not create lead.');
@@ -226,52 +211,13 @@ export default function LeadDashboard() {
   };
 
   const handleSendSingleEmail = async (lead) => {
-    setSendingEmail(true);
-    try {
-      await sendOutreachEmail({
-        leadId: lead.id,
-        clubName: lead.clubName,
-        firstName: lead.firstName,
-        email: lead.email,
-        organizationType: lead.organizationType,
-        leadCode: lead.leadCode || lead.id
-      });
-      alert(`Outreach email successfully sent to ${lead.email}!`);
-      setPreviewLead(null);
-      await load();
-    } catch (error) {
-      alert(error.message || 'Could not send outreach email. Please verify MailerSend setup.');
-    } finally {
-      setSendingEmail(false);
-    }
+    void lead;
+    alert('Outreach is paused. Add this contact to a verified review batch before sending.');
   };
 
   const handleSendFollowupEmail = async (lead) => {
-    setSendingEmail(true);
-    try {
-      await sendOutreachEmail({
-        leadId: lead.id,
-        clubName: lead.clubName,
-        firstName: lead.firstName,
-        email: lead.email,
-        organizationType: lead.organizationType,
-        leadCode: lead.leadCode || lead.id,
-        templateType: 'followup'
-      });
-      alert(`Follow-up email successfully sent to ${lead.email}!`);
-      setFollowupLead(null);
-      await load();
-    } catch (error) {
-      alert(error.message || 'Could not send follow-up via server. Opening pre-filled Gmail draft...');
-      const first = (lead.firstName && lead.firstName.trim() && lead.firstName !== 'General Manager') ? lead.firstName.trim() : 'there';
-      const encodedClub = encodeURIComponent(lead.clubName);
-      const subject = `Follow-up: Custom preview for ${lead.clubName}`;
-      const body = `Hi ${first},\n\nFollowing up on my note earlier regarding private member photo sharing.\n\nWe just introduced custom sample previews where we set up a private workspace using ${lead.clubName}'s branding and event categories so you can see exactly how your members would experience it. Zero setup required for your staff.\n\nYou can request a private sample preview in 10 seconds here:\n👉 https://clubphotohub.com/book-demo?club=${encodedClub}\n\nOr simply reply to this email with "yes" and I'll build out a preview for ${lead.clubName}.\n\nMayank Saxena\nmayank.saxena@xtide.io\nhttps://clubphotohub.com\n\n--\nxTide Apps / Club PhotoHub\nActon, ON L7J 1H3, Canada\nReply unsubscribe to opt out.`;
-      const gmailUrl = `https://mail.google.com/mail/u/0/?view=cm&fs=1&tf=1&to=${encodeURIComponent(lead.email)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-      window.open(gmailUrl, '_blank');
-    } finally {
-      setSendingEmail(false);
-    }
+    void lead;
+    alert('Follow-ups are paused until prior delivery, reply state, verification, and cadence are reconciled.');
   };
 
   const handleRunBulkOutreach = async () => {
@@ -296,16 +242,7 @@ export default function LeadDashboard() {
 
       try {
         const res = await createOutreachLead({ clubName, firstName, email, organizationType, leadCode });
-        if (email) {
-          await sendOutreachEmail({
-            leadId: res.lead?.id,
-            clubName,
-            firstName,
-            email,
-            organizationType,
-            leadCode
-          });
-        }
+        void res;
       } catch (err) {
         console.error('Bulk lead error for line:', line, err);
       }
@@ -361,11 +298,11 @@ export default function LeadDashboard() {
         <a href="/"><ArrowLeft size={16} /> Club PhotoHub</a>
         <span>Private platform admin</span>
         <h1>Lead Tracker & AI Outreach</h1>
-        <p>Track email outreach engagement, generate tracked links, and dispatch automated cold emails.</p>
+        <p>Research prospects, reconcile contact history, and build verified review batches. Outbound outreach is paused.</p>
       </div>
       <div className="lead-header-actions">
         <button className="lead-ai-bulk-btn" onClick={() => setShowBulkModal(true)}>
-          <Zap size={16} /> Bulk AI Outreach
+          <Zap size={16} /> Import Leads for Review
         </button>
         <button className="lead-add-btn" onClick={() => setShowAddModal(true)}>
           <Plus size={16} /> Add Lead
@@ -416,7 +353,7 @@ export default function LeadDashboard() {
             <div className="database-card-stats">
               <span className="stat-pill total">🌐 {leads.length} Potential Clients</span>
               <span className="stat-pill contacted">✅ {leads.filter(l => l.status === 'outreach_sent' || l.status === 'followup_sent' || l.status === 'demo_opened' || l.status === 'link_clicked').length} Contacted</span>
-              <span className="stat-pill ready">🎯 {leads.filter(l => l.status === 'new').length} Ready to Target</span>
+              <span className="stat-pill ready">🧭 {leads.filter(l => l.status === 'new').length} Unreviewed</span>
               <span className="stat-pill hot">🔥 {leads.filter(l => l.status === 'demo_opened' || l.status === 'link_clicked' || (l.clicksCount && l.clicksCount > 0)).length} Hot Prospects</span>
             </div>
           </div>
@@ -519,7 +456,7 @@ export default function LeadDashboard() {
           🌐 All Clubs ({leads.length})
         </button>
         <button className={`filter-tab ${statusFilter === 'new' ? 'active' : ''}`} onClick={() => setStatusFilter('new')}>
-          🎯 Queued for Outreach ({leads.filter(l => l.status === 'new').length})
+          🧭 Unreviewed ({leads.filter(l => l.status === 'new').length})
         </button>
         <button className={`filter-tab ${statusFilter === 'outreach_sent' ? 'active' : ''}`} onClick={() => setStatusFilter('outreach_sent')}>
           ✉️ Outreach Sent ({leads.filter(l => l.status === 'outreach_sent').length})
@@ -634,9 +571,9 @@ export default function LeadDashboard() {
                       <button
                         className="btn-send-email-action"
                         onClick={() => setPreviewLead(lead)}
-                        title="Preview & Send Cold Outreach Email"
+                        title="Review outreach candidate"
                       >
-                        <Send size={12} /> Send Email
+                        <Send size={12} /> Review Email
                       </button>
                     )}
                     <a
@@ -653,9 +590,9 @@ export default function LeadDashboard() {
                       <button
                         className="btn-send-followup-action"
                         onClick={() => setFollowupLead(lead)}
-                        title="Send Branded Preview Follow-Up Email"
+                        title="Review follow-up candidate"
                       >
-                        <Sparkles size={12} /> 🔥 Send Follow-Up
+                        <Sparkles size={12} /> Review Follow-Up
                       </button>
                     )}
                     {lead.workspaceClubId ? (
@@ -716,7 +653,7 @@ export default function LeadDashboard() {
                   <strong className="mob-club-name"><Building2 size={15} style={{ verticalAlign: 'middle', marginRight: 4 }} /> {lead.clubName}</strong>
                   <span className="mob-org-type">{lead.organizationType}</span>
                 </div>
-                {isHot && <span className="badge-hot-lead">🔥 HOT LEAD</span>}
+                {isHot && <span className="badge-hot-lead">High engagement</span>}
               </div>
 
               <div className="mob-card-contact">
@@ -735,7 +672,7 @@ export default function LeadDashboard() {
                   {lead.status === 'demo_opened' && '🚀 Demo Opened'}
                   {lead.status === 'verification_started' && '⏳ Verification'}
                   {lead.status === 'workspace_created' && '🎉 Workspace Created'}
-                  {!statusLabels[lead.status] && (lead.status || 'Outreach Sent')}
+                  {!statusLabels[lead.status] && (lead.status || 'Unknown')}
                 </span>
 
                 <div className="mob-clicks-pill">
@@ -751,7 +688,7 @@ export default function LeadDashboard() {
                     className="btn-send-followup-action mob-primary-btn"
                     onClick={() => setFollowupLead(lead)}
                   >
-                    <Sparkles size={14} /> 🔥 Send Follow-Up Preview
+                    <Sparkles size={14} /> Review Follow-Up
                   </button>
                 ) : lead.email ? (
                   <button
@@ -788,7 +725,7 @@ export default function LeadDashboard() {
 
   {/* RIGHT COLUMN (30% AREA) */}
   <aside className="lead-dashboard-agent-col">
-    <AIAgentConsole onRefreshLeads={load} leads={leads} />
+    <AIAgentConsole onRefreshLeads={load} />
   </aside>
 </div>
 
@@ -869,16 +806,7 @@ export default function LeadDashboard() {
               </label>
             </div>
 
-            {newLead.email && (
-              <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  checked={newLead.sendEmailNow}
-                  onChange={e => setNewLead(prev => ({ ...prev, sendEmailNow: e.target.checked }))}
-                />
-                <span>Automatically send personalized email outreach immediately</span>
-              </label>
-            )}
+            {newLead.email && <p className="lead-safety-note">This creates an unreviewed lead only. No email will be sent.</p>}
 
             <div className="modal-actions">
               <button type="button" onClick={() => setShowAddModal(false)} className="btn-cancel">Cancel</button>
@@ -928,11 +856,11 @@ export default function LeadDashboard() {
             <button type="button" onClick={() => setPreviewLead(null)} className="btn-cancel">Cancel</button>
             <button
               type="button"
-              disabled={sendingEmail}
+              disabled
               onClick={() => handleSendSingleEmail(previewLead)}
               className="btn-submit btn-send-now"
             >
-              {sendingEmail ? 'Sending Email...' : `Send Email to ${previewLead.email}`}
+              Outreach Paused — Add to Review
             </button>
           </div>
         </div>
@@ -962,9 +890,6 @@ export default function LeadDashboard() {
             <div className="email-preview-body">
               {(() => {
                 const targetFirst = (followupLead.firstName && followupLead.firstName.trim() && followupLead.firstName !== 'General Manager') ? followupLead.firstName.trim() : 'there';
-                const bodyText = `Hi ${targetFirst},\n\nFollowing up on my note earlier regarding private member photo sharing.\n\nWe just introduced custom sample previews where we set up a private workspace using ${followupLead.clubName}'s branding and event categories so you can see exactly how your members would experience it. Zero setup required for your staff.\n\nYou can request a private sample preview in 10 seconds here:\n👉 https://clubphotohub.com/book-demo?club=${encodeURIComponent(followupLead.clubName)}\n\nOr simply reply to this email with "yes" and I'll build out a preview for ${followupLead.clubName}.\n\nMayank Saxena\nmayank.saxena@xtide.io\nhttps://clubphotohub.com\n\n--\nxTide Apps / Club PhotoHub\nActon, ON L7J 1H3, Canada\nReply unsubscribe to opt out.`;
-                const gmailLink = `https://mail.google.com/mail/u/0/?view=cm&fs=1&tf=1&to=${encodeURIComponent(followupLead.email)}&su=${encodeURIComponent(`Follow-up: Custom preview for ${followupLead.clubName}`)}&body=${encodeURIComponent(bodyText)}`;
-
                 return <>
                   <p>Hi {targetFirst},</p>
                   <p>Following up on my note earlier regarding private member photo sharing.</p>
@@ -977,23 +902,14 @@ export default function LeadDashboard() {
 
                   <div className="modal-actions" style={{ gap: 10, marginTop: 20 }}>
                     <button type="button" onClick={() => setFollowupLead(null)} className="btn-cancel">Cancel</button>
-                    <a
-                      href={gmailLink}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="btn-submit"
-                      style={{ background: '#0f1828', color: '#fff', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}
-                    >
-                      ✉️ Open in Gmail Compose
-                    </a>
                     <button
                       type="button"
-                      disabled={sendingEmail}
+                      disabled
                       onClick={() => handleSendFollowupEmail(followupLead)}
                       className="btn-submit btn-send-now"
                       style={{ background: '#d97706', color: '#fff' }}
                     >
-                      {sendingEmail ? 'Sending Follow-Up...' : `⚡ Send Server Follow-Up`}
+                      Outreach Paused
                     </button>
                   </div>
                 </>;
@@ -1010,8 +926,8 @@ export default function LeadDashboard() {
         <div className="lead-modal-content modal-lg" onClick={e => e.stopPropagation()}>
           <div className="lead-modal-header">
             <div>
-              <h3><Zap size={18} /> Bulk AI Outreach Campaign</h3>
-              <p>Paste target clubs to automatically create tracking links & send personalized emails</p>
+              <h3><Zap size={18} /> Import Leads for Review</h3>
+              <p>Paste target clubs to create unreviewed records. This action does not send email.</p>
             </div>
             <button onClick={() => setShowBulkModal(false)} className="btn-close-modal"><XIcon size={18} /></button>
           </div>
@@ -1029,7 +945,7 @@ export default function LeadDashboard() {
             {bulkProgress && (
               <div className="bulk-progress-bar">
                 <div className="progress-fill" style={{ width: `${(bulkProgress.current / bulkProgress.total) * 100}%` }} />
-                <span>Sending email {bulkProgress.current} of {bulkProgress.total}: <strong>{bulkProgress.currentName}</strong></span>
+                <span>Importing lead {bulkProgress.current} of {bulkProgress.total}: <strong>{bulkProgress.currentName}</strong></span>
               </div>
             )}
           </div>
@@ -1042,7 +958,7 @@ export default function LeadDashboard() {
               onClick={handleRunBulkOutreach}
               className="btn-submit btn-ai-run"
             >
-              {submitting ? 'Running Outreach Campaign...' : '⚡ Run Outreach Campaign'}
+              {submitting ? 'Building Review Batch...' : 'Build Review Batch'}
             </button>
           </div>
         </div>
@@ -1110,7 +1026,7 @@ export default function LeadDashboard() {
                 ✅ Contacted ({leads.filter(l => l.status === 'outreach_sent' || l.status === 'followup_sent' || l.status === 'demo_opened' || l.status === 'link_clicked').length})
               </button>
               <button className={`db-pill ready ${dbStatusFilter === 'ready' ? 'active' : ''}`} onClick={() => setDbStatusFilter('ready')}>
-                🎯 Ready to Target ({leads.filter(l => l.status === 'new').length})
+                🧭 Unreviewed ({leads.filter(l => l.status === 'new').length})
               </button>
               <button className={`db-pill hot ${dbStatusFilter === 'hot' ? 'active' : ''}`} onClick={() => setDbStatusFilter('hot')}>
                 🔥 Hot Prospects ({leads.filter(l => l.status === 'demo_opened' || l.status === 'link_clicked' || (l.clicksCount && l.clicksCount > 0)).length})
@@ -1194,7 +1110,7 @@ export default function LeadDashboard() {
                               setPreviewLead(lead);
                             }}
                           >
-                            <Send size={12} /> Send Email
+                            <Send size={12} /> Review Email
                           </button>
                         ) : null}
                       </td>

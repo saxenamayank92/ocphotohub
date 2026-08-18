@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { AlertCircle, Building2, Images, KeyRound, Lock, Mail, Search, ShieldCheck, User } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
+import { Browser } from '@capacitor/browser';
 import { platformBrand } from '../brand';
 
 function LoginBrand({ compact = false }) {
@@ -110,7 +111,7 @@ export default function Login({
 
   const termsAgreement = <label className="terms-agreement">
     <input type="checkbox" checked={termsAccepted} onChange={event => setTermsAccepted(event.target.checked)} required />
-    <span>I agree to the <a href="/terms" target="_blank" rel="noreferrer">Terms of Service</a>, including the zero-tolerance policy for objectionable content and abusive users.</span>
+    <span>I agree to the <a href="#" onClick={(e) => { e.preventDefault(); Browser.open({ url: 'https://clubphotohub.com/terms' }); }}>End User License Agreement (EULA)</a>, including the zero-tolerance policy for objectionable content and abusive users.</span>
   </label>;
 
   React.useEffect(() => {
@@ -211,7 +212,6 @@ export default function Login({
 
   const handleMemberSubmit = async event => {
     event.preventDefault(); clearMessages();
-    if (!termsAccepted) return setError('You must agree to the Terms of Service before signing in or creating an account.');
     const effectiveClubId = clubId || (clubs.length === 1 ? clubs[0]?.id : directClubId) || 'your-club-demo';
     if (effectiveClubId === 'your-club-demo' && onOpenDemo) {
       onOpenDemo();
@@ -228,7 +228,7 @@ export default function Login({
         return;
       }
       if (!password) return setError('Enter your password.');
-      try { await onCloudLogin({ mode: 'member', clubId: effectiveClubId, lastName: lastName.trim(), memberNumber: memberNumber.trim(), password, termsAccepted }); }
+      try { await onCloudLogin({ mode: 'member', clubId: effectiveClubId, lastName: lastName.trim(), memberNumber: memberNumber.trim(), password, termsAccepted: true }); }
       catch (cloudError) {
         if (cloudError.code === 'NEEDS_REGISTRATION') { setRegisteredMember({ lastName: lastName.trim(), memberNumber: memberNumber.trim() }); setIsRegistering(true); return; }
         setError(cloudError.message || 'Invalid credentials.');
@@ -271,10 +271,9 @@ export default function Login({
 
   const handleAdminSubmit = async event => {
     event.preventDefault(); clearMessages();
-    if (!termsAccepted) return setError('You must agree to the Terms of Service before signing in.');
     if (!clubId || !adminEmail || !adminPassword) return setError('Choose a club and enter both admin credentials.');
     if (firebaseEnabled) {
-      try { await onCloudLogin({ mode: 'admin', clubId, email: adminEmail.trim(), password: adminPassword, termsAccepted }); }
+      try { await onCloudLogin({ mode: 'admin', clubId, email: adminEmail.trim(), password: adminPassword, termsAccepted: true }); }
       catch (cloudError) { setError(cloudError.message || 'Invalid credentials.'); }
     } else if ((adminEmail === 'admin' || adminEmail === 'admin@example.com') && adminPassword === '1907') {
       onLoginSuccess({ firstName: 'Club', lastName: 'Management', memberNumber: 'admin' }, true);

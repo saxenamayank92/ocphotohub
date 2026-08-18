@@ -2,7 +2,7 @@ import React, { lazy, Suspense, useEffect, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { ShieldCheck, AlertCircle, Info, ArrowRight, Sparkles } from 'lucide-react';
 import { getAllPhotos, savePhoto, deletePhoto as localDeletePhoto, clearAllPhotos } from './db';
-import { demoAdminUser, demoClub, demoMembers, demoPhotos, demoUser, seedMembers, seedPhotos } from './seedData';
+import { demoAdminUser, demoClub, demoMembers, demoPhotos, demoUser, seedMembers, seedPhotos, defaultEvents, defaultVenues, defaultAlbums } from './seedData';
 import Login from './components/Login';
 import Header from './components/Header';
 import PhotoGallery from './components/PhotoGallery';
@@ -26,6 +26,7 @@ import './App.css';
 
 const PhotoUpload = lazy(() => import('./components/PhotoUpload'));
 const AdminPortal = lazy(() => import('./components/AdminPortal'));
+const EventSchedule = lazy(() => import('./components/EventSchedule'));
 
 export default function App() {
   // Only a top-level club slug should lock member access to one club. `/app`
@@ -60,7 +61,122 @@ export default function App() {
   const [activeTab, setActiveTab] = useState(initialDemoAdmin ? 'admin' : 'gallery');
   const [members, setMembers] = useState((demoMode || isPreviewMode) ? demoMembers : []);
   const [photos, setPhotos] = useState((demoMode || isPreviewMode) ? demoPhotos : []);
+  const [albums, setAlbums] = useState(() => {
+    try {
+      const saved = localStorage.getItem('oakville_albums');
+      return saved ? JSON.parse(saved) : defaultAlbums;
+    } catch {
+      return defaultAlbums;
+    }
+  });
   const [toasts, setToasts] = useState([]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('oakville_albums', JSON.stringify(albums));
+    } catch (err) {
+      console.warn('Failed to save albums to local storage', err);
+    }
+  }, [albums]);
+
+  const handleAddAlbum = (newAlbumData) => {
+    const newAlbum = {
+      id: `album-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
+      name: newAlbumData.name.trim(),
+      description: newAlbumData.description?.trim() || '',
+      coverUrl: newAlbumData.coverUrl || 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=1200&auto=format&fit=crop',
+      createdAt: new Date().toISOString(),
+      createdBy: currentUser?.firstName ? `${currentUser.firstName} ${currentUser.lastName}` : (currentUser?.name || 'Club Moderator')
+    };
+    setAlbums(prev => [newAlbum, ...prev]);
+    addToast(`Album "${newAlbum.name}" created!`, 'success');
+    return newAlbum;
+  };
+
+  const handleMovePhotosToAlbum = (photoIds, targetAlbumId) => {
+    setPhotos(prev => prev.map(p => {
+      if (photoIds.includes(p.id)) {
+        return { ...p, albumId: targetAlbumId || null };
+      }
+      return p;
+    }));
+    const targetAlbum = albums.find(a => a.id === targetAlbumId);
+    const albumName = targetAlbum ? targetAlbum.name : 'Unassigned';
+    addToast(`Moved ${photoIds.length} photo(s) to "${albumName}"`, 'success');
+  };
+
+  // Dynamic Event Schedule & Venues Management State
+  const [events, setEvents] = useState(() => {
+    try {
+      const saved = localStorage.getItem('oakville_events');
+      return saved ? JSON.parse(saved) : defaultEvents;
+    } catch {
+      return defaultEvents;
+    }
+  });
+
+  const [venues, setVenues] = useState(() => {
+    try {
+      const saved = localStorage.getItem('oakville_venues');
+      return saved ? JSON.parse(saved) : defaultVenues;
+    } catch {
+      return defaultVenues;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('oakville_events', JSON.stringify(events));
+    } catch (err) {
+      console.warn('Failed to save events to local storage', err);
+    }
+  }, [events]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('oakville_venues', JSON.stringify(venues));
+    } catch (err) {
+      console.warn('Failed to save venues to local storage', err);
+    }
+  }, [venues]);
+
+  const handleAddEvent = (newEvent) => {
+    setEvents(prev => [newEvent, ...prev]);
+    addToast(`Event "${newEvent.name}" created!`, 'success');
+  };
+
+  const handleUpdateEvent = (eventId, updatedData) => {
+    setEvents(prev => prev.map(evt => evt.id === eventId ? { ...evt, ...updatedData } : evt));
+    addToast('Event updated successfully!', 'success');
+  };
+
+  const handleDeleteEvent = (eventId) => {
+    const target = events.find(e => e.id === eventId);
+    setEvents(prev => prev.filter(evt => evt.id !== eventId));
+    addToast(`Event "${target?.name || 'Item'}" removed`, 'info');
+  };
+
+  const handleAddVenue = (newVenueName) => {
+    const trimmed = newVenueName.trim();
+    if (!trimmed) return;
+    if (!venues.includes(trimmed)) {
+      setVenues(prev => [...prev, trimmed]);
+      addToast(`New space "${trimmed}" added!`, 'success');
+    }
+  };
+
+  const handleResetEvents = () => {
+    setEvents(defaultEvents);
+    setVenues(defaultVenues);
+    try {
+      localStorage.setItem('oakville_events', JSON.stringify(defaultEvents));
+      localStorage.setItem('oakville_venues', JSON.stringify(defaultVenues));
+    } catch (err) {
+      console.warn(err);
+    }
+    addToast('Event schedule reset to initial 14 events!', 'success');
+  };
+
   const [cloudActive, setCloudActive] = useState(false);
   const [clubs, setClubs] = useState(cloudApiEnabled ? [] : [clubBrand]);
   const [currentClub, setCurrentClub] = useState(() => {
@@ -571,10 +687,11 @@ export default function App() {
       {!demoMode && trialDaysLeft !== null && currentUser?.role === 'owner' && <div className={`trial-status-banner ${trialDaysLeft === 0 ? 'expired' : ''}`}><span>{trialDaysLeft > 0 ? `${trialDaysLeft} days left in your free trial` : 'Your trial has ended. This workspace is now read-only.'}</span>{Capacitor.isNativePlatform() ? <span>Billing is managed outside the iOS app.</span> : <a href="/pricing#pricing-links">Choose a plan</a>}</div>}
       <main className="content-wrapper">
         <Suspense fallback={<div className="panel-loading" role="status"><div className="spinner" /><span>Loading…</span></div>}>
-          {activeTab === 'gallery' && <PhotoGallery photos={photos} currentUser={currentUser} isAdmin={isAdmin} onHeartPhoto={handleHeartPhoto} onDeletePhoto={handleDeletePhoto} onReportPhoto={handleReportPhoto} onBlockMember={handleBlockMember} addToast={addToast} />}
-          {activeTab === 'upload' && <PhotoUpload user={currentUser} initialFiles={cameraFiles} onInitialFilesConsumed={() => setCameraFiles(null)} onUploadSuccess={handleUploadPhoto} addToast={addToast} />}
+          {activeTab === 'gallery' && <PhotoGallery photos={photos} albums={albums} currentUser={currentUser} isAdmin={isAdmin} onHeartPhoto={handleHeartPhoto} onDeletePhoto={handleDeletePhoto} onReportPhoto={handleReportPhoto} onBlockMember={handleBlockMember} onAddAlbum={handleAddAlbum} onMovePhotosToAlbum={handleMovePhotosToAlbum} addToast={addToast} />}
+          {activeTab === 'events' && <EventSchedule user={currentUser} club={currentClub || clubBrand} isAdmin={isAdmin} events={events} venues={venues} onAddEvent={handleAddEvent} onUpdateEvent={handleUpdateEvent} onDeleteEvent={handleDeleteEvent} onAddVenue={handleAddVenue} onResetEvents={handleResetEvents} addToast={addToast} />}
+          {activeTab === 'upload' && <PhotoUpload user={currentUser} albums={albums} initialFiles={cameraFiles} onInitialFilesConsumed={() => setCameraFiles(null)} onUploadSuccess={handleUploadPhoto} addToast={addToast} />}
           {activeTab === 'profile' && <MemberProfile user={currentUser} club={currentClub || clubBrand} photos={photos} onLogout={handleLogout} />}
-          {activeTab === 'admin' && isAdmin && <AdminPortal user={currentUser} club={currentClub || clubBrand} members={members} photos={photos} onUpdateClub={handleUpdateClub} onAddMember={handleAddMember} onAddMembers={handleAddMembers} onUpdateMember={handleUpdateMember} onDeleteMember={handleDeleteMember} onSetMemberPassword={handleSetMemberPassword} onDeletePhoto={handleDeletePhoto} onUpdatePhoto={handleUpdatePhoto} onHeartPhoto={handleHeartPhoto} firebaseConfig={cloudActive ? { provider: 'managed' } : null} onResetDatabase={handleResetDatabase} demoMode={demoMode || isPreviewMode} addToast={addToast} />}
+          {activeTab === 'admin' && isAdmin && <AdminPortal user={currentUser} club={currentClub || clubBrand} members={members} photos={photos} events={events} venues={venues} onAddEvent={handleAddEvent} onUpdateEvent={handleUpdateEvent} onDeleteEvent={handleDeleteEvent} onAddVenue={handleAddVenue} onResetEvents={handleResetEvents} onUpdateClub={handleUpdateClub} onAddMember={handleAddMember} onAddMembers={handleAddMembers} onUpdateMember={handleUpdateMember} onDeleteMember={handleDeleteMember} onSetMemberPassword={handleSetMemberPassword} onDeletePhoto={handleDeletePhoto} onUpdatePhoto={handleUpdatePhoto} onHeartPhoto={handleHeartPhoto} firebaseConfig={cloudActive ? { provider: 'managed' } : null} onResetDatabase={handleResetDatabase} demoMode={demoMode || isPreviewMode} addToast={addToast} />}
           {activeTab === 'account' && <AccountSettings user={currentUser} club={currentClub || clubBrand} isAdmin={isAdmin} demoMode={demoMode} onDeleteAccount={handleDeleteAccount} onDeleteOrganization={handleDeleteOrganization} addToast={addToast} />}
         </Suspense>
       </main>

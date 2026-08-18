@@ -104,7 +104,6 @@ export const resolveCloudClub = slug => request(`/clubs/resolve?slug=${encodeURI
 // Fetch the asset with the authenticated API request and let the UI render a
 // short-lived local blob URL instead.
 const fetchAuthenticatedPhotoResponse = value => fetch(resolveApiUrl(value), {
-  credentials: 'include',
   headers: csrfToken ? { 'Authorization': `Bearer ${csrfToken}` } : {}
 });
 

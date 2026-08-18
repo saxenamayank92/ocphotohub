@@ -10,6 +10,7 @@ import { track, trackPageOnce } from './analytics';
 
 const MemberApp = lazy(() => import('./App.jsx'));
 const LeadDashboard = lazy(() => import('./components/LeadDashboard.jsx'));
+const OakvilleMemberIntro = lazy(() => import('./components/OakvilleMemberIntro.jsx'));
 
 function LeadTracker({ path, search }) {
   useEffect(() => {
@@ -70,6 +71,16 @@ export default function Root({ url }) {
     || currentUrl.protocol === 'capacitor:'
     || currentUrl.protocol === 'ionic:'
     || (!import.meta.env.DEV && (currentUrl.hostname === 'localhost' || currentUrl.hostname === '127.0.0.1'));
+
+  const oakvilleIntroPaths = ['/theoakvilleclub/welcome', '/theoakvilleclub/guide'];
+  if (oakvilleIntroPaths.includes(currentUrl.pathname.toLowerCase())) {
+    return (
+      <Suspense fallback={<div className="member-route-loading">Loading Oakville Club Guide…</div>}>
+        <OakvilleMemberIntro onBackToApp={() => { window.location.href = '/theoakvilleclub?demo=1'; }} />
+      </Suspense>
+    );
+  }
+
   const directClubPath = /^\/[a-z0-9][a-z0-9-]{0,59}\/?$/i.test(currentUrl.pathname)
     && !['/api', '/app', '/assets', '/faq', '/features', '/help', '/privacy', '/terms', '/pricing', '/book-demo', '/founding-clubs', '/security'].includes(currentUrl.pathname.toLowerCase());
   const isMemberApp = isNativeApp

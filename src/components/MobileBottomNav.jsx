@@ -1,4 +1,3 @@
-import React from 'react';
 import { Image, Upload, User } from 'lucide-react';
 
 export default function MobileBottomNav({ activeTab, setActiveTab }) {
@@ -16,7 +15,7 @@ export default function MobileBottomNav({ activeTab, setActiveTab }) {
         {activeTab === 'gallery' && <div className="active-dot" />}
       </button>
 
-      {/* 2. Upload (center, elevated) */}
+      {/* 3. Upload (center, elevated) */}
       <button
         type="button"
         className={`mobile-nav-item upload-center-item ${activeTab === 'upload' ? 'active' : ''}`}
@@ -29,7 +28,7 @@ export default function MobileBottomNav({ activeTab, setActiveTab }) {
         <span>Upload</span>
       </button>
 
-      {/* 3. Profile */}
+      {/* 4. Profile */}
       <button
         type="button"
         className={`mobile-nav-item ${activeTab === 'profile' ? 'active' : ''}`}

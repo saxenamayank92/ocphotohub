@@ -1,5 +1,5 @@
 import React from 'react';
-import { LogOut, Image, Upload, Shield, User, Settings } from 'lucide-react';
+import { LogOut, Image, Upload, Shield, User, Settings, Calendar, FileText } from 'lucide-react';
 import { platformBrand } from '../brand';
 
 export default function Header({ user, club, isAdmin, activeTab, setActiveTab, onLogout }) {
@@ -45,6 +45,13 @@ export default function Header({ user, club, isAdmin, activeTab, setActiveTab, o
                   <Upload size={16} /> Upload Photos
                 </span>
               </button>
+              <a
+                href="/theoakvilleclub/welcome"
+                className="tab-btn"
+                style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+              >
+                <FileText size={16} /> Member Access Guide
+              </a>
             </>
           ) : (
             <>
@@ -64,6 +71,13 @@ export default function Header({ user, club, isAdmin, activeTab, setActiveTab, o
                   <Upload size={16} /> Upload Photo
                 </span>
               </button>
+              <a
+                href="/theoakvilleclub/welcome"
+                className="tab-btn"
+                style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+              >
+                <FileText size={16} /> Member Access Guide
+              </a>
             </>
           )}
         </nav>

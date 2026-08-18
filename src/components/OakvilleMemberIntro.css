@@ -1,0 +1,632 @@
+/* Oakville Club Branded Member Intro Form CSS */
+
+.oakville-intro-container {
+  min-height: 100vh;
+  background-color: var(--club-cream, #F7F5F0);
+  color: var(--club-charcoal, #1C2531);
+  font-family: var(--font-sans, system-ui, sans-serif);
+  padding-bottom: 80px;
+}
+
+/* Top Navigation Bar */
+.oakville-top-nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px;
+  background: rgba(23, 34, 56, 0.96);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(200, 167, 107, 0.3);
+  color: #ffffff;
+}
+
+.oakville-nav-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.oakville-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.oakville-back-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.oakville-nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.oakville-nav-title {
+  display: flex;
+  flex-direction: column;
+}
+
+.oakville-club-name {
+  font-family: var(--font-serif, Georgia, serif);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--club-gold-light, #E2C892);
+  line-height: 1.2;
+}
+
+.oakville-app-tag {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.7);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.oakville-nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.oakville-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 18px;
+  border-radius: 6px;
+  background: var(--club-gold, #C8A76B);
+  color: #172238;
+  border: none;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(200, 167, 107, 0.25);
+  transition: all 0.2s ease;
+}
+
+.oakville-btn-primary:hover {
+  background: var(--club-gold-light, #E2C892);
+  transform: translateY(-1px);
+}
+
+/* Main Layout Container */
+.oakville-content {
+  max-width: 1200px;
+  margin: 40px auto 0 auto;
+  padding: 0 24px;
+}
+
+/* Hero & Header Card */
+.oakville-hero-card {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 40px 48px;
+  border: 1px solid rgba(200, 167, 107, 0.4);
+  box-shadow: 0 16px 40px rgba(23, 34, 56, 0.08);
+  margin-bottom: 40px;
+  position: relative;
+  overflow: hidden;
+}
+
+.oakville-hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 24px;
+  background: rgba(200, 167, 107, 0.15);
+  color: var(--club-gold-dark, #A78345);
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 20px;
+}
+
+.oakville-brand-header {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-bottom: 32px;
+  border-bottom: 2px solid var(--club-cream, #F7F5F0);
+  text-align: center;
+}
+
+.oakville-header-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.oakville-eyebrow {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--club-gold-dark, #A78345);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.oakville-title {
+  font-family: var(--font-serif, Georgia, serif);
+  font-size: 46px;
+  font-weight: 700;
+  color: var(--club-green-dark, #0D1728);
+  line-height: 1.15;
+  margin-bottom: 12px;
+}
+
+.oakville-subtitle {
+  font-size: 18px;
+  color: #4b5563;
+  line-height: 1.5;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Direct Access Box */
+.oakville-direct-access-box {
+  margin-top: 32px;
+  padding: 24px 32px;
+  background: linear-gradient(135deg, #172238 0%, #263A5C 100%);
+  border-radius: 16px;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.oakville-link-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.oakville-link-label {
+  font-size: 13px;
+  color: var(--club-gold-light, #E2C892);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.oakville-link-url {
+  font-size: 26px;
+  font-weight: 750;
+  color: #ffffff;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  transition: color 0.2s ease;
+}
+
+.oakville-link-url:hover {
+  color: var(--club-gold-light, #E2C892);
+}
+
+.oakville-app-availability {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 12px 20px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.availability-icon-wrap {
+  color: var(--club-gold-light, #E2C892);
+}
+
+.availability-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.avail-main {
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.avail-sub {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 500;
+}
+
+.oakville-link-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.oakville-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.oakville-copy-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* Onboarding Section Title */
+.oakville-section {
+  margin-bottom: 48px;
+}
+
+.section-title-row {
+  margin-bottom: 28px;
+  text-align: center;
+}
+
+.section-title-row h2 {
+  font-family: var(--font-serif, Georgia, serif);
+  font-size: 32px;
+  color: var(--club-green-dark, #0D1728);
+  margin-bottom: 8px;
+}
+
+.section-title-row p {
+  font-size: 16px;
+  color: #6b7280;
+}
+
+/* Steps Grid */
+.oakville-steps-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 24px;
+}
+
+.oakville-step-card {
+  background: #ffffff;
+  border: 1px solid rgba(220, 226, 224, 0.8);
+  border-radius: 16px;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.04);
+  transition: all 0.25s ease;
+}
+
+.oakville-step-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--club-gold, #C8A76B);
+  box-shadow: 0 12px 32px rgba(200, 167, 107, 0.15);
+}
+
+.step-card-featured {
+  border: 2px solid var(--club-gold, #C8A76B);
+  background: linear-gradient(180deg, #ffffff 0%, #fefcf6 100%);
+}
+
+.step-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.step-number {
+  font-family: var(--font-serif, Georgia, serif);
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--club-gold-dark, #A78345);
+  line-height: 1;
+}
+
+.step-icon-wrap {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: rgba(23, 34, 56, 0.06);
+  color: var(--club-green, #172238);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.oakville-step-card h3 {
+  font-family: var(--font-serif, Georgia, serif);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--club-green-dark, #0D1728);
+  margin-bottom: 8px;
+}
+
+.step-desc {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--club-gold-dark, #A78345);
+  margin-bottom: 12px;
+}
+
+.step-detail {
+  font-size: 15px;
+  color: #4b5563;
+  line-height: 1.6;
+  flex-grow: 1;
+}
+
+.step-highlight-badge {
+  margin-top: 18px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: rgba(200, 167, 107, 0.15);
+  color: #785a21;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Features Three Column Banner */
+.oakville-features-banner {
+  background: linear-gradient(135deg, #172238 0%, #0D1728 100%);
+  border-radius: 20px;
+  padding: 40px;
+  color: #ffffff;
+  margin-bottom: 40px;
+  box-shadow: 0 16px 40px rgba(13, 23, 40, 0.2);
+}
+
+.oakville-features-banner h2 {
+  font-family: var(--font-serif, Georgia, serif);
+  font-size: 32px;
+  color: var(--club-gold-light, #E2C892);
+  margin-bottom: 32px;
+  text-align: center;
+}
+
+.features-three-col {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 32px;
+}
+
+.feature-col {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.feature-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  background: var(--club-gold, #C8A76B);
+  color: #172238;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.feature-col h3 {
+  font-family: var(--font-serif, Georgia, serif);
+  font-size: 24px;
+  color: #ffffff;
+  margin-bottom: 12px;
+}
+
+.feature-col p {
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.6;
+}
+
+/* Print Optimization */
+@media print {
+  @page {
+    size: letter;
+    margin: 0.2in;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-size: 11px !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .oakville-intro-container {
+    padding: 0;
+    margin: 0;
+    background: #ffffff;
+  }
+
+  .oakville-content {
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Compress the hero card */
+  .oakville-hero-card {
+    box-shadow: none;
+    border: 2px solid #172238;
+    padding: 12px 16px;
+    margin-bottom: 12px;
+    border-radius: 8px;
+    page-break-after: avoid;
+  }
+
+  .oakville-title {
+    font-size: 20px !important;
+    margin-bottom: 4px;
+  }
+  
+  .oakville-subtitle {
+    font-size: 11px !important;
+    max-width: 100%;
+  }
+  
+  .oakville-eyebrow {
+    font-size: 10px !important;
+    margin-bottom: 2px;
+  }
+  
+  .oakville-brand-header {
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+    gap: 8px;
+  }
+
+  .oakville-direct-access-box {
+    background: #172238 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    padding: 8px 12px;
+    margin-top: 10px;
+    border-radius: 6px;
+    gap: 12px;
+  }
+  
+  .oakville-link-url {
+    font-size: 14px !important;
+  }
+  
+  .oakville-app-availability {
+    border: 1px solid #C8A76B;
+    padding: 6px 12px;
+  }
+  
+  .avail-main { font-size: 10px !important; }
+  .avail-sub { font-size: 9px !important; }
+
+  /* Section Adjustments */
+  .oakville-section {
+    margin-bottom: 16px;
+  }
+  
+  .section-title-row h2 {
+    font-size: 16px !important;
+    margin-bottom: 2px;
+  }
+  .section-title-row p {
+    font-size: 11px !important;
+    margin-bottom: 10px;
+  }
+
+  /* Compress Steps Grid */
+  .oakville-steps-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .oakville-step-card {
+    box-shadow: none;
+    border: 1px solid #cccccc;
+    padding: 8px 12px;
+    border-radius: 6px;
+    page-break-inside: avoid;
+  }
+  
+  .step-number { font-size: 18px !important; }
+  .step-icon-wrap { width: 24px; height: 24px; border-radius: 4px; }
+  .step-icon-wrap svg { width: 14px; height: 14px; }
+  .oakville-step-card h3 { font-size: 12px !important; margin-bottom: 4px; }
+  .step-desc { font-size: 10px !important; margin-bottom: 4px; }
+  .step-detail { font-size: 10px !important; line-height: 1.3; }
+  .step-highlight-badge { margin-top: 6px; padding: 4px 6px; font-size: 9px !important; }
+
+  /* Compress Features Banner */
+  .oakville-features-banner {
+    background: #172238 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    padding: 12px;
+    margin-bottom: 0;
+    border-radius: 8px;
+    page-break-inside: avoid;
+  }
+  
+  .oakville-features-banner h2 {
+    font-size: 16px !important;
+    margin-bottom: 12px;
+  }
+  
+  .features-three-col {
+    gap: 12px;
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .feature-col {
+    padding: 8px;
+    border-radius: 6px;
+  }
+  
+  .feature-icon {
+    width: 24px; height: 24px; margin-bottom: 6px; border-radius: 4px;
+  }
+  .feature-icon svg { width: 14px; height: 14px; }
+  .feature-col h3 { font-size: 11px !important; margin-bottom: 4px; }
+  .feature-col p { font-size: 9px !important; line-height: 1.3; }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .oakville-title {
+    font-size: 32px;
+  }
+  
+  .oakville-link-url {
+    font-size: 18px;
+    word-break: break-all;
+  }
+
+  .oakville-direct-access-box {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .oakville-app-availability {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .oakville-top-nav {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+  
+  .oakville-hero-card {
+    padding: 24px;
+  }
+}

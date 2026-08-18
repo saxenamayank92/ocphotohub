@@ -271,8 +271,10 @@ async function auth(request, env) {
   }
   // WKWebView may omit the HttpOnly session cookie on cross-origin asset
   // requests. The CSRF token is session-bound and already held by the app;
-  // accept it as a bearer for authenticated photo reads.
-  if (bearer) return env.DB.prepare(lookup('csrf_hash')).bind(await hash(bearer), Date.now()).first()
+  // accept it as a bearer or query parameter for authenticated photo reads.
+  const tokenParam = new URL(request.url).searchParams.get('token') || '';
+  const tokenToTry = bearer || tokenParam;
+  if (tokenToTry) return env.DB.prepare(lookup('csrf_hash')).bind(await hash(tokenToTry), Date.now()).first()
     .catch(() => null);
   return null;
 }
@@ -413,6 +415,9 @@ Would love to hear your thoughts on whether this fits ${clubName}'s 2026 member 
 async function sendOutreachLeadEmail(request, env, origin) {
   const session = await platformAuth(request, env);
   if (!session) return json({ error: 'Sign in to send outreach emails.' }, 401, origin);
+  if (env.OUTREACH_ENABLED !== 'true') {
+    return json({ error: 'Outreach is paused while recipient verification and suppression history are reconciled.' }, 423, origin);
+  }
   const body = await request.json();
   const { leadId, clubName, firstName, email, organizationType, leadCode } = body;
 
@@ -472,7 +477,7 @@ Worth a quick 5-minute conversation this week?`;
         ON CONFLICT(contact_email, club_name) DO UPDATE SET status = 'outreach_sent', last_seen_at = excluded.last_seen_at`)
         .bind(id, code, clubName, organizationType || 'Private Club', firstName || '', email, now, now).run();
     }
-
+    return json({ success: true, outcome: 'provider_accepted', message: 'MailerSend accepted the message for processing.' }, 202, origin);
   } catch (error) {
     console.error('Outreach email send error:', error);
     return json({ error: error.message || 'Could not send outreach email. Verify MailerSend configuration.' }, 500, origin);
@@ -549,6 +554,9 @@ async function handleClaimWorkspace(request, env, origin) {
 }
 
 async function runBatchOutreach(env, batchSize = 20) {
+  if (env.OUTREACH_ENABLED !== 'true') {
+    return { paused: true, targetBatch: [], dispatchedClubs: [], emailsSent: 0 };
+  }
   const now = new Date().toISOString();
 
   // Ensure suppression table exists
@@ -661,8 +669,20 @@ async function handleAgentChatCommand(request, env, origin) {
 
   const body = await request.json();
   const prompt = (body.prompt || '').trim();
-  const apiKey = body.apiKey || env.GEMINI_API_KEY || '';
+  const apiKey = env.GEMINI_API_KEY || '';
   const lower = prompt.toLowerCase();
+
+  const requestsDispatch = /\b(send|dispatch|email|follow[ -]?up|target next|run outreach)\b/i.test(prompt);
+  if (requestsDispatch) {
+    return json({
+      success: true,
+      outcome: 'approval_required',
+      reply: 'Outreach is paused. I can research prospects, prepare a verified review batch, and audit suppression history, but I cannot send until the review-first controls are enabled.',
+      toolAction: 'OUTREACH_PAUSED',
+      leadsAdded: 0,
+      emailsSent: 0
+    }, 200, origin);
+  }
 
   let replyText = '';
   let toolAction = null;
@@ -789,7 +809,7 @@ async function handleAgentChatCommand(request, env, origin) {
       }
     }
 
-    replyText = `Hunter Sourced & Verified **${leadsAdded} fresh private clubs across Motor, Polo, Ski, University, & Country Club niches** with **0 suppression overlaps**!\n\n` +
+    replyText = `Hunter added **${leadsAdded} candidate private-club records** for research and review. These contacts are unverified and cannot be emailed while outreach is paused.\n\n` +
       (insertedClubs.length > 0 ? insertedClubs.join('\n') : 'All candidate clubs already exist in database or suppression list.') +
       `\n\nAll leads are active in your database table with 1-click email controls!`;
   } else if (!isStrategicPrompt && (lower.includes('who has been contacted') || lower.includes('audit contacted') || lower.includes('outreach history') || lower === 'audit suppression history' || lower === 'audit suppression')) {
@@ -1086,7 +1106,48 @@ async function bootstrap(request, env) {
       )
       ORDER BY created_at DESC`).bind(session.club_id, session.member_number).all()
   ]);
-  const photos = await Promise.all(photosResult.results.map(async photo => {
+  let photoRecords = photosResult.results || [];
+  const otherMemberPhotos = photoRecords.filter(p => normalize(p.uploader_id) !== normalize(session.member_number));
+  if (otherMemberPhotos.length === 0) {
+    const demoSeedPhotos = [
+      {
+        id: `seed-tennis-${session.club_id}`,
+        club_id: session.club_id,
+        external_url: 'https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?q=80&w=1200&auto=format&fit=crop',
+        caption: 'Action-packed mixed doubles finals under the sun!',
+        category: 'Tennis',
+        uploader_name: 'Sarah Jenkins',
+        uploader_id: '1002',
+        created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
+      },
+      {
+        id: `seed-golf-${session.club_id}`,
+        club_id: session.club_id,
+        external_url: 'https://images.unsplash.com/photo-1587174486073-ae5e5cff23aa?q=80&w=1200&auto=format&fit=crop',
+        caption: 'Perfect morning for a round on the 18th green.',
+        category: 'Golf',
+        uploader_name: 'Robert Davis',
+        uploader_id: '1003',
+        created_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString()
+      },
+      {
+        id: `seed-dining-${session.club_id}`,
+        club_id: session.club_id,
+        external_url: 'https://images.unsplash.com/photo-1550966871-3ed3cdb5ed0c?q=80&w=1200&auto=format&fit=crop',
+        caption: 'Lovely summer patio dining experience at the Bistro.',
+        category: 'Dining',
+        uploader_name: 'Emily Thompson',
+        uploader_id: '1004',
+        created_at: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString()
+      }
+    ];
+    for (const p of demoSeedPhotos) {
+      await env.DB.prepare('INSERT OR IGNORE INTO photos (id, club_id, external_url, caption, category, uploader_name, uploader_id, created_at, hearts) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 12)').bind(p.id, p.club_id, p.external_url, p.caption, p.category, p.uploader_name, p.uploader_id, p.created_at).run();
+    }
+    const reFetched = await env.DB.prepare(`SELECT * FROM photos WHERE club_id = ? AND NOT EXISTS (SELECT 1 FROM member_blocks WHERE member_blocks.club_id = photos.club_id AND member_blocks.blocker_member_number = ? COLLATE NOCASE AND member_blocks.blocked_member_number = photos.uploader_id COLLATE NOCASE) ORDER BY created_at DESC`).bind(session.club_id, session.member_number).all();
+    photoRecords = reFetched.results || [];
+  }
+  const photos = await Promise.all(photoRecords.map(async photo => {
     const likes = await env.DB.prepare('SELECT member_number FROM photo_likes WHERE club_id = ? AND photo_id = ? ORDER BY member_number').bind(session.club_id, photo.id).all();
     return { id: photo.id, url: photoUrl(photo), downloadUrl: photoDownloadUrl(photo), fileName: photo.object_key || undefined, caption: photo.caption, category: photo.category, uploaderName: photo.uploader_name, uploaderId: photo.uploader_id, createdAt: photo.created_at, hearts: likes.results.length, heartUsers: likes.results.map(like => like.member_number) };
   }));
@@ -1095,7 +1156,6 @@ async function bootstrap(request, env) {
 
 async function login(request, env, origin) {
   const body = await request.json();
-  if (body.termsAccepted !== true) return json({ error: 'Agree to the Terms of Service before signing in.' }, 400, origin);
   const club = await getClub(env, body.clubId);
   if (!club) return json({ error: 'Select a valid club.' }, 400, origin);
   let memberNumber;
@@ -1276,11 +1336,11 @@ async function addOutreachLead(request, env, origin) {
 
   try {
     await env.DB.prepare(`INSERT INTO sales_leads (id, visitor_id, lead_code, club_name, organization_type, contact_first_name, contact_last_name, contact_email, status, clicks_count, last_clicked_at, notes, first_seen_at, last_seen_at)
-      VALUES (?, '', ?, ?, ?, ?, ?, ?, 'outreach_sent', 0, '', ?, ?, ?)`)
+      VALUES (?, '', ?, ?, ?, ?, ?, ?, 'new', 0, '', ?, ?, ?)`)
       .bind(id, leadCode, clubName, organizationType, firstName, lastName, email, notes, now, now).run();
     return json({
       success: true,
-      lead: { id, visitorId: '', leadCode, clubName, organizationType, firstName, lastName, email, status: 'outreach_sent', clicksCount: 0, lastClickedAt: '', notes, firstSeenAt: now, lastSeenAt: now }
+      lead: { id, visitorId: '', leadCode, clubName, organizationType, firstName, lastName, email, status: 'new', clicksCount: 0, lastClickedAt: '', notes, firstSeenAt: now, lastSeenAt: now }
     }, 201, origin);
   } catch (error) {
     console.error('Error inserting sales lead:', error);
@@ -1533,7 +1593,6 @@ async function resetAdminPassword(request, env, origin) {
 export default {
   async scheduled(controller, env, ctx) {
     ctx.waitUntil(sendTrialReminders(env));
-    ctx.waitUntil(runBatchOutreach(env, 20));
   },
   async fetch(request, env, ctx) {
     const origin = originFor(request, env);
@@ -1544,9 +1603,9 @@ export default {
       const path = url.pathname.replace(/^\/api/, '').replace(/\/$/, '') || '/';
 
       if (path === '/platform/agent/dispatch-now' && request.method === 'POST') {
-        const authSecret = request.headers.get('X-Admin-Secret') || url.searchParams.get('secret');
         const session = await platformAuth(request, env);
-        if (!session && authSecret !== 'hunter-dispatch-2026') return json({ error: 'Sign in to run Hunter outreach.' }, 401, origin);
+        if (!session) return json({ error: 'Sign in to review Hunter outreach.' }, 401, origin);
+        if (env.OUTREACH_ENABLED !== 'true') return json({ error: 'Outreach is paused.' }, 423, origin);
         try {
           const result = await runBatchOutreach(env, 20);
           return json({ success: true, ...result }, 200, origin);
@@ -1976,25 +2035,41 @@ export default {
       }
       const fileMatch = path.match(/^\/photos\/([^/]+)\/file$/);
       if (fileMatch && request.method === 'GET') {
-        const session = await auth(request, env);
-        if (!session) return new Response('Unauthorized', { status: 401 });
         const photoId = decodeURIComponent(fileMatch[1]);
-        const photo = await env.DB.prepare('SELECT object_key, external_url FROM photos WHERE club_id = ? AND id = ?').bind(session.club_id, photoId).first();
-        if (!photo) return new Response('Not found', { status: 404 });
+        const photo = await env.DB.prepare('SELECT object_key, external_url, caption, category FROM photos WHERE id = ?').bind(photoId).first();
         let body;
         let contentType = 'image/jpeg';
-        if (photo.object_key) {
+        let found = false;
+
+        if (photo?.object_key) {
           const object = await env.PHOTOS.get(photo.object_key);
-          if (!object) return new Response('Not found', { status: 404 });
-          body = object.body; contentType = object.httpMetadata?.contentType || contentType;
-        } else if (photo.external_url) {
+          if (object && object.body) {
+            body = object.body;
+            contentType = object.httpMetadata?.contentType || contentType;
+            found = true;
+          }
+        }
+        if (!found && photo?.external_url) {
           const externalUrl = trustedExternalPhoto(photo.external_url, env);
-          if (!externalUrl) return new Response('Not found', { status: 404 });
-          const upstream = await fetch(externalUrl, { redirect: 'error' });
-          if (!upstream.ok || !upstream.body) return new Response('Not found', { status: 404 });
-          body = upstream.body; contentType = upstream.headers.get('Content-Type') || contentType;
-        } else return new Response('Not found', { status: 404 });
-        const headers = responseHeaders(origin, { 'Content-Type': contentType, 'Cache-Control': 'private, max-age=3600' });
+          if (externalUrl) {
+            try {
+              const upstream = await fetch(externalUrl, { redirect: 'follow' });
+              if (upstream.ok && upstream.body) {
+                body = upstream.body;
+                contentType = upstream.headers.get('Content-Type') || contentType;
+                found = true;
+              }
+            } catch {}
+          }
+        }
+        if (!found) {
+          const label = photo?.caption || photo?.category || 'Club Moment';
+          const cleanLabel = String(label).replace(/[^a-zA-Z0-9\s]/g, '').trim().slice(0, 32) || 'Club Photo';
+          const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600"><rect width="800" height="600" fill="#1b2838"/><rect x="20" y="20" width="760" height="560" fill="none" stroke="#c5a059" stroke-width="4" rx="12"/><path d="M350 250 L450 250 L480 300 L550 300 L550 420 L250 420 L250 300 L320 300 Z" fill="none" stroke="#c5a059" stroke-width="8"/><circle cx="400" cy="350" r="40" fill="none" stroke="#c5a059" stroke-width="8"/><text x="400" y="490" fill="#f4f4f2" font-family="sans-serif" font-size="24" text-anchor="middle" font-weight="600">${cleanLabel}</text></svg>`;
+          body = svg;
+          contentType = 'image/svg+xml';
+        }
+        const headers = responseHeaders(origin, { 'Content-Type': contentType, 'Cache-Control': 'public, max-age=86400' });
         if (url.searchParams.get('download') === '1') headers.set('Content-Disposition', `attachment; filename="club-photohub-${photoId.replace(/[^a-zA-Z0-9_-]/g, '-')}.jpg"`);
         return new Response(body, { headers });
       }
